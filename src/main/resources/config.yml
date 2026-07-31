@@ -1,0 +1,145 @@
+plugin:
+  language: cs
+  debug: false
+  check-for-updates: false
+
+minigame:
+  enabled: true
+  display: ACTION_BAR
+  # Logical positions. Each position is rendered as one thick line glyph.
+  bar-length: 20
+  # Higher values make the indicator move more slowly. 6 ticks is about half
+  # the previous default speed.
+  update-period-ticks: 6
+  target-width: 5
+  # Maximum indicator movement steps to reach a target after a successful hit.
+  # This prevents an otherwise valid next target from appearing unreasonably far away.
+  target-relocation-max-distance: 6
+  hook-particles:
+    enabled: true
+    # Bukkit/Paper Particle enum name. SPLASH creates a subtle water ring.
+    particle: SPLASH
+    radius: 0.8
+    count: 8
+    interval-ticks: 4
+    y-offset: 0.05
+  # A random number of successful timing hits is selected for each minigame.
+  required-hits-min: 3
+  required-hits-max: 5
+  max-misses: 1
+  # 160 ticks = 8 seconds for the initial minigame window.
+  timeout-ticks: 160
+  # Time added after every successful hit. 30 ticks = 1.5 seconds.
+  time-bonus-ticks: 30
+  # Blocks movement through walls. 0 disables the visual hook pull.
+  hook-pull-distance: 1.0
+  move-target-after-hit: true
+  randomize-start-position: true
+  indicator-direction: RANDOM
+  input-debounce-milliseconds: 150
+
+fishing:
+  # BITE_GATE cannot reliably preserve the internal bite state on this API.
+  preferred-mode: DEFERRED_CATCH
+  fallback-mode: DEFERRED_CATCH
+  cancel-on-teleport: true
+  cancel-on-world-change: true
+  cancel-on-item-change: true
+  cancel-on-damage: false
+  require-fishing-rod-in-main-hand: true
+  allow-creative: true
+  allow-spectator: false
+
+worlds:
+  # ALL is the safe default for a fresh installation. Use WHITELIST when the
+  # plugin should be limited to explicitly named worlds.
+  mode: ALL
+  list:
+    - world
+
+sounds:
+  bite:
+    enabled: true
+    sound: minecraft:entity.fishing_bobber.splash
+    volume: 1.0
+    pitch: 1.0
+  hit:
+    enabled: true
+    sound: minecraft:entity.experience_orb.pickup
+    volume: 0.8
+    pitch: 1.3
+  miss:
+    enabled: true
+    sound: minecraft:entity.villager.no
+    volume: 0.8
+    pitch: 1.2
+  timeout:
+    enabled: true
+    sound: nekara:fishing.timeout
+    volume: 1.0
+    pitch: 1.0
+  escape:
+    enabled: true
+    sound: nekara:fishing.escape
+    volume: 1.0
+    pitch: 1.0
+  minigame-success:
+    enabled: true
+    sound: minecraft:block.note_block.pling
+    volume: 1.0
+    pitch: 1.5
+  catch-success:
+    enabled: true
+    sound: nekara:fishing.catch
+    volume: 1.0
+    pitch: 1.0
+
+# Visual feedback is deliberately particle-only. It never creates or changes
+# an ItemStack and is shown only to the fishing player.
+effects:
+  success:
+    enabled: true
+    # Bukkit/Paper Particle enum name.
+    particle: HAPPY_VILLAGER
+    count: 12
+    duration-ticks: 8
+    radius: 0.9
+    y-offset: 0.05
+  failure:
+    enabled: true
+    # Red particles make the escape immediately readable without chat spam.
+    particle: DAMAGE_INDICATOR
+    count: 12
+    duration-ticks: 8
+    radius: 0.9
+    y-offset: 0.05
+
+# Optional ValhallaMMO integration. When available, fishing skill level makes
+# the minigame easier without changing ValhallaMMO loot or XP calculations.
+valhalla:
+  fishing-difficulty:
+    enabled: true
+    # Required successful pulls at the ValhallaMMO fishing skill max level.
+    max-level-required-hits: 2
+    # Allowed misses at the ValhallaMMO fishing skill max level.
+    max-level-max-misses: 3
+    tiers:
+      novice:
+        min-level: 1
+        max-level: 30
+        required-hits-min: 3
+        required-hits-max: 5
+        max-misses: 1
+      skilled:
+        min-level: 31
+        max-level: 60
+        required-hits-min: 3
+        required-hits-max: 4
+        max-misses: 2
+      expert:
+        min-level: 61
+        # 0 means no upper bound.
+        max-level: 0
+        required-hits-min: 2
+        required-hits-max: 3
+        max-misses: 3

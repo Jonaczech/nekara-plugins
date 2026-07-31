@@ -1,0 +1,28 @@
+prefix: "&8[&bNekaraFishing&8] &r"
+bite: "%prefix%&eRyba zabrala! &fKlikni ve správný okamžik."
+hit: "%prefix%&aÚspěšný zásah! &7(%hits%/%required_hits%)"
+miss: "%prefix%&cMinul jsi. &7Chyby: %misses%/%max_misses%"
+escape: "%prefix%&cRyba unikla."
+timeout: "%prefix%&cNestihl jsi reagovat."
+minigame-success: "%prefix%&aMinihra dokončena."
+catch-success: "%prefix%&6Úlovek byl úspěšně vytažen."
+cancelled: "%prefix%&7Minihra byla zrušena."
+reloaded: "%prefix%&aKonfigurace byla znovu načtena."
+no-permission: "%prefix%&cNemáš oprávnění."
+invalid-command: "%prefix%&cNeplatný příkaz. Použij &f/nekarafishing help&c."
+help: |-
+  &8&m--------------------------------
+  &bNekaraFishing &7- příkazy
+  &f/nekarafishing help &7- zobrazí tuto nápovědu
+  &f/nekarafishing reload &7- znovu načte konfiguraci
+  &f/nekarafishing status &7- zobrazí stav pluginu
+  &f/nekarafishing test &7- spustí testovací minihru
+  &f/nekarafishing cancel [hráč] &7- zruší minihru
+  &8&m--------------------------------
+status: "%prefix%&7Verze: &f%version% &7| Režim: &f%mode% &7| Aktivní minihry: &f%active%"
+test-player-only: "%prefix%&cTento příkaz může použít pouze hráč."
+test-started: "%prefix%&bTestovací minihra spuštěna."
+test-already-active: "%prefix%&cTento hráč již má aktivní minihru."
+player-not-found: "%prefix%&cHráč nebyl nalezen."
+player-cancelled: "%prefix%&7Minihra hráče %player% byla zrušena."
+no-active-game: "%prefix%&7Hráč nemá aktivní minihru."
