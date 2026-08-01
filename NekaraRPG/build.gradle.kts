@@ -12,7 +12,11 @@ java {
 
 dependencies {
     compileOnly("org.purpurmc.purpur:purpur-api:${providers.gradleProperty("purpur_api_version").get()}")
+    compileOnly("io.lumine:Mythic-Dist:5.12.1") {
+        isTransitive = false
+    }
     testImplementation("org.junit.jupiter:junit-jupiter:5.13.4")
+    testImplementation("org.yaml:snakeyaml:2.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -32,21 +36,34 @@ tasks.processResources {
 }
 
 tasks.jar {
-    archiveBaseName.set("NekaraRPG")
+    archiveFileName.set("NekaraRPG.jar")
+}
+
+val cleanReleaseArtifacts by tasks.registering(Delete::class) {
+    delete(fileTree(layout.projectDirectory.dir("dist")) {
+        include("NekaraRPG*.jar")
+    })
+    delete(fileTree(layout.projectDirectory.dir("../../dist")) {
+        include("NekaraRPG*.jar")
+    })
 }
 
 tasks.register<Copy>("copyJarToDist") {
-    dependsOn(tasks.jar)
+    dependsOn(tasks.build)
+    dependsOn(cleanReleaseArtifacts)
     from(tasks.jar)
     into(layout.projectDirectory.dir("dist"))
 }
 
 tasks.register<Copy>("copyJarToRootDist") {
-    dependsOn(tasks.jar)
+    dependsOn(tasks.build)
+    dependsOn(cleanReleaseArtifacts)
     from(tasks.jar)
     into(layout.projectDirectory.dir("../../dist"))
 }
 
-tasks.build {
-    finalizedBy("copyJarToDist", "copyJarToRootDist")
+tasks.register("release") {
+    group = "build"
+    description = "Runs all checks and publishes the stable-name NekaraRPG JAR."
+    dependsOn("copyJarToDist", "copyJarToRootDist")
 }
