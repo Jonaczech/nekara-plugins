@@ -2,6 +2,15 @@
 
 This repository contains Minecraft server plugins for the Nekara ecosystem.
 
+## Project Continuity
+
+- [`HANDOFF.md`](HANDOFF.md) records the current release, operational state, and
+  immediate next steps.
+- [`PROJECT_MEMORY.md`](PROJECT_MEMORY.md) records durable product,
+  compatibility, and release decisions.
+- [`AGENTS.md`](AGENTS.md) tells Codex on any device to read and preserve that
+  context before changing the repository.
+
 ## Projects
 
 | Plugin | Status | Description |
