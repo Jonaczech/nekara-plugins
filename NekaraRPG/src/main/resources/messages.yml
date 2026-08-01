@@ -1,0 +1,29 @@
+prefix: "&8[&bNekaraRPG&8] &r"
+bite: "%prefix%&eRyba zabrala! &fZatáhni ve správný okamžik."
+hit: ""
+miss: ""
+escape: "%prefix%&cRyba uplavala."
+timeout: "%prefix%&cNestihl jsi reagovat."
+minigame-success: ""
+catch-success: ""
+cancelled: "%prefix%&7Minihra byla zrušena."
+reloaded: "%prefix%&aKonfigurace byla znovu načtena."
+no-permission: "%prefix%&cNemáš oprávnění."
+invalid-command: "%prefix%&cNeplatný příkaz. Použij &f/nekararpg help&c."
+module-disabled: "%prefix%&cModul &f%module% &cje vypnutý."
+help: |-
+  &8&m--------------------------------
+  &bNekaraRPG &7- příkazy
+  &f/nekararpg help &7- zobrazí tuto nápovědu
+  &f/nekararpg reload &7- znovu načte konfiguraci
+  &f/nekararpg status &7- zobrazí stav pluginu
+  &f/nekararpg test &7- spustí testovací rybářskou minihru
+  &f/nekararpg cancel [hráč] &7- zruší aktivní minihru
+  &8&m--------------------------------
+status: "%prefix%&7Verze: &f%version% &7| Moduly: &f%modules% &7| Fishing režim: &f%mode% &7| Aktivní minihry: &f%active%"
+test-player-only: "%prefix%&cTento příkaz může použít pouze hráč."
+test-started: "%prefix%&bTestovací minihra spuštěna."
+test-already-active: "%prefix%&cTento hráč už má aktivní minihru."
+player-not-found: "%prefix%&cHráč nebyl nalezen."
+player-cancelled: "%prefix%&7Minihra hráče %player% byla zrušena."
+no-active-game: "%prefix%&7Hráč nemá aktivní minihru."
