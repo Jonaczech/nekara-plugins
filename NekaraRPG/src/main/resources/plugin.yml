@@ -1,0 +1,57 @@
+name: NekaraRPG
+version: ${version}
+main: cz.nekara.rpg.NekaraRPGPlugin
+api-version: '26.1'
+authors:
+  - Nekara
+description: Modular RPG and immersion systems for Nekara, currently including non-invasive fishing.
+softdepend:
+  - ValhallaMMO
+commands:
+  nekararpg:
+    description: Manage NekaraRPG.
+    usage: /nekararpg <help|reload|status|test|cancel [player]>
+    aliases: [nrpg, nekarafishing, nfishing]
+permissions:
+  nekararpg.use:
+    description: Allows the fishing minigame to start.
+    default: true
+  nekararpg.command.help:
+    description: Allows help for NekaraRPG.
+    default: op
+  nekararpg.command.reload:
+    description: Reloads NekaraRPG configuration.
+    default: op
+  nekararpg.command.status:
+    description: Shows NekaraRPG status.
+    default: op
+  nekararpg.command.test:
+    description: Starts a test minigame.
+    default: op
+  nekararpg.command.cancel:
+    description: Cancels an active minigame.
+    default: op
+  nekararpg.bypass:
+    description: Bypasses the fishing minigame.
+    default: false
+  nekarafishing.use:
+    description: Legacy permission for the fishing minigame.
+    default: true
+  nekarafishing.command.help:
+    description: Legacy permission for help.
+    default: op
+  nekarafishing.command.reload:
+    description: Legacy permission for reload.
+    default: op
+  nekarafishing.command.status:
+    description: Legacy permission for status.
+    default: op
+  nekarafishing.command.test:
+    description: Legacy permission for test.
+    default: op
+  nekarafishing.command.cancel:
+    description: Legacy permission for cancel.
+    default: op
+  nekarafishing.bypass:
+    description: Legacy bypass permission for the fishing minigame.
+    default: false
