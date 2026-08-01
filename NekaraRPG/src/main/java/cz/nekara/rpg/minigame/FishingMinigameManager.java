@@ -111,6 +111,7 @@ public final class FishingMinigameManager {
         FishingMinigameSession session = new FishingMinigameSession(
                 player.getUniqueId(), null, EquipmentSlot.HAND, true,
                 effectiveMinigameConfig(player));
+        session.state(FishingSessionState.WAITING_FOR_BITE);
         sessions.put(player.getUniqueId(), session);
         begin(player, session);
         return true;

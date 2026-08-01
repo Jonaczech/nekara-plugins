@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1
+
+- Fixed `/nekararpg test` so the standalone fishing minigame starts correctly.
+- Initialized test sessions in `WAITING_FOR_BITE` before starting them; without
+  this state transition, the test session was rejected by the active-minigame
+  guard and the minigame never rendered.
+
 ## 1.0.0
 
 - Renamed the plugin from NekaraFishing to NekaraRPG.

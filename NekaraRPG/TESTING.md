@@ -20,7 +20,7 @@ enabled world.
 
 ### 1. Startup and Module Config
 
-1. Install `NekaraRPG-1.0.0.jar`.
+1. Install `NekaraRPG-1.0.1.jar`.
 2. Start the server and verify the plugin creates `plugins/NekaraRPG/config.yml`.
 3. Verify `modules.fishing.enabled: true` is present by default.
 4. Run `/nekararpg status` and verify the `fishing` module is listed.

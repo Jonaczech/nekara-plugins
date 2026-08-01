@@ -82,9 +82,9 @@ gradlew.bat clean test build
 
 The build produces:
 
-- `build/libs/NekaraRPG-1.0.0.jar`
-- `dist/NekaraRPG-1.0.0.jar`
-- repository-level `../dist/NekaraRPG-1.0.0.jar`
+- `build/libs/NekaraRPG-1.0.1.jar`
+- `dist/NekaraRPG-1.0.1.jar`
+- repository-level `../../dist/NekaraRPG-1.0.1.jar`
 
 ## Installation
 

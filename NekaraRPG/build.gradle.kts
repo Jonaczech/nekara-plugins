@@ -44,7 +44,7 @@ tasks.register<Copy>("copyJarToDist") {
 tasks.register<Copy>("copyJarToRootDist") {
     dependsOn(tasks.jar)
     from(tasks.jar)
-    into(layout.projectDirectory.dir("../dist"))
+    into(layout.projectDirectory.dir("../../dist"))
 }
 
 tasks.build {
