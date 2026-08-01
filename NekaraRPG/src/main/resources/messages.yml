@@ -1,4 +1,5 @@
 prefix: "&8[&bNekaraRPG&8] &r"
+campfire-rested-timer: "<green>Odpočatý</green> <dark_gray>|</dark_gray> <white>%remaining_text%</white>"
 bite: "%prefix%&eRyba zabrala! &fZatáhni ve správný okamžik."
 hit: ""
 miss: ""
@@ -17,13 +18,34 @@ help: |-
   &f/nekararpg help &7- zobrazí tuto nápovědu
   &f/nekararpg reload &7- znovu načte konfiguraci
   &f/nekararpg status &7- zobrazí stav pluginu
+  &f/nekararpg sit &7- posadí tě na aktuálním místě
+  &f/nekararpg stand &7- ukončí sezení
   &f/nekararpg test &7- spustí testovací rybářskou minihru
   &f/nekararpg cancel [hráč] &7- zruší aktivní minihru
   &8&m--------------------------------
-status: "%prefix%&7Verze: &f%version% &7| Moduly: &f%modules% &7| Fishing režim: &f%mode% &7| Aktivní minihry: &f%active%"
+status: "%prefix%&7Verze: &f%version% &7| Moduly: &f%modules% &7| Fishing: &f%mode%/%active% &7| Sedí: &f%seated% &7| Odpočívá: &f%resting% &7| Rested: &f%rested%"
 test-player-only: "%prefix%&cTento příkaz může použít pouze hráč."
 test-started: "%prefix%&bTestovací minihra spuštěna."
 test-already-active: "%prefix%&cTento hráč už má aktivní minihru."
 player-not-found: "%prefix%&cHráč nebyl nalezen."
 player-cancelled: "%prefix%&7Minihra hráče %player% byla zrušena."
 no-active-game: "%prefix%&7Hráč nemá aktivní minihru."
+player-only: "%prefix%&cTento příkaz může použít pouze hráč."
+sitting-started: "%prefix%&aPosadil ses. Vstaneš pomocí &f/nekararpg stand&a nebo sesednutím."
+sitting-stopped: "%prefix%&7Vstal jsi."
+sitting-already: "%prefix%&7Už sedíš."
+sitting-riding: "%prefix%&cNejdřív sesedni z aktuálního vozidla."
+sitting-ground-required: "%prefix%&cSednout si můžeš pouze na zemi."
+sitting-invalid-state: "%prefix%&cV tomto stavu si nemůžeš sednout."
+sitting-disabled: "%prefix%&cModul sitting je vypnutý."
+sitting-failed: "%prefix%&cNepodařilo se vytvořit místo k sezení."
+sitting-not-seated: "%prefix%&7Právě nesedíš."
+campfire-rest-start: "<gold>Teplo ohně tě zve k odpočinku.</gold>"
+campfire-resting-early: "<gold>Teplo ohně pomalu zahání únavu.</gold> <gray>%elapsed%/%required% s</gray>"
+campfire-resting-mid: "<gold>Praskání ohně ti vrací sílu.</gold> <gray>%elapsed%/%required% s</gray>"
+campfire-resting-late: "<yellow>Cítíš, jak se odpočinek blíží.</yellow> <gray>%elapsed%/%required% s</gray>"
+campfire-resting-group: "<gold>Společný odpočinek posiluje tábor.</gold> <gray>%group% hráčů · %multiplier%x</gray>"
+campfire-rested-granted: "<green>Jsi odpočatý.</green> <gray>Rested bonus: %duration_text%</gray>"
+campfire-rested-active: "<green>Rested je aktivní.</green> <gray>Zbývá %remaining% s · skupina %group% · %multiplier%x</gray>"
+campfire-rest-complete: "<gold>U ohně ses plně zotavil.</gold>"
+campfire-rest-left: "<gray>Vzdálil ses od tepla ohně.</gray>"

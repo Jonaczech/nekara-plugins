@@ -4,7 +4,10 @@ import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.minigame.FishingMinigameManager;
 import cz.nekara.rpg.modules.ModuleRegistry;
+import cz.nekara.rpg.modules.campfire.CampfireModule;
 import cz.nekara.rpg.modules.fishing.FishingModule;
+import cz.nekara.rpg.modules.sitting.SittingModule;
+import cz.nekara.rpg.sitting.SitResult;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -20,17 +23,23 @@ import java.util.Map;
 public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
     private final NekaraRPGPlugin plugin;
     private final FishingModule fishingModule;
+    private final SittingModule sittingModule;
+    private final CampfireModule campfireModule;
     private final ModuleRegistry modules;
     private final MessageService messages;
 
     public NekaraRPGCommand(
             NekaraRPGPlugin plugin,
             FishingModule fishingModule,
+            SittingModule sittingModule,
+            CampfireModule campfireModule,
             ModuleRegistry modules,
             MessageService messages
     ) {
         this.plugin = plugin;
         this.fishingModule = fishingModule;
+        this.sittingModule = sittingModule;
+        this.campfireModule = campfireModule;
         this.modules = modules;
         this.messages = messages;
     }
@@ -57,10 +66,44 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                         "version", plugin.getDescription().getVersion(),
                         "mode", manager.modeName(),
                         "active", manager.activeCount(),
+                        "seated", sittingModule.seatedCount(),
+                        "resting", campfireModule.restingCount(),
+                        "rested", campfireModule.restedCount(),
                         "modules", modules.enabledModuleIds().isEmpty()
                                 ? "none"
                                 : String.join(", ", modules.enabledModuleIds())
                 ));
+                yield true;
+            }
+            case "sit" -> {
+                if (!require(sender, "nekararpg.sitting.use")) yield true;
+                if (!modules.isEnabled(SittingModule.ID)) {
+                    messages.send(sender, "module-disabled", Map.of("module", SittingModule.ID));
+                    yield true;
+                }
+                if (!(sender instanceof Player player)) {
+                    messages.send(sender, "player-only");
+                    yield true;
+                }
+                SitResult result = sittingModule.sit(player);
+                messages.send(player, switch (result) {
+                    case SUCCESS -> "sitting-started";
+                    case ALREADY_SITTING -> "sitting-already";
+                    case ALREADY_RIDING -> "sitting-riding";
+                    case NOT_ON_GROUND -> "sitting-ground-required";
+                    case INVALID_STATE -> "sitting-invalid-state";
+                    case MODULE_DISABLED -> "sitting-disabled";
+                    case FAILED -> "sitting-failed";
+                });
+                yield true;
+            }
+            case "stand" -> {
+                if (!(sender instanceof Player player)) {
+                    messages.send(sender, "player-only");
+                    yield true;
+                }
+                messages.send(player, sittingModule.stand(player)
+                        ? "sitting-stopped" : "sitting-not-seated");
                 yield true;
             }
             case "test" -> {
@@ -117,10 +160,18 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
         return false;
     }
 
+    private boolean require(CommandSender sender, String permission) {
+        if (sender.hasPermission(permission)) {
+            return true;
+        }
+        messages.send(sender, "no-permission");
+        return false;
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return prefix(List.of("help", "reload", "status", "test", "cancel"), args[0]);
+            return prefix(List.of("help", "reload", "status", "sit", "stand", "test", "cancel"), args[0]);
         }
         if (args.length == 2 && "cancel".equalsIgnoreCase(args[0])) {
             List<String> names = Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();

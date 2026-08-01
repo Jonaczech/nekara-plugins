@@ -12,6 +12,8 @@ public record PluginConfig(
         OutcomeEffectConfig failureEffect,
         ValhallaFishingConfig valhallaFishing,
         FishingConfig fishing,
+        SittingConfig sitting,
+        CampfireConfig campfire,
         WorldConfig worlds,
         Map<String, SoundSettings> sounds
 ) {

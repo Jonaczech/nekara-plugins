@@ -4,10 +4,103 @@ plugin:
   check-for-updates: false
 
 modules:
-  # NekaraRPG is a modular plugin. Fishing is the first module and stays enabled
-  # by default so the migrated plugin behaves like NekaraFishing out of the box.
+  # Every gameplay area is shipped in the same NekaraRPG JAR and can be toggled
+  # independently. Campfire accepts both NekaraRPG and supported external seats.
   fishing:
     enabled: true
+  sitting:
+    enabled: true
+  campfire:
+    enabled: true
+
+sitting:
+  # Sitting works on any grounded position and does not register /sit, avoiding
+  # command collisions with CMI. Use /nekararpg sit and /nekararpg stand.
+  require-ground: true
+  seat-y-offset: 0.20
+  allow-creative: true
+  allow-flying: false
+  # Damage immediately removes the seat to prevent combat healing abuse.
+  stand-on-damage: true
+  # Campfire can also recognize seats created by CMI and similar plugins. Only
+  # vehicle types listed here count, so horses and minecarts are not rest seats.
+  detect-external-seats: true
+  external-seat-entity-types:
+    - ARMOR_STAND
+
+campfire:
+  # Only lit CAMPFIRE and SOUL_CAMPFIRE blocks count.
+  radius: 5.0
+  # Player and campfire state is evaluated once per second by default.
+  update-period-ticks: 20
+  healing:
+    # One health point is half a heart.
+    amount: 1.0
+    period-seconds: 5
+  hunger:
+    # Hunger loss is completely blocked while actively resting. In addition,
+    # one food point is restored every ten seconds by default.
+    restore-amount: 1
+    restore-period-seconds: 10
+  rested:
+    # Charge and duration use real wall-clock seconds, even when the server lags.
+    charge-seconds: 20
+    duration-seconds: 300
+    # 0.5 means the hunger bar drains at half speed after leaving the campfire.
+    hunger-loss-multiplier: 0.5
+    # Haste I is granted only when the camp contains a crafting table. It also
+    # provides Minecraft's standard status icon. Amplifier 0 means level I.
+    haste:
+      enabled: true
+      amplifier: 0
+      ambient: true
+      particles: true
+      icon: true
+  camping:
+    # Every unique enabled block type within this radius adds one minute to
+    # Rested. Duplicate blocks of the same type do not stack.
+    feature-radius: 5.0
+    duration-per-feature-seconds: 60
+    features:
+      - CRAFTING_TABLE
+      - BED
+      - SMOKER
+      - BARREL
+      - WATER_CAULDRON
+      - CARTOGRAPHY_TABLE
+      - GRINDSTONE
+    spawn-protection:
+      # A bed near a lit campfire protects the wider camp from natural hostile
+      # spawns. Existing mobs can still enter, and scripted spawns are untouched.
+      enabled: true
+      radius: 24.0
+      natural-only: true
+      # The production MythicMobs hostile random-spawn faction.
+      mythic-hostile-faction: NekaraHostile
+  group:
+    # Healing and hunger restoration become stronger for players sharing one fire.
+    multiplier-per-extra-player: 0.15
+    maximum-multiplier: 1.75
+  visuals:
+    # A small shared particle signal confirms that active campfire rest is running.
+    resting-particles:
+      enabled: true
+      particle: HAPPY_VILLAGER
+      count: 4
+      radius: 0.7
+      y-offset: 0.35
+    rested:
+      # Rested always needs its own timer because Haste is conditional.
+      # ACTION_BAR shows text above the hotbar; NONE disables the indicator.
+      # Legacy BOSS_BAR values are accepted and migrated to ACTION_BAR behavior.
+      indicator: ACTION_BAR
+      particles:
+        # Haste already has ambient particles; keep this extra effect opt-in.
+        enabled: false
+        particle: END_ROD
+        count: 2
+        radius: 0.55
+        y-offset: 0.75
 
 minigame:
   enabled: true
@@ -99,6 +192,12 @@ sounds:
     sound: nekara:fishing.catch
     volume: 1.0
     pitch: 1.0
+  campfire-rested:
+    # A soft confirmation played once when the 20-second rest completes.
+    enabled: true
+    sound: minecraft:block.amethyst_block.chime
+    volume: 0.65
+    pitch: 1.15
 
 # Visual feedback is deliberately particle-only. It never creates or changes
 # an ItemStack and is shown only to the fishing player.

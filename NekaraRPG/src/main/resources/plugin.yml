@@ -4,13 +4,14 @@ main: cz.nekara.rpg.NekaraRPGPlugin
 api-version: '26.1'
 authors:
   - Nekara
-description: Modular RPG and immersion systems for Nekara, currently including non-invasive fishing.
+description: Modular RPG and immersion systems for Nekara, including fishing, sitting, and campfire rest.
 softdepend:
   - ValhallaMMO
+  - MythicMobs
 commands:
   nekararpg:
     description: Manage NekaraRPG.
-    usage: /nekararpg <help|reload|status|test|cancel [player]>
+    usage: /nekararpg <help|reload|status|sit|stand|test|cancel [player]>
     aliases: [nrpg, nekarafishing, nfishing]
 permissions:
   nekararpg.use:
@@ -34,6 +35,12 @@ permissions:
   nekararpg.bypass:
     description: Bypasses the fishing minigame.
     default: false
+  nekararpg.sitting.use:
+    description: Allows the player to sit and stand through NekaraRPG.
+    default: true
+  nekararpg.campfire.use:
+    description: Allows campfire rest effects while sitting.
+    default: true
   nekarafishing.use:
     description: Legacy permission for the fishing minigame.
     default: true

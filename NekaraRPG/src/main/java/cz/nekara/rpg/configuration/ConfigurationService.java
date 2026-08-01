@@ -1,7 +1,9 @@
 package cz.nekara.rpg.configuration;
 
+import cz.nekara.rpg.campfire.CampFeature;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.EntityType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
@@ -87,15 +89,119 @@ public final class ConfigurationService {
                 config.getBoolean("fishing.allow-spectator", false)
         );
 
+        SittingConfig sitting = new SittingConfig(
+                config.getBoolean("sitting.require-ground", true),
+                parseSeatYOffset(config, warning),
+                config.getBoolean("sitting.allow-creative", true),
+                config.getBoolean("sitting.allow-flying", false),
+                config.getBoolean("sitting.stand-on-damage", true),
+                config.getBoolean("sitting.detect-external-seats", true),
+                parseEntityTypes(config, "sitting.external-seat-entity-types",
+                        Set.of(EntityType.ARMOR_STAND), warning)
+        );
+
+        int configuredRestedDuration = config.getInt("campfire.rested.duration-seconds", 300);
+        boolean migratePreReleaseRestedDefaults = configuredRestedDuration == 15
+                && config.getBoolean("campfire.visuals.rested.boss-bar", true)
+                && config.getBoolean("campfire.visuals.rested.particles.enabled", true);
+        if (migratePreReleaseRestedDefaults) {
+            warning.accept("Migrating pre-release Rested defaults to 300 seconds with the Rested timer.");
+        }
+
+        CampfireVisualConfig campfireVisuals = new CampfireVisualConfig(
+                config.getBoolean("campfire.visuals.resting-particles.enabled", true),
+                parseParticle(config.getString("campfire.visuals.resting-particles.particle", "HAPPY_VILLAGER"),
+                        "HAPPY_VILLAGER", warning),
+                validateInt(config.getInt("campfire.visuals.resting-particles.count", 4),
+                        1, 64, 4, "campfire.visuals.resting-particles.count", warning),
+                validateDouble(config.getDouble("campfire.visuals.resting-particles.radius", 0.7),
+                        0.05, 5.0, 0.7, "campfire.visuals.resting-particles.radius", warning),
+                validateDouble(config.getDouble("campfire.visuals.resting-particles.y-offset", 0.35),
+                        -2.0, 3.0, 0.35, "campfire.visuals.resting-particles.y-offset", warning),
+                parseRestedIndicator(config, warning),
+                migratePreReleaseRestedDefaults
+                        ? false : config.getBoolean("campfire.visuals.rested.particles.enabled", false),
+                parseParticle(config.getString("campfire.visuals.rested.particles.particle", "END_ROD"),
+                        "END_ROD", warning),
+                validateInt(config.getInt("campfire.visuals.rested.particles.count", 2),
+                        1, 64, 2, "campfire.visuals.rested.particles.count", warning),
+                validateDouble(config.getDouble("campfire.visuals.rested.particles.radius", 0.55),
+                        0.05, 5.0, 0.55, "campfire.visuals.rested.particles.radius", warning),
+                validateDouble(config.getDouble("campfire.visuals.rested.particles.y-offset", 0.75),
+                        -2.0, 3.0, 0.75, "campfire.visuals.rested.particles.y-offset", warning)
+        );
+
+        RestedEffectConfig restedEffect = new RestedEffectConfig(
+                config.getBoolean("campfire.rested.haste.enabled", true),
+                validateInt(config.getInt("campfire.rested.haste.amplifier", 0),
+                        0, 9, 0, "campfire.rested.haste.amplifier", warning),
+                config.getBoolean("campfire.rested.haste.ambient", true),
+                config.getBoolean("campfire.rested.haste.particles", true),
+                config.getBoolean("campfire.rested.haste.icon", true)
+        );
+
+        String mythicHostileFaction = config.getString(
+                "campfire.camping.spawn-protection.mythic-hostile-faction", "NekaraHostile");
+        if (mythicHostileFaction == null || mythicHostileFaction.isBlank()) {
+            warning.accept("Invalid campfire.camping.spawn-protection.mythic-hostile-faction; using NekaraHostile.");
+            mythicHostileFaction = "NekaraHostile";
+        }
+        CampingConfig camping = new CampingConfig(
+                validateDouble(config.getDouble("campfire.camping.feature-radius", 5.0),
+                        1.0, 16.0, 5.0, "campfire.camping.feature-radius", warning),
+                validateInt(config.getInt("campfire.camping.duration-per-feature-seconds", 60),
+                        0, 3_600, 60, "campfire.camping.duration-per-feature-seconds", warning),
+                parseCampFeatures(config, warning),
+                config.getBoolean("campfire.camping.spawn-protection.enabled", true),
+                validateDouble(config.getDouble("campfire.camping.spawn-protection.radius", 24.0),
+                        1.0, 128.0, 24.0, "campfire.camping.spawn-protection.radius", warning),
+                config.getBoolean("campfire.camping.spawn-protection.natural-only", true),
+                mythicHostileFaction.trim()
+        );
+
+        CampfireConfig campfire = new CampfireConfig(
+                validateDouble(config.getDouble("campfire.radius", 5.0),
+                        1.0, 16.0, 5.0, "campfire.radius", warning),
+                validateInt(config.getInt("campfire.update-period-ticks", 20),
+                        1, 200, 20, "campfire.update-period-ticks", warning),
+                validateDouble(config.getDouble("campfire.healing.amount", 1.0),
+                        0.0, 20.0, 1.0, "campfire.healing.amount", warning),
+                validateInt(config.getInt("campfire.healing.period-seconds", 5),
+                        1, 300, 5, "campfire.healing.period-seconds", warning),
+                validateInt(config.getInt("campfire.hunger.restore-amount", 1),
+                        0, 20, 1, "campfire.hunger.restore-amount", warning),
+                validateInt(config.getInt("campfire.hunger.restore-period-seconds", 10),
+                        1, 300, 10, "campfire.hunger.restore-period-seconds", warning),
+                validateInt(config.getInt("campfire.rested.charge-seconds", 20),
+                        1, 3_600, 20, "campfire.rested.charge-seconds", warning),
+                validateInt(migratePreReleaseRestedDefaults ? 300 : configuredRestedDuration,
+                        1, 3_600, 300, "campfire.rested.duration-seconds", warning),
+                validateDouble(config.getDouble("campfire.rested.hunger-loss-multiplier", 0.5),
+                        0.0, 1.0, 0.5, "campfire.rested.hunger-loss-multiplier", warning),
+                restedEffect,
+                camping,
+                validateDouble(config.getDouble("campfire.group.multiplier-per-extra-player", 0.15),
+                        0.0, 2.0, 0.15, "campfire.group.multiplier-per-extra-player", warning),
+                validateDouble(config.getDouble("campfire.group.maximum-multiplier", 1.75),
+                        1.0, 10.0, 1.75, "campfire.group.maximum-multiplier", warning),
+                campfireVisuals
+        );
+
         WorldMode worldMode = ConfigurationValidator.parseWorldMode(
                 config.getString("worlds.mode", "ALL"), warning);
         Set<String> worlds = new HashSet<>(config.getStringList("worlds.list"));
         WorldConfig worldConfig = new WorldConfig(worldMode, Set.copyOf(worlds));
 
         Map<String, SoundSettings> sounds = new HashMap<>();
-        for (String key : new String[]{"bite", "hit", "miss", "timeout", "escape", "minigame-success", "catch-success"}) {
+        for (String key : new String[]{"bite", "hit", "miss", "timeout", "escape", "minigame-success",
+                "catch-success", "campfire-rested"}) {
             ConfigurationSection section = config.getConfigurationSection("sounds." + key);
             if (section == null) {
+                if ("campfire-rested".equals(key)) {
+                    sounds.put(key, new SoundSettings(true,
+                            "minecraft:block.amethyst_block.chime", 0.65f, 1.15f));
+                    continue;
+                }
                 warning.accept("Missing sounds." + key + "; sound is disabled.");
                 sounds.put(key, new SoundSettings(false, "", 1.0f, 1.0f));
                 continue;
@@ -111,13 +217,19 @@ public final class ConfigurationService {
         current = new PluginConfig(
                 plugin.getDescription().getVersion(),
                 config.getBoolean("plugin.debug", false),
-                Map.of("fishing", config.getBoolean("modules.fishing.enabled", true)),
+                Map.of(
+                        "fishing", config.getBoolean("modules.fishing.enabled", true),
+                        "sitting", config.getBoolean("modules.sitting.enabled", true),
+                        "campfire", config.getBoolean("modules.campfire.enabled", true)
+                ),
                 minigame,
                 hookParticles,
                 successEffect,
                 failureEffect,
                 valhallaFishing,
                 fishing,
+                sitting,
+                campfire,
                 worldConfig,
                 Map.copyOf(sounds)
         );
@@ -210,6 +322,88 @@ public final class ConfigurationService {
             warning.accept("Invalid particle name; using " + fallback + ".");
             return org.bukkit.Particle.valueOf(fallback);
         }
+    }
+
+    private double parseSeatYOffset(FileConfiguration config, Consumer<String> warning) {
+        double value = config.getDouble("sitting.seat-y-offset", 0.20);
+        if (Double.compare(value, -1.15) == 0
+                || Double.compare(value, -0.35) == 0
+                || Double.compare(value, 0.35) == 0
+                || Double.compare(value, 0.25) == 0) {
+            warning.accept("Migrating the pre-release sitting.seat-y-offset to 0.20.");
+            return 0.20;
+        }
+        return validateDouble(value, -2.0, 1.0, 0.20, "sitting.seat-y-offset", warning);
+    }
+
+    private boolean parseRestedIndicator(FileConfiguration config, Consumer<String> warning) {
+        String value = config.getString("campfire.visuals.rested.indicator", "ACTION_BAR");
+        if (value == null) {
+            return true;
+        }
+        return switch (value.trim().toUpperCase(Locale.ROOT)) {
+            case "ACTION_BAR", "BOSS_BAR" -> true;
+            case "NONE" -> false;
+            default -> {
+                warning.accept("Invalid campfire.visuals.rested.indicator; using ACTION_BAR.");
+                yield true;
+            }
+        };
+    }
+
+    private Set<EntityType> parseEntityTypes(
+            FileConfiguration config,
+            String path,
+            Set<EntityType> fallback,
+            Consumer<String> warning
+    ) {
+        List<String> values = config.getStringList(path);
+        if (values.isEmpty()) {
+            return fallback;
+        }
+        Set<EntityType> types = new HashSet<>();
+        for (String value : values) {
+            try {
+                types.add(EntityType.valueOf(value.trim().toUpperCase(Locale.ROOT)));
+            } catch (RuntimeException exception) {
+                warning.accept("Invalid entity type '" + value + "' in " + path + "; ignoring it.");
+            }
+        }
+        if (types.isEmpty()) {
+            warning.accept("No valid entity types in " + path + "; using ARMOR_STAND.");
+            return fallback;
+        }
+        return Set.copyOf(types);
+    }
+
+    private Set<CampFeature> parseCampFeatures(FileConfiguration config, Consumer<String> warning) {
+        Set<CampFeature> fallback = Set.of(
+                CampFeature.CRAFTING_TABLE,
+                CampFeature.BED,
+                CampFeature.SMOKER,
+                CampFeature.BARREL,
+                CampFeature.WATER_CAULDRON,
+                CampFeature.CARTOGRAPHY_TABLE,
+                CampFeature.GRINDSTONE
+        );
+        List<String> values = config.getStringList("campfire.camping.features");
+        if (values.isEmpty()) {
+            return fallback;
+        }
+        Set<CampFeature> features = new HashSet<>();
+        for (String value : values) {
+            try {
+                features.add(CampFeature.valueOf(value.trim().toUpperCase(Locale.ROOT)));
+            } catch (RuntimeException exception) {
+                warning.accept("Invalid camp feature '" + value
+                        + "' in campfire.camping.features; ignoring it.");
+            }
+        }
+        if (features.isEmpty()) {
+            warning.accept("No valid campfire.camping.features; using all default camp features.");
+            return fallback;
+        }
+        return Set.copyOf(features);
     }
 
     private int validateInt(int value, int minimum, int maximum, int fallback,

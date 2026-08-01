@@ -1,7 +1,7 @@
 # NekaraRPG
 
 NekaraRPG is a modular Purpur/Paper plugin for Nekara RPG and immersion systems.
-The first production module is `fishing`, migrated from NekaraFishing.
+It currently ships fishing, free-position sitting, and campfire rest in one JAR.
 
 The plugin is intentionally conservative: it does not replace vanilla loot
 tables, does not generate synthetic fishing events, and does not require
@@ -15,6 +15,10 @@ Modules are enabled by default and can be controlled in `config.yml`:
 modules:
   fishing:
     enabled: true
+  sitting:
+    enabled: true
+  campfire:
+    enabled: true
 ```
 
 Current modules:
@@ -22,10 +26,76 @@ Current modules:
 | Module | Status | Description |
 | --- | --- | --- |
 | `fishing` | production | Non-invasive fishing timing minigame with vanilla/ValhallaMMO compatibility. |
+| `sitting` | production | Command-driven sitting plus configurable detection of external seats. |
+| `campfire` | production | Healing, hunger protection, visual Rested bonus, group scaling, and action-bar roleplay near lit campfires. |
 
-Future modules can be added without turning the plugin into separate unrelated
-JARs. Good candidates are lockpicking, wounds, campfire/rest, world events,
-rumors, territory ambience, and reputation.
+Campfire accepts both NekaraRPG seats and configured external vehicle-based
+seats. The internal sitting module may therefore be disabled when another
+plugin provides the seat. Future modules can be added without turning the
+plugin into separate unrelated JARs. Good candidates are lockpicking, wounds,
+world events, rumors, territory ambience, and reputation.
+
+## Sitting
+
+Use `/nekararpg sit` to sit at the current grounded position and
+`/nekararpg stand` to stand up. The seat is an invisible, non-persistent entity
+that is removed on dismount, teleport, death, disconnect, configured damage,
+module disable, reload cleanup, and shutdown.
+
+NekaraRPG deliberately does not register the top-level `/sit` command. This
+keeps CMI and other existing sitting plugins in control of their own command.
+Campfire detects external `ARMOR_STAND` seats by default, so `/cmi sit` can
+participate without a compile-time CMI dependency. Additional seat vehicle
+types can be added under `sitting.external-seat-entity-types`.
+
+## Campfire Rest
+
+A player actively rests while seated within the configured radius of a lit
+campfire or soul campfire. The default radius is `5.0` blocks and uses a true
+three-dimensional distance from the player to the fire. Active rest:
+
+- slowly restores health,
+- prevents the hunger bar from falling,
+- restores a small amount of hunger at a configurable interval,
+- scales healing and hunger restoration when players share the same fire,
+- shows configurable progress and roleplay messages in the action bar,
+- emits low-count particles to confirm that the rest mechanic is active.
+
+After 20 real-time seconds by default, the player receives a five-minute base
+Rested bonus. After leaving the fire, Rested reduces average hunger loss to the
+configured multiplier, `0.5` by default. The timer uses wall-clock time, so
+server lag does not make a twenty-second rest take longer.
+Once charged, Rested stays refreshed while the player remains at the fire, then
+counts down after the player leaves active rest.
+
+### Camping Equipment
+
+Every unique enabled camping block type within five blocks of the lit campfire
+adds one minute to Rested. Duplicate blocks of one type do not stack. The
+default set is crafting table, bed, smoker, barrel, water cauldron, cartography
+table, and grindstone, giving a possible duration from five to twelve minutes.
+
+A crafting table also grants Haste I for that Rested bonus. Haste supplies
+Minecraft's standard potion icon and countdown in the top-right status area.
+Existing Haste from another source is not replaced by NekaraRPG.
+
+A bed near the lit campfire creates a configurable 24-block safe-camp radius.
+Natural hostile spawns are cancelled while the camp is loaded, so protection
+becomes useful again when a player returns. Existing mobs can still walk into
+the camp. Command, summon, quest, boss, and other scripted spawns remain
+untouched by default. With MythicMobs installed, only natural random spawns in
+the configured `NekaraHostile` faction are cancelled; `NekaraFauna` is left
+alone. MythicMobs remains a soft dependency and NekaraRPG works without it.
+
+The charging roleplay remains in the action bar. Once charged, Rested shows the
+compact action-bar text `Odpočatý | m:ss`, independent of whether Haste is active. The
+timer yields to the fishing minigame and to campfire charging messages. Set
+`campfire.visuals.rested.indicator` to `NONE` to disable it. Extra particles
+remain opt-in. A soft configurable amethyst chime confirms the moment the
+20-second charge completes.
+
+The campfire key and public Rested state methods are ready for a later optional
+ValhallaMMO XP bridge. XP behavior is not changed in version 1.1.0.
 
 ## Fishing Compatibility Mode
 
@@ -67,24 +137,37 @@ valhalla:
 
 - Purpur 26.1.2 or compatible Paper API implementation
 - Java 25
-- No required plugin dependencies
+- No required plugin dependencies; MythicMobs and ValhallaMMO integrations are optional
 
 The plugin uses the Purpur API as `compileOnly`, so the output is not a fat JAR
 and does not bundle Paper/Purpur classes.
 
 ## Build
 
-From this directory:
+For normal checks:
 
 ```text
 gradlew.bat clean test build
 ```
 
-The build produces:
+For a verified release:
 
-- `build/libs/NekaraRPG-1.0.1.jar`
-- `dist/NekaraRPG-1.0.1.jar`
-- repository-level `../../dist/NekaraRPG-1.0.1.jar`
+```text
+scripts\build-release.cmd
+```
+
+The release produces:
+
+- `build/libs/NekaraRPG.jar`
+- `dist/NekaraRPG.jar`
+- repository-level `../../dist/NekaraRPG.jar`
+
+The semantic version remains embedded in `plugin.yml`, documented in the
+changelog, and represented by the Git tag; it is deliberately omitted from the
+deployable filename.
+
+See `DEVELOPMENT.md` for the release contract and `LIVE_TESTING.md` for the
+staging-server workflow.
 
 ## Installation
 
@@ -93,6 +176,11 @@ then configure:
 
 - `plugins/NekaraRPG/config.yml`
 - `plugins/NekaraRPG/messages.yml`
+
+An existing `plugins/NekaraRPG` folder does not need to be deleted during this
+upgrade. Missing camping keys use the new runtime defaults. Merge the bundled
+`campfire.camping` section into an existing `config.yml` only when those values
+need to be customized or documented on the server.
 
 Use `/nekararpg reload` after configuration changes. A reload safely ends active
 fishing sessions and does not register duplicate listeners or ticker tasks.
@@ -104,6 +192,8 @@ fishing sessions and does not register duplicate listeners or ticker tasks.
 | `/nekararpg help` | `nekararpg.command.help` |
 | `/nekararpg reload` | `nekararpg.command.reload` |
 | `/nekararpg status` | `nekararpg.command.status` |
+| `/nekararpg sit` | `nekararpg.sitting.use` |
+| `/nekararpg stand` | none; a player must always be able to stand |
 | `/nekararpg test` | `nekararpg.command.test` |
 | `/nekararpg cancel [player]` | `nekararpg.command.cancel` |
 
@@ -111,6 +201,7 @@ Aliases: `/nrpg`, `/nekarafishing`, `/nfishing`.
 
 Fishing requires `nekararpg.use`, which defaults to true for every player.
 `nekararpg.bypass` skips the fishing minigame and defaults to false.
+Campfire effects require `nekararpg.campfire.use`, which defaults to true.
 
 Legacy `nekarafishing.*` permissions are still declared and accepted so existing
 server permission setups can migrate gradually.
@@ -129,6 +220,11 @@ dependency.
 ## Limitations
 
 - The fishing module is intentionally an action-bar timing gate; it does not replace Minecraft's fishing mechanics.
+- Sitting uses a server-side passenger seat; it does not add a client keybind. Its default vertical offset is configurable and existing pre-release offsets are migrated to `0.20` at runtime.
+- External seat detection is vehicle-type based. `ARMOR_STAND` is the safe default; plugins using another seat entity must add that type to configuration.
+- Campfire and Rested action-bar feedback can temporarily replace other non-priority action-bar text. NekaraRPG's fishing minigame always takes priority over the Rested timer.
+- Rested uses a text-only action-bar timer; crafting-table camps additionally use the vanilla Haste icon. A uniquely branded status icon would require a client resource-pack or mod solution.
+- Rested currently affects hunger; crafting-table camps also grant configurable Haste. ValhallaMMO XP scaling is reserved for a later compatibility bridge.
 - The minigame starts on the rod click after a bite and defers the original `CAUGHT_FISH` Item until the final hit.
 - A client-side resource-pack sound cannot be verified from the server; only its namespaced syntax can be validated.
 - Full acceptance still requires a live Purpur 26.1.2 server because Bukkit event ordering and other plugin interactions cannot be completely simulated by pure unit tests.
