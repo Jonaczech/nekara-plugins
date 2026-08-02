@@ -65,8 +65,11 @@ release deliberately changes one of these decisions.
   Vein does not use the Digging treasure table or maintain custom loot.
 - There is no cooldown. A completed target has a configurable chance to chain
   to a visible face-adjacent host block. The first target damage may reveal a
-  weighted vanilla ore once; end stone stays unchanged. Fishing has interaction
-  priority over an active echo.
+  weighted vanilla ore once. Ore candidates follow vanilla-compatible Y bands
+  and relative height biases, including Badlands gold and the Nether Y 10-117
+  band; seed noise and air exposure are not reproduced. End stone stays
+  unchanged. Vein discovery and successful ore reveal use distinct related
+  sounds. Fishing has interaction priority over an active echo.
 - If `modules.mining.enabled` is absent, preserve the legacy
   `modules.echo-vein.enabled` value. Keep activity settings under `echo-vein`.
 

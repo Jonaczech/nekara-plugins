@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.5
+
+- Made ore reveal height-aware. Overworld candidates now follow vanilla
+  generation bands and relative height biases, so deep ores such as diamond
+  and redstone cannot appear at high elevations.
+- Added high-altitude iron, Y 0-96 copper, below-Y-32 gold, below-Y-64 lapis,
+  below-Y-16 diamond/redstone, coal above Y 0, and elevated Badlands gold rules.
+  Exact worldgen seed noise and air-exposure suppression are intentionally not
+  reproduced.
+- Limited netherrack reveals to the normal Y 10-117 Nether ore band. End stone
+  still has no artificial ore reveal.
+- Added a dedicated ore-reveal sound using a brighter amethyst cluster tone.
+  The existing lower amethyst chime remains the distinct vein-discovery sound.
+- Added pure tests for height boundaries, deep-ore bias, Badlands gold, Nether
+  bounds, and weighted selection.
+
 ## 1.2.4
 
 - Raised the default Echo Vein trigger chance from 4% to 5% and removed its
