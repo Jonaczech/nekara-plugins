@@ -6,25 +6,24 @@ The repository is published at
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 The default branch is `main`.
 
-The latest shipped plugin is **NekaraRPG 1.2.0**:
+The latest shipped plugin is **NekaraRPG 1.2.1**:
 
-- tag: `v1.2.0`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.2.0>
+- tag: `v1.2.1`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.2.1>
 - deployable asset: `NekaraRPG.jar`
-- source PR: <https://github.com/Jonaczech/nekara-plugins/pull/5>
-- release merge commit: `44401180f12eee80d3246aa3cc1f9df95f79759d`
+- source PR: <https://github.com/Jonaczech/nekara-plugins/pull/7>
+- release merge commit: `0b925d9f6bf4f8e5c955c293fc742f82bdbc4de7`
 - release JAR SHA-256:
-  `0D827BF58B7064BC3DA7AF37ED4F4D99FC76B0EFA760398EBC818548EB1D9691`
-- release asset size: `181561` bytes
+  `ECA56FA1BDB9B4DD7BC257E8A6B189B3434A5D4E503D80FD0AF1C80E8D899A55`
+- release asset size: `181563` bytes
 - automated validation: 35 passing tests
 
-Release 1.2.0 moves reduced Rested hunger loss behind the smoker camp feature,
-adds a configurable 10% Rested XP bonus across all ValhallaMMO skills,
-introduces the optional Echo Vein Mining activity, and adds the asynchronous,
-fail-closed GitHub updater. GitHub's latest-release endpoint, asset name, size,
-SHA-256 digest, stable status, and tag target were verified after publication.
-Live Purpur/ValhallaMMO gameplay and updater restart consumption remain pending
-until 1.2.0 is installed manually on the staging server.
+Release 1.2.1 is the first patch intended for end-to-end updater acceptance
+from a manually installed 1.2.0. It ships the complete Echo Vein Mining module
+and otherwise keeps 1.2.0 gameplay and configuration defaults unchanged.
+GitHub's latest-release endpoint, asset name, size, SHA-256 digest, downloaded
+JAR contents, stable status, and tag target were verified after publication.
+Live Purpur/ValhallaMMO gameplay and updater restart consumption remain pending.
 
 Version numbers belong in plugin metadata, changelogs, and Git tags. The JAR
 filename intentionally stays stable so server deployment never creates a
@@ -105,13 +104,13 @@ startup logs. Version 1.2.0 itself still needs one manual deployment because
 
 ## Next Session
 
-After live acceptance of 1.2.0, the next approved design direction is a
+After live acceptance of 1.2.1, the next approved design direction is a
 `mounts` module. Its first version should use a vanilla horse, one persistent
 mount per player, no cargo inventory, and no hoglin model. Preserve saddle,
 armor, name, health, ownership, and death cooldown while preventing summon,
 dismiss, logout, and healing abuse in PvP.
 
-Potential later Campfire extensions after the 1.2.0 candidate:
+Potential later Campfire extensions after the 1.2.1 acceptance pass:
 
 - unique gameplay bonuses for smoker, barrel, cauldron, cartography table, and
   grindstone,
