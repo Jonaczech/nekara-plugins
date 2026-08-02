@@ -1,5 +1,32 @@
 # Přehled změn
 
+## 1.5.0
+
+- Opraven pád `/nekararpg mount` při načtení staršího záznamu bez `custom-name`.
+  Úložiště takový záznam atomicky doplní jménem `Bezejmenný` a doménový model už
+  neplatné prázdné jméno nepřijme.
+- Přidán samostatně zapínatelný modul `mounts` (NekaraMounts) pro jednoho trvalého
+  vanilla koně na hráče.
+- Přidána virtuální evidence koně bez ochočování: GUI pro prvotní výběr barvy a
+  jména, správa jména, barvy a výbavy a administrátorské přidělení přes
+  `/nekararpg mount grant <hráč>`.
+- Svázaná píšťalka přivolá koně 7-12 bloků od hráče. Kůň doběhne na místo
+  písknutí, čeká v jeho okolí a další použití má výchozí cooldown 30 sekund.
+- Píšťalku nelze zahodit, uložit do cizího inventáře ani sebrat cizím hráčem.
+  Management GUI a `mount whistle <restore|remove>` bezpečně udržují jedinou kopii;
+  po smrti hráče se píšťalka vrátí. Plný inventář nikdy nevyhodí píšťalku na zem.
+- Jméno, zdraví, maximální zdraví, rychlost, skok, barva, styl, sedlo, brnění,
+  oheň, zamrznutí, vzduch a potion efekty se ukládají do atomicky zapisovaného
+  `mounts/data.yml` za rozhraním `MountRepository`.
+- Aktivní entity používají trvalý mount ID a owner ID; stale nebo duplicitní entity
+  se při načtení chunku odstraní bez dropu uloženého vybavení.
+- PvP okno se ukládá na disk a blokuje vytvoření, přidělení, přivolání i odvolání.
+  Smrt ukládá minutový cooldown, který přežije reconnect, reload i restart.
+- Cizí hráč nemůže mounta otevřít, osedlat ani na něj nasednout. Při chybě storage
+  se modul uzamkne a existující entitu nemaže.
+- Přidána typovaná konfigurace `mounts/config.yml`, české zprávy, persistence test,
+  testy cooldownu a stabilní offline identity a živý Purpur akceptační postup.
+
 ## 1.4.0
 
 - Rozdělen monolitický `config.yml`: kořenový soubor obsahuje pouze nastavení jádra,

@@ -27,7 +27,8 @@ final class ModuleConfigurationStore {
                     List.of("campfire-rested")),
             new ModuleFile("mining/config.yml", null, List.of("echo-vein"),
                     List.of("echo-vein-pulse", "echo-vein-ore-reveal",
-                            "echo-vein-success", "echo-vein-failure"))
+                            "echo-vein-success", "echo-vein-failure")),
+            new ModuleFile("mounts/config.yml", "mounts", List.of("mounts"), List.of())
     );
 
     private final JavaPlugin plugin;
@@ -79,7 +80,32 @@ final class ModuleConfigurationStore {
         YamlConfiguration defaults = loadResource(definition.resourcePath());
         YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
         configuration.setDefaults(defaults);
+        migrateMountsPreReleaseDefaults(definition, configuration, file);
         return new LoadedModule(file, defaults, configuration, existedBeforeLoad);
+    }
+
+    private void migrateMountsPreReleaseDefaults(
+            ModuleFile definition,
+            YamlConfiguration configuration,
+            File file
+    ) {
+        if (!"mounts/config.yml".equals(definition.resourcePath())
+                || !migrateMountsPreReleaseDefaults(configuration)) {
+            return;
+        }
+        save(configuration, file);
+        plugin.getLogger().info("Migrated NekaraMounts pre-release defaults to configuration version 2.");
+    }
+
+    static boolean migrateMountsPreReleaseDefaults(YamlConfiguration configuration) {
+        if (configuration.contains("configuration-version", true)) {
+            return false;
+        }
+        if (configuration.getInt("death.cooldown-seconds", 86_400) == 86_400) {
+            configuration.set("death.cooldown-seconds", 60);
+        }
+        configuration.set("configuration-version", 2);
+        return true;
     }
 
     private YamlConfiguration loadResource(String resourcePath) {

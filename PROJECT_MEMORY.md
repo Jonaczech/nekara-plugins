@@ -73,12 +73,21 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
 
 ## Směr modulu Mounts
 
-- NekaraMounts je schválená nejbližší implementační priorita. Konkrétní rozsah,
-  bezpečnostní pravidla, otevřená rozhodnutí a akceptace jsou v `ROADMAP.md`.
-- Budoucí modul `mounts` má začít vanilla koněm, jedním mountem na hráče, bez
+- NekaraMounts je implementovaný kandidát verze 1.5.0. Konkrétní rozsah,
+  bezpečnostní pravidla, uzavřená rozhodnutí a akceptace jsou v `ROADMAP.md`.
+- Modul `mounts` začíná vanilla koněm, jedním mountem na hráče, bez
   nákladního inventáře a bez modelu hoglina.
 - Sedlo, brnění, jméno, zdraví, cooldown po smrti a vlastnictví musí být trvalé.
   Přivolání a odvolání nesmí sloužit jako únik nebo léčení v PvP.
+- Kůň vzniká virtuálně přes GUI pro barvu a jméno, bez hledání a ochočování.
+  Administrátorský grant otevře stejný průchod; questové získání je budoucí práce.
+- Svázaná píšťalka má perzistentní cooldown, spawn 7-12 bloků od hráče a navede
+  koně k místu písknutí. Je soulbound, nedropuje a obnova udržuje jedinou nalezenou
+  kopii. Smrt koně používá minutový cooldown bez ceny a bez dropu výbavy.
+- PvP používá vlastní perzistentní combat okno. Stabilní identita vlastníka je
+  normalizovaný nick chráněný NekaraAuth; poslední známé UUID je doplňkové.
+- `MountRepository` je hranice storage. YAML backend zapisuje atomickým replace a
+  modul při chybě selže uzavřeně bez odstranění aktivní entity.
 
 ## Pravidla NekaraAuth
 

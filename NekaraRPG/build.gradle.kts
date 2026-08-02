@@ -16,6 +16,7 @@ dependencies {
         isTransitive = false
     }
     testImplementation("org.junit.jupiter:junit-jupiter:5.13.4")
+    testImplementation("org.purpurmc.purpur:purpur-api:${providers.gradleProperty("purpur_api_version").get()}")
     testImplementation("com.google.code.gson:gson:2.13.2")
     testImplementation("org.yaml:snakeyaml:2.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

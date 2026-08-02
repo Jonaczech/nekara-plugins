@@ -33,10 +33,11 @@ help: |-
   &f/nekaraauth &7- otevře registraci a správu účtu
   &f/nekararpg sit &7- posadí tě na aktuálním místě
   &f/nekararpg stand &7- ukončí sezení
+  &f/nekararpg mount [menu|status|call|dismiss|whistle] &7- spravuje tvého koně
   &f/nekararpg test <fishing|vein> &7- spustí vybranou testovací minihru
   &f/nekararpg cancel [hráč] &7- zruší aktivní minihru
   &8&m--------------------------------
-status: "%prefix%&7Verze: &f%version% &7| Moduly: &f%modules% &7| Fishing: &f%mode%/%active% &7| Ozvěna: &f%echo_active% &7| Sedí: &f%seated% &7| Odpočívá: &f%resting% &7| Rested: &f%rested%"
+status: "%prefix%&7Verze: &f%version% &7| Moduly: &f%modules% &7| Fishing: &f%mode%/%active% &7| Ozvěna: &f%echo_active% &7| Mounti: &f%mounts_active% &7| Sedí: &f%seated% &7| Odpočívá: &f%resting% &7| Rested: &f%rested%"
 test-player-only: "%prefix%&cTento příkaz může použít pouze hráč."
 test-started: "%prefix%&bTestovací minihra spuštěna."
 test-already-active: "%prefix%&cTento hráč už má aktivní minihru."
@@ -101,3 +102,51 @@ echo-vein-test-started: "%prefix%&bTestovací Ozvěna žíly spuštěna. &7Tento
 echo-vein-test-success: "%prefix%&aTestovací puklinu jsi našel."
 echo-vein-test-failure: "%prefix%&7Testovací ozvěna utichla."
 echo-vein-test-unavailable: "%prefix%&cOzvěnu nelze spustit. &7Potřebuješ volnou viditelnou stěnu a nesmí běžet jiná minihra."
+
+# NekaraMounts
+mount-usage: "%prefix%&7Použij &f/nekararpg mount [menu|status|call|dismiss|whistle]&7."
+mount-admin-usage: "%prefix%&7Použij &f/nekararpg mount grant <hráč>&7."
+mount-admin-dispatched: "%prefix%&7Přidělení mounta bylo provedeno pro hráče &f%player%&7; výsledek obdržel hráč."
+mount-storage-error: "%prefix%&cÚložiště NekaraMounts není dostupné. Operace byla bezpečně odmítnuta; kontaktuj administrátora."
+mount-already-owned: "%prefix%&cUž vlastníš jednoho mounta. V první verzi může mít hráč právě jednoho koně."
+mount-not-owned: "%prefix%&7Zatím nemáš vlastního koně. Otevři výběr přes &f/nekararpg mount&7."
+mount-grant-started: "%prefix%&aVyber barvu a jméno svého nového koně."
+mount-created: "%prefix%&a%name% byl zaevidován. Píšťalkou ho přivoláš k sobě."
+mount-world-blocked: "%prefix%&cV tomto světě nelze koně vytvořit ani přivolat."
+mount-no-space: "%prefix%&cNablízku není bezpečný volný prostor pro koně."
+mount-active-unloaded: "%prefix%&cTvůj mount je veden jako aktivní v jiném nebo nenačteném chunku. Z bezpečnostních důvodů nevytvořím kopii."
+mount-other-world: "%prefix%&cTvůj kůň je aktivní v jiném světě. Nejdřív ho tam odvolej."
+mount-being-ridden: "%prefix%&cKoně právě někdo používá, proto ho nelze přesunout."
+mount-not-active: "%prefix%&7Tvůj mount už je odvolaný."
+mount-called: "%prefix%&aPísknutí přivolalo koně %name%&a."
+mount-summon-cooldown: "%prefix%&7Píšťalku můžeš znovu použít za &f%time%&7."
+mount-dismissed: "%prefix%&7%name% byl bezpečně odvolán a jeho stav uložen."
+mount-dead: "%prefix%&cTvůj mount se stále zotavuje. Vrátit se může za &f%time%&c."
+mount-combat-blocked: "%prefix%&cS mountem teď nelze manipulovat. PvP ochrana skončí za &f%time%&c."
+mount-foreign: "%prefix%&cTento mount ti nepatří."
+mount-whistle-foreign: "%prefix%&cTato píšťalka není svázaná s tvým koněm."
+mount-whistle-bound: "%prefix%&7Píšťalka je svázaná s tebou a nelze ji zahodit ani uložit do cizího inventáře."
+mount-whistle-restored: "%prefix%&aJediná platná píšťalka byla obnovena do tvého inventáře."
+mount-whistle-removed: "%prefix%&7Tvoje píšťalka byla bezpečně odebrána."
+mount-whistle-not-found: "%prefix%&7V inventáři ani Ender Chest nemáš píšťalku k odebrání."
+mount-whistle-no-space: "%prefix%&cPro píšťalku potřebuješ alespoň jeden volný slot v inventáři."
+mount-whistle-returned: "%prefix%&aPíšťalka se po smrti vrátila do tvého inventáře."
+mount-whistle-duplicate-removed: "%prefix%&7Nalezená přebytečná kopie píšťalky byla odstraněna."
+mount-whistle-usage: "%prefix%&7Použij &f/nekararpg mount whistle <restore|remove>&7."
+mount-use-gui-name: "%prefix%&7Jméno koně lze změnit pouze v jeho správě."
+mount-use-gui-equipment: "%prefix%&7Výbavu koně spravuj přes &f/nekararpg mount&7."
+mount-equipment-single-item: "%prefix%&cDo slotu vlož právě jeden předmět."
+mount-equipment-saddle-only: "%prefix%&cDo tohoto slotu patří pouze sedlo."
+mount-equipment-armor-only: "%prefix%&cDo tohoto slotu patří pouze koňské brnění."
+mount-equipment-updated: "%prefix%&aUložená výbava koně byla aktualizována."
+mount-color-updated: "%prefix%&aBarva koně byla změněna."
+mount-gui-error: "%prefix%&cTuto nabídku už nelze bezpečně použít. Otevři ji znovu."
+mount-name-invalid: "%prefix%&cJméno musí mít %min% až %max% znaků a nesmí obsahovat řídicí znaky."
+mount-name-updated: "%prefix%&aKůň se nyní jmenuje %name%&a."
+mount-status: |-
+  &8&m--------------------------------
+  &bNekaraMounts &7- %name%
+  &7Stav: &f%state% &7| Zdraví: &f%health%
+  &7Rychlost: &f%speed% &7| Skok: &f%jump%
+  &7Barva: &f%color% &7| Styl: &f%style%
+  &8&m--------------------------------

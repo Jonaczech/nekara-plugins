@@ -16,6 +16,7 @@ public record PluginConfig(
         CampfireConfig campfire,
         AuthConfig auth,
         EchoVeinConfig echoVein,
+        MountConfig mounts,
         UpdaterConfig updater,
         WorldConfig worlds,
         Map<String, SoundSettings> sounds

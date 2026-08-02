@@ -19,7 +19,7 @@ class ResourceYamlTest {
     void bundledYamlResourcesAreValid() throws Exception {
         for (String resource : new String[]{"config.yml", "messages.yml", "plugin.yml",
                 "auth/config.yml", "fishing/config.yml", "sitting/config.yml",
-                "campfire/config.yml", "mining/config.yml"}) {
+                "campfire/config.yml", "mining/config.yml", "mounts/config.yml"}) {
             InputStream stream = getClass().getClassLoader().getResourceAsStream(resource);
             assertNotNull(stream, resource + " is missing from the test classpath");
             try (stream; InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
@@ -37,6 +37,7 @@ class ResourceYamlTest {
         Map<String, Object> campfire = loadYaml("campfire/config.yml");
         Map<String, Object> mining = loadYaml("mining/config.yml");
         Map<String, Object> fishing = loadYaml("fishing/config.yml");
+        Map<String, Object> mountsConfig = loadYaml("mounts/config.yml");
 
             Map<String, Object> updater = (Map<String, Object>) root.get("updater");
             Map<String, Object> modules = (Map<String, Object>) root.get("modules");
@@ -63,12 +64,20 @@ class ResourceYamlTest {
             Map<String, Object> restingParticles =
                     (Map<String, Object>) visuals.get("resting-particles");
             Map<String, Object> rested = (Map<String, Object>) visuals.get("rested");
+            Map<String, Object> mountStorage = (Map<String, Object>) mountsConfig.get("storage");
+            Map<String, Object> mountDeath = (Map<String, Object>) mountsConfig.get("death");
+            Map<String, Object> mountCombat = (Map<String, Object>) mountsConfig.get("combat");
+            Map<String, Object> mountSummoning = (Map<String, Object>) mountsConfig.get("summoning");
+            Map<String, Object> mountPersistence = (Map<String, Object>) mountsConfig.get("persistence");
+            Map<String, Object> mountNaming = (Map<String, Object>) mountsConfig.get("naming");
+            Map<String, Object> mountWhistle = (Map<String, Object>) mountsConfig.get("whistle");
 
             assertEquals(0.20, ((Number) sitting.get("seat-y-offset")).doubleValue(), 0.0001);
             assertTrue((Boolean) updater.get("enabled"));
             assertEquals(2, ((Number) root.get("configuration-layout")).intValue());
             assertNotNull(modules.get("mining"));
             assertNotNull(modules.get("auth"));
+            assertNotNull(modules.get("mounts"));
             assertFalse(root.containsKey("auth"));
             assertFalse(root.containsKey("campfire"));
             assertFalse(root.containsKey("minigame"));
@@ -124,6 +133,21 @@ class ResourceYamlTest {
             assertTrue((Boolean) veinSound.get("enabled"));
             assertTrue((Boolean) oreSound.get("enabled"));
             assertFalse(veinSound.get("sound").equals(oreSound.get("sound")));
+            assertEquals("mounts/data.yml", mountStorage.get("file"));
+            assertEquals(2, ((Number) mountsConfig.get("configuration-version")).intValue());
+            assertEquals(60, ((Number) mountDeath.get("cooldown-seconds")).intValue());
+            assertEquals(15, ((Number) mountCombat.get("block-seconds")).intValue());
+            assertEquals(List.of(), mountSummoning.get("allowed-worlds"));
+            assertEquals(30, ((Number) mountSummoning.get("cooldown-seconds")).intValue());
+            assertEquals(7, ((Number) mountSummoning.get("minimum-spawn-distance")).intValue());
+            assertEquals(12, ((Number) mountSummoning.get("maximum-spawn-distance")).intValue());
+            assertEquals(3.0, ((Number) mountSummoning.get("waiting-radius")).doubleValue(), 0.0001);
+            assertEquals(100, ((Number) mountPersistence.get("autosave-period-ticks")).intValue());
+            assertTrue((Boolean) mountPersistence.get("recall-on-quit"));
+            assertEquals(2, ((Number) mountNaming.get("minimum-length")).intValue());
+            assertEquals(24, ((Number) mountNaming.get("maximum-length")).intValue());
+            assertEquals("GOAT_HORN", mountWhistle.get("material"));
+            assertEquals(260102, ((Number) mountWhistle.get("custom-model-data")).intValue());
     }
 
     @Test
@@ -145,6 +169,13 @@ class ResourceYamlTest {
             assertNotNull(messages.get("auth-session-restored"));
             assertNotNull(messages.get("auth-time-remaining"));
             assertNotNull(messages.get("auth-fallback-disabled"));
+            assertNotNull(messages.get("mount-status"));
+            assertNotNull(messages.get("mount-combat-blocked"));
+            assertNotNull(messages.get("mount-created"));
+            assertNotNull(messages.get("mount-summon-cooldown"));
+            assertNotNull(messages.get("mount-whistle-foreign"));
+            assertNotNull(messages.get("mount-whistle-bound"));
+            assertNotNull(messages.get("mount-whistle-restored"));
             assertEquals(
                     "<green>Odpočatý</green> <dark_gray>|</dark_gray> <white>%remaining_text%</white>",
                     messages.get("campfire-rested-timer")

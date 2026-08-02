@@ -18,7 +18,7 @@ Moduly se nesestavují jako samostatné pluginy. Release je úplný pouze tehdy,
    jeden `NekaraRPG.jar` a zpřístupňuje jeho SHA-256 v release metadatech.
 
 Pro opravy používej patch verzi, pro nový modul nebo významnou herní změnu minor
-verzi. Auth, fishing, sitting, campfire a mining musí zůstat samostatně zapínatelné
+verzi. Auth, fishing, sitting, campfire, mining a mounts musí zůstat samostatně zapínatelné
 pod `modules` v `config.yml`.
 
 ## Standardní postup
@@ -49,8 +49,12 @@ truststore konkrétního zařízení.
 Každý modul implementuje `NekaraModule`, vlastní své listenery a scheduler tasky
 a v `disable()` musí uklidit všechny hráčské stavy a entity. Moduly registruj v
 `NekaraRPGPlugin` v pořadí závislostí: `auth`, `fishing`, `sitting`, `campfire`,
-`mining`. Auth se registruje první, aby nepřihlášení hráči nevstoupili do
+`mining`, `mounts`. Auth se registruje první, aby nepřihlášení hráči nevstoupili do
 herních listenerů ostatních modulů.
+
+NekaraMounts musí před odstraněním aktivní entity atomicky uložit její úplný stav.
+Pokud storage selže, operaci odmítne a entitu ponechá. `MountRepository` zůstává
+hranice budoucího databázového backendu; herní logika nesmí záviset na YAML cestách.
 
 Konfigurace patří do typovaného recordu pod `configuration`. Kořenový `config.yml`
 smí obsahovat jen nastavení jádra, updater a přepínače `modules.*.enabled`;

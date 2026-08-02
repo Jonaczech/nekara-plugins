@@ -2,6 +2,7 @@ package cz.nekara.rpg.configuration;
 
 import cz.nekara.rpg.campfire.CampFeature;
 import cz.nekara.rpg.echovein.EchoVeinMath;
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
@@ -288,6 +289,58 @@ public final class ConfigurationService {
                 config.getBoolean("auth.gui.open-on-join", true)
         );
 
+        String mountStorageFile = validateRelativeStoragePath(
+                config.getString("mounts.storage.file", "mounts/data.yml"),
+                "mounts.storage.file", "mounts/data.yml", warning);
+        Set<String> mountWorlds = new HashSet<>();
+        for (String world : config.getStringList("mounts.summoning.allowed-worlds")) {
+            if (world != null && !world.isBlank()) {
+                mountWorlds.add(world.trim().toLowerCase(Locale.ROOT));
+            }
+        }
+        int mountMinimumNameLength = validateInt(config.getInt("mounts.naming.minimum-length", 2),
+                1, 16, 2, "mounts.naming.minimum-length", warning);
+        int mountMaximumNameLength = validateInt(config.getInt("mounts.naming.maximum-length", 24),
+                2, 64, 24, "mounts.naming.maximum-length", warning);
+        if (mountMinimumNameLength > mountMaximumNameLength) {
+            warning.accept("Mount minimum name length exceeds maximum; using defaults 2 and 24.");
+            mountMinimumNameLength = 2;
+            mountMaximumNameLength = 24;
+        }
+        MountConfig mounts = new MountConfig(
+                mountStorageFile,
+                validateInt(config.getInt("mounts.death.cooldown-seconds", 60),
+                        1, 2_592_000, 60, "mounts.death.cooldown-seconds", warning),
+                validateInt(config.getInt("mounts.combat.block-seconds", 15),
+                        1, 600, 15, "mounts.combat.block-seconds", warning),
+                validateInt(config.getInt("mounts.summoning.cooldown-seconds", 30),
+                        1, 3_600, 30, "mounts.summoning.cooldown-seconds", warning),
+                validateInt(config.getInt("mounts.summoning.minimum-spawn-distance", 7),
+                        2, 32, 7, "mounts.summoning.minimum-spawn-distance", warning),
+                validateInt(config.getInt("mounts.summoning.maximum-spawn-distance", 12),
+                        3, 48, 12, "mounts.summoning.maximum-spawn-distance", warning),
+                validateDouble(config.getDouble("mounts.summoning.waiting-radius", 3.0),
+                        1.0, 16.0, 3.0, "mounts.summoning.waiting-radius", warning),
+                validateDouble(config.getDouble("mounts.summoning.pathfinding-speed", 1.35),
+                        0.5, 3.0, 1.35, "mounts.summoning.pathfinding-speed", warning),
+                validateInt(config.getInt("mounts.persistence.autosave-period-ticks", 100),
+                        20, 1_200, 100, "mounts.persistence.autosave-period-ticks", warning),
+                config.getBoolean("mounts.persistence.recall-on-quit", true),
+                Set.copyOf(mountWorlds),
+                validateDouble(config.getDouble("mounts.defaults.max-health", 30.0),
+                        1.0, 2_048.0, 30.0, "mounts.defaults.max-health", warning),
+                validateDouble(config.getDouble("mounts.defaults.movement-speed", 0.225),
+                        0.01, 10.0, 0.225, "mounts.defaults.movement-speed", warning),
+                validateDouble(config.getDouble("mounts.defaults.jump-strength", 0.70),
+                        0.0, 2.0, 0.70, "mounts.defaults.jump-strength", warning),
+                mountMinimumNameLength,
+                mountMaximumNameLength,
+                parseMaterial(config.getString("mounts.whistle.material", "GOAT_HORN"),
+                        Material.GOAT_HORN, "mounts.whistle.material", warning),
+                validateInt(config.getInt("mounts.whistle.custom-model-data", 260102),
+                        0, 16_777_215, 260102, "mounts.whistle.custom-model-data", warning)
+        );
+
         Map<String, SoundSettings> sounds = new HashMap<>();
         for (String key : new String[]{"bite", "hit", "miss", "timeout", "escape", "minigame-success",
                 "catch-success", "campfire-rested", "echo-vein-pulse", "echo-vein-ore-reveal",
@@ -328,7 +381,8 @@ public final class ConfigurationService {
                         "sitting", config.getBoolean("modules.sitting.enabled", true),
                         "campfire", config.getBoolean("modules.campfire.enabled", true),
                         "auth", config.getBoolean("modules.auth.enabled", true),
-                        "mining", miningModuleEnabled
+                        "mining", miningModuleEnabled,
+                        "mounts", config.getBoolean("modules.mounts.enabled", true)
                 ),
                 minigame,
                 hookParticles,
@@ -340,11 +394,23 @@ public final class ConfigurationService {
                 campfire,
                 auth,
                 echoVein,
+                mounts,
                 updater,
                 worldConfig,
                 Map.copyOf(sounds)
         );
         return current;
+    }
+
+    private String validateRelativeStoragePath(String configured, String key, String fallback,
+                                               Consumer<String> warning) {
+        if (configured == null || configured.isBlank() || configured.contains("..")
+                || configured.startsWith("/") || configured.startsWith("\\")
+                || configured.matches("^[A-Za-z]:.*")) {
+            warning.accept("Invalid " + key + "; using " + fallback + ".");
+            return fallback;
+        }
+        return configured.replace('\\', '/');
     }
 
     private DisplayMode parseDisplay(String value, Consumer<String> warning) {
@@ -538,6 +604,16 @@ public final class ConfigurationService {
             return fallback;
         }
         return value;
+    }
+
+    private Material parseMaterial(String value, Material fallback, String path,
+                                   Consumer<String> warning) {
+        Material material = value == null ? null : Material.matchMaterial(value.trim());
+        if (material == null || material.isAir()) {
+            warning.accept("Invalid " + path + "; using " + fallback.name() + ".");
+            return fallback;
+        }
+        return material;
     }
 
     private double validateDouble(double value, double minimum, double maximum, double fallback,

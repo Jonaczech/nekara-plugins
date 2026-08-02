@@ -115,6 +115,26 @@ pro každý oheň a přidat okolní struktury bez změny smlouvy sezení.
 15. Vrať defaults (`0.05`, bez cooldownu, `0.50` chain, `0.25` ore reveal) a ověř nezávislé po sobě jdoucí bloky.
 16. Vypni ValhallaMMO nebo Mining skill. NekaraRPG musí bezpečně nastartovat, automatická Echo Vein zůstane nedostupná.
 
+## Akceptace NekaraMounts
+
+1. Vytvoř virtuálního koně přes GUI, odvolej ho a přivolej píšťalkou; porovnej celý
+   stav před a po a ověř tučné jméno.
+2. Opakuj po plném restartu a po unloadu chunku. Vždy spočítej entity a ověř jediný
+   mount ID bez duplicitního sedla nebo brnění.
+3. Zkus dvě rychlá písknutí a call ve chvíli, kdy persistence ukazuje aktivní
+   entitu v nenačteném chunku. Cooldown musí platit a druhá entita nesmí vzniknout.
+4. Ověř cizí interakce a vstup do horse inventory druhým hráčem.
+   Píšťalku zkus zahodit, uložit do truhly a sebrat druhým hráčem; nesmí opustit
+   vlastníka. Ověř také `mount whistle remove` a `mount whistle restore`.
+5. Způsob PvP zásah, reconnect a restart v průběhu combat okna. Summon i dismiss
+   zůstávají blokované do uloženého času.
+6. Zabij koně se sedlem a brněním. Gear nesmí vypadnout a po minutě se vrátí právě
+   jedna uložená sada. Po smrti hráče se píšťalka vrátí až do jeho inventáře.
+7. Ověř spawn 7-12 bloků daleko, doběhnutí a čekání u místa písknutí. Opakuj v
+   úzkém interiéru, na hraně, ve vodě a v povoleném i zakázaném světě.
+8. Vypni modul a simuluj selhání zápisu pouze na kopii serveru. Při úspěchu se stav
+   uloží a entita uklidí; při chybě se entita ponechá a další operace uzamknou.
+
 ## Akceptace updateru
 
 Použij jednorázový staging release novější než instalovaná verze. Jeho jediný

@@ -7,6 +7,7 @@ import cz.nekara.rpg.modules.ModuleRegistry;
 import cz.nekara.rpg.modules.campfire.CampfireModule;
 import cz.nekara.rpg.modules.fishing.FishingModule;
 import cz.nekara.rpg.modules.mining.MiningModule;
+import cz.nekara.rpg.modules.mounts.MountsModule;
 import cz.nekara.rpg.modules.sitting.SittingModule;
 import cz.nekara.rpg.sitting.SitResult;
 import cz.nekara.rpg.updater.UpdaterService;
@@ -28,6 +29,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
     private final SittingModule sittingModule;
     private final CampfireModule campfireModule;
     private final MiningModule miningModule;
+    private final MountsModule mountsModule;
     private final ModuleRegistry modules;
     private final MessageService messages;
     private final UpdaterService updater;
@@ -38,6 +40,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
             SittingModule sittingModule,
             CampfireModule campfireModule,
             MiningModule miningModule,
+            MountsModule mountsModule,
             ModuleRegistry modules,
             MessageService messages,
             UpdaterService updater
@@ -47,6 +50,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
         this.sittingModule = sittingModule;
         this.campfireModule = campfireModule;
         this.miningModule = miningModule;
+        this.mountsModule = mountsModule;
         this.modules = modules;
         this.messages = messages;
         this.updater = updater;
@@ -79,10 +83,59 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                         "resting", campfireModule.restingCount(),
                         "rested", campfireModule.restedCount(),
                         "echo_active", miningModule.activeCount(),
+                        "mounts_active", mountsModule.activeCount(),
                         "modules", modules.enabledModuleIds().isEmpty()
                                 ? "none"
                                 : String.join(", ", modules.enabledModuleIds())
                 ));
+                yield true;
+            }
+            case "mount" -> {
+                if (!modules.isEnabled(MountsModule.ID)) {
+                    messages.send(sender, "module-disabled", Map.of("module", MountsModule.ID));
+                    yield true;
+                }
+                String action = args.length < 2 ? "menu" : args[1].toLowerCase(Locale.ROOT);
+                if ("grant".equals(action)) {
+                    if (!require(sender, "nekararpg.mount.admin")) yield true;
+                    if (args.length < 3) {
+                        messages.send(sender, "mount-admin-usage");
+                        yield true;
+                    }
+                    Player target = Bukkit.getPlayerExact(args[2]);
+                    if (target == null) {
+                        messages.send(sender, "player-not-found");
+                        yield true;
+                    }
+                    boolean granted = mountsModule.grant(target);
+                    if (granted && !sender.equals(target)) {
+                        messages.send(sender, "mount-admin-dispatched", Map.of("player", target.getName()));
+                    }
+                    yield true;
+                }
+                if (!require(sender, "nekararpg.mount.use")) yield true;
+                if (!(sender instanceof Player player)) {
+                    messages.send(sender, "player-only");
+                    yield true;
+                }
+                switch (action) {
+                    case "menu", "manage", "create" -> mountsModule.openMenu(player);
+                    case "summon", "call" -> mountsModule.call(player);
+                    case "dismiss", "recall" -> mountsModule.dismiss(player);
+                    case "status" -> mountsModule.sendStatus(player);
+                    case "whistle" -> {
+                        String whistleAction = args.length < 3
+                                ? "restore" : args[2].toLowerCase(Locale.ROOT);
+                        if ("restore".equals(whistleAction)) {
+                            mountsModule.restoreWhistle(player);
+                        } else if ("remove".equals(whistleAction)) {
+                            mountsModule.removeWhistle(player);
+                        } else {
+                            messages.send(sender, "mount-whistle-usage");
+                        }
+                    }
+                    default -> messages.send(sender, "mount-usage");
+                }
                 yield true;
             }
             case "update" -> {
@@ -210,13 +263,24 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return prefix(List.of("help", "reload", "status", "update", "sit", "stand", "test", "cancel"), args[0]);
+            return prefix(List.of("help", "reload", "status", "update", "sit", "stand", "mount", "test", "cancel"), args[0]);
         }
         if (args.length == 2 && "update".equalsIgnoreCase(args[0])) {
             return prefix(List.of("check", "status"), args[1]);
         }
         if (args.length == 2 && "test".equalsIgnoreCase(args[0])) {
             return prefix(List.of("fishing", "vein"), args[1]);
+        }
+        if (args.length == 2 && "mount".equalsIgnoreCase(args[0])) {
+            return prefix(List.of("menu", "status", "call", "dismiss", "whistle", "grant"), args[1]);
+        }
+        if (args.length == 3 && "mount".equalsIgnoreCase(args[0])
+                && "whistle".equalsIgnoreCase(args[1])) {
+            return prefix(List.of("restore", "remove"), args[2]);
+        }
+        if (args.length == 3 && "mount".equalsIgnoreCase(args[0])
+                && "grant".equalsIgnoreCase(args[1])) {
+            return prefix(Bukkit.getOnlinePlayers().stream().map(Player::getName).toList(), args[2]);
         }
         if (args.length == 2 && "cancel".equalsIgnoreCase(args[0])) {
             List<String> names = Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
