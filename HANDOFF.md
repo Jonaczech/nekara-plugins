@@ -6,26 +6,26 @@ The repository is published at
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 The default branch is `main`.
 
-The latest shipped plugin is **NekaraRPG 1.2.2**:
+The latest shipped plugin is **NekaraRPG 1.2.3**:
 
-- tag: `v1.2.2`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.2.2>
+- tag: `v1.2.3`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.2.3>
 - deployable asset: `NekaraRPG.jar`
-- source PR: <https://github.com/Jonaczech/nekara-plugins/pull/9>
-- release merge commit: `9336f6528d4e90ba1cbe0010d6394ccaffe8f205`
+- source PR: <https://github.com/Jonaczech/nekara-plugins/pull/11>
+- release merge commit: `f3ffb7345368b9275aebabb9289a02d67ec75f5e`
 - release JAR SHA-256:
-  `CDEAA8A55D69B4CCC41CEAC24A69071621FF3AD4E637A7923A1D3A730DDD6E78`
-- release asset size: `181349` bytes
+  `FCF1521D6F101E54413ED21B9CC6C1304EAA13E3AE5F20CD726CAD5D4189F5E0`
+- release asset size: `181237` bytes
 - automated validation: 35 passing tests
 
-Release 1.2.2 incorporates the first live Echo Vein feedback. It removes the
-Mining level gate, restricts targets to Paper's pickaxe-mineable tag, layers a
-subtle nearby pulse with a denser visible-face marker, and limits natural chat
-to one timed discovery message. Command tests remain reward-free; natural
-successes retain the 25% Mining XP and finalized-drop rewards. GitHub's latest
-release metadata, downloaded JAR hash and contents, stable status, and tag
-target were verified after publication. Live acceptance of the revised visual
-balance and natural rewards remains pending.
+Release 1.2.3 renames the module to `mining` (NekaraMining), with Echo Vein as
+its first activity. It preserves the old module toggle when the new key is
+missing, no longer cancels an active echo when another block is struck, removes
+natural chat, plays discovery once instead of on every pulse, keeps one success
+sound, and leaves natural timeout silent. Rewards, cooldown, visible target
+selection, and fishing priority are unchanged. GitHub's release metadata,
+downloaded JAR hash and contents, stable status, and tag target were verified.
+Live acceptance of uninterrupted mining and the revised audio remains pending.
 
 Version numbers belong in plugin metadata, changelogs, and Git tags. The JAR
 filename intentionally stays stable so server deployment never creates a
@@ -64,8 +64,10 @@ second versioned copy beside the active plugin.
 - Rested uses text-only action-bar UI: `Odpočatý | m:ss`. It yields to campfire
   charging messages and the fishing minigame. It does not create a bossbar.
 
-### Echo Vein
+### NekaraMining / Echo Vein
 
+- Uses module ID `mining`; legacy `modules.echo-vein.enabled` is the fallback
+  until `modules.mining.enabled` is explicitly present.
 - Requires a real ValhallaMMO Mining XP action but has no level gate.
 - Selects only blocks in Paper's `MINEABLE_PICKAXE` tag and marks the visible
   target face more strongly than the surrounding one-block-area hint.
@@ -73,7 +75,9 @@ second versioned copy beside the active plugin.
 - Success grants 25% of the final source Mining XP with reason `PLUGIN`.
 - The optional bonus is one item from that action's finalized Mining drops; no
   Digging table, custom loot table, or Fortune reroll is used.
-- Natural chat contains only the timed discovery message; outcomes use sounds.
+- Striking or mining another block does not cancel the active target.
+- Natural attempts use no chat, one discovery sound, one success sound, and a
+  silent timeout. The action bar still carries the timer.
 - `/nekararpg test vein` exercises the visuals without XP, drops, or cooldown.
 
 ## Build and Deployment
@@ -109,13 +113,13 @@ startup logs. Version 1.2.0 itself still needs one manual deployment because
 
 ## Next Session
 
-After live acceptance of 1.2.2, the next approved design direction is a
+After live acceptance of 1.2.3, the next approved design direction is a
 `mounts` module. Its first version should use a vanilla horse, one persistent
 mount per player, no cargo inventory, and no hoglin model. Preserve saddle,
 armor, name, health, ownership, and death cooldown while preventing summon,
 dismiss, logout, and healing abuse in PvP.
 
-Potential later Campfire extensions after the 1.2.2 acceptance pass:
+Potential later Campfire extensions after the 1.2.3 acceptance pass:
 
 - unique gameplay bonuses for smoker, barrel, cauldron, cartography table, and
   grindstone,
