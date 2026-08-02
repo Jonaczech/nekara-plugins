@@ -6,26 +6,28 @@ The repository is published at
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 The default branch is `main`.
 
-The latest shipped plugin is **NekaraRPG 1.2.3**:
+The latest shipped plugin is **NekaraRPG 1.2.4**:
 
-- tag: `v1.2.3`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.2.3>
+- tag: `v1.2.4`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.2.4>
 - deployable asset: `NekaraRPG.jar`
-- source PR: <https://github.com/Jonaczech/nekara-plugins/pull/11>
-- release merge commit: `f3ffb7345368b9275aebabb9289a02d67ec75f5e`
+- source PR: <https://github.com/Jonaczech/nekara-plugins/pull/13>
+- release merge commit: `6004e052eb0bf00086514584639bd56d7fe9038d`
 - release JAR SHA-256:
-  `FCF1521D6F101E54413ED21B9CC6C1304EAA13E3AE5F20CD726CAD5D4189F5E0`
-- release asset size: `181237` bytes
-- automated validation: 35 passing tests
+  `A082272CF6996CE8E83561A6909338608F1CEAF1A1AC5AC98234D46DF4D04D4A`
+- release asset size: `184813` bytes
+- automated validation: 36 passing tests
 
-Release 1.2.3 renames the module to `mining` (NekaraMining), with Echo Vein as
-its first activity. It preserves the old module toggle when the new key is
-missing, no longer cancels an active echo when another block is struck, removes
-natural chat, plays discovery once instead of on every pulse, keeps one success
-sound, and leaves natural timeout silent. Rewards, cooldown, visible target
-selection, and fishing priority are unchanged. GitHub's release metadata,
-downloaded JAR hash and contents, stable status, and tag target were verified.
-Live acceptance of uninterrupted mining and the revised audio remains pending.
+Release 1.2.4 raises the base chance to 5%, removes the cooldown, and restricts
+automatic Echo Vein triggers and targets to stone, deepslate, netherrack, and
+end stone. Natural completion now requires mining the marked block and grants
+25% of that block's final Mining XP plus its own optional finalized-drop item.
+Completion has a 50% chance to chain to a visible face-adjacent host. The first
+target damage has a one-time 25% chance to reveal a weighted vanilla ore where
+the dimension has one. Debug mode logs XP event counts and exact bonus values.
+GitHub release metadata, downloaded JAR hash, stable status, single asset, and
+tag target were verified. Live Purpur/ValhallaMMO acceptance and balance remain
+pending.
 
 Version numbers belong in plugin metadata, changelogs, and Git tags. The JAR
 filename intentionally stays stable so server deployment never creates a
@@ -69,16 +71,22 @@ second versioned copy beside the active plugin.
 - Uses module ID `mining`; legacy `modules.echo-vein.enabled` is the fallback
   until `modules.mining.enabled` is explicitly present.
 - Requires a real ValhallaMMO Mining XP action but has no level gate.
-- Selects only blocks in Paper's `MINEABLE_PICKAXE` tag and marks the visible
-  target face more strongly than the surrounding one-block-area hint.
-- Uses a rare six-second spatial pulse with an eight-minute persistent cooldown.
-- Success grants 25% of the final source Mining XP with reason `PLUGIN`.
-- The optional bonus is one item from that action's finalized Mining drops; no
-  Digging table, custom loot table, or Fortune reroll is used.
+- Triggers from and selects only stone, deepslate, netherrack, and end stone in
+  Paper's `MINEABLE_PICKAXE` tag. There is no cooldown.
+- Marks the visible target face more strongly than the surrounding one-block
+  area and requires the target to be actually mined for natural completion.
+- Success grants 25% of the marked block's final Mining XP with reason `PLUGIN`.
+- The optional bonus is one item from that marked block's finalized Mining
+  drops; no Digging table, custom loot table, or Fortune reroll is used.
+- Completion has a 50% chance to continue into a visible face-adjacent host.
+- First target damage rolls a one-time 25% weighted ore reveal. Stone and
+  deepslate use Overworld ores, netherrack uses quartz or gold, and end stone
+  remains unchanged.
 - Striking or mining another block does not cancel the active target.
 - Natural attempts use no chat, one discovery sound, one success sound, and a
   silent timeout. The action bar still carries the timer.
-- `/nekararpg test vein` exercises the visuals without XP, drops, or cooldown.
+- `/nekararpg test vein` exercises the visuals without XP, drops, ore reveal,
+  or chaining.
 
 ## Build and Deployment
 
