@@ -6,19 +6,19 @@ Repozitář je publikovaný jako
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 Výchozí větev je `main`.
 
-Nejnovější vydaná verze je **NekaraRPG 1.5.0**:
+Nejnovější vydaná verze je **NekaraRPG 1.5.1**:
 
-- tag: `v1.5.0`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.5.0>
+- tag: `v1.5.1`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.5.1>
 - nasazovaný soubor: `NekaraRPG.jar`
-- zdrojové PR: <https://github.com/Jonaczech/nekara-plugins/pull/23>
-- release merge commit: `fc1315a2e173837481bedb3ee8132b48f9ae098f`
+- zdrojové PR: <https://github.com/Jonaczech/nekara-plugins/pull/25>
+- release merge commit: `d23e94c8ec6713fd13f9df3492ed854a0d149d9a`
 - SHA-256 vydaného JARu:
-  `9A037355089B522580538B81F6EC9EE248145DA7C6165852AF695DB76217E9D6`
-- velikost release assetu: `296564` bajtů
+  `EE1CE0759A98F56B416F1E3E29A2C53E0089BFB43A8019D672D0AF66C2073F9C`
+- velikost release assetu: `296565` bajtů
 - automatické ověření: 64 úspěšných testů
 
-Verze 1.5.0 přidává NekaraMounts: virtuálně evidovaného vanilla koně, GUI pro
+Verze 1.5.1 obsahuje NekaraMounts: virtuálně evidovaného vanilla koně, GUI pro
 jméno, barvu a výbavu, soulbound píšťalku, doběhnutí na místo volání, ochranu
 proti duplicitě a cizí manipulaci a atomické YAML úložiště. Smrt koně zachová
 výbavu a používá minutový cooldown. Starý záznam bez `custom-name` se bezpečně
@@ -32,7 +32,7 @@ Purpur serveru s ValhallaMMO a celý NekaraAuth průchod z `TESTING.md`.
 záměrně stabilní, aby při nasazení nevznikla druhá verzovaná kopie vedle
 aktivního pluginu.
 
-## NekaraMounts 1.5.0
+## NekaraMounts 1.5.1
 
 Vydaný modul NekaraMounts přidává virtuální
 vytvoření jednoho vanilla koně přes GUI pro barvu a jméno, svázanou píšťalku,
@@ -40,8 +40,8 @@ management výbavy, atomický YAML backend za `MountRepository`, perzistentní P
 okno, cooldown po smrti a ochranu proti duplicitní entitě i vybavení. Zbývající
 živé Purpur scénáře jsou vedené v `TESTING.md` a `LIVE_TESTING.md`.
 
-Release postup prošel se 64 testy. Vydaný asset má velikost `296564` bajtů a
-SHA-256 `9A037355089B522580538B81F6EC9EE248145DA7C6165852AF695DB76217E9D6`.
+Release postup prošel se 64 testy. Vydaný asset má velikost `296565` bajtů a
+SHA-256 `EE1CE0759A98F56B416F1E3E29A2C53E0089BFB43A8019D672D0AF66C2073F9C`.
 Hash byl ověřen stažením assetu z GitHub release.
 Hotfix migruje starší mount záznam bez `custom-name` na jméno `Bezejmenný`.
 Smrt koně má minutový cooldown a píšťalka je soulbound: nedropuje, nejde uložit do
