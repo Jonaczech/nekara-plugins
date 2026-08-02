@@ -6,28 +6,27 @@ The repository is published at
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 The default branch is `main`.
 
-The latest shipped plugin is **NekaraRPG 1.2.4**:
+The latest shipped plugin is **NekaraRPG 1.2.5**:
 
-- tag: `v1.2.4`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.2.4>
+- tag: `v1.2.5`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.2.5>
 - deployable asset: `NekaraRPG.jar`
-- source PR: <https://github.com/Jonaczech/nekara-plugins/pull/13>
-- release merge commit: `6004e052eb0bf00086514584639bd56d7fe9038d`
+- source PR: <https://github.com/Jonaczech/nekara-plugins/pull/15>
+- release merge commit: `47944ab70e7a88a07376a9945449ea5470c80e73`
 - release JAR SHA-256:
-  `A082272CF6996CE8E83561A6909338608F1CEAF1A1AC5AC98234D46DF4D04D4A`
-- release asset size: `184813` bytes
-- automated validation: 36 passing tests
+  `D6D95DBE342DF9F9161EA154DC1709286BC50611C3B8C5B8AEF7166AD0A4AFA2`
+- release asset size: `190588` bytes
+- automated validation: 42 passing tests
 
-Release 1.2.4 raises the base chance to 5%, removes the cooldown, and restricts
-automatic Echo Vein triggers and targets to stone, deepslate, netherrack, and
-end stone. Natural completion now requires mining the marked block and grants
-25% of that block's final Mining XP plus its own optional finalized-drop item.
-Completion has a 50% chance to chain to a visible face-adjacent host. The first
-target damage has a one-time 25% chance to reveal a weighted vanilla ore where
-the dimension has one. Debug mode logs XP event counts and exact bonus values.
-GitHub release metadata, downloaded JAR hash, stable status, single asset, and
-tag target were verified. Live Purpur/ValhallaMMO acceptance and balance remain
-pending.
+Release 1.2.5 keeps the 1.2.4 Echo Vein flow and makes ore reveal
+height-aware. Candidates follow vanilla-compatible Y bands and relative height
+biases, including high Badlands gold and the Nether Y 10-117 range. Diamond and
+redstone cannot appear high above their normal region. Seed noise and vanilla
+air-exposure suppression are intentionally not reproduced. Successful ore
+transformation now uses a brighter amethyst sound distinct from the lower vein
+discovery chime. GitHub release metadata, downloaded JAR hash, stable status,
+single asset, and tag target were verified. Live Purpur/ValhallaMMO sound and
+balance acceptance remains pending.
 
 Version numbers belong in plugin metadata, changelogs, and Git tags. The JAR
 filename intentionally stays stable so server deployment never creates a
@@ -80,11 +79,13 @@ second versioned copy beside the active plugin.
   drops; no Digging table, custom loot table, or Fortune reroll is used.
 - Completion has a 50% chance to continue into a visible face-adjacent host.
 - First target damage rolls a one-time 25% weighted ore reveal. Stone and
-  deepslate use Overworld ores, netherrack uses quartz or gold, and end stone
-  remains unchanged.
+  deepslate use height-compatible Overworld ores, netherrack uses quartz or
+  gold only from Y 10 through 117, and end stone remains unchanged. Badlands
+  can reveal elevated gold.
 - Striking or mining another block does not cancel the active target.
 - Natural attempts use no chat, one discovery sound, one success sound, and a
-  silent timeout. The action bar still carries the timer.
+  silent timeout. Successful ore transformation adds its own brighter related
+  sound. The action bar still carries the timer.
 - `/nekararpg test vein` exercises the visuals without XP, drops, ore reveal,
   or chaining.
 
