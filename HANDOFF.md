@@ -6,23 +6,25 @@ The repository is published at
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 The default branch is `main`.
 
-The latest shipped plugin is **NekaraRPG 1.1.0**:
+The latest shipped plugin is **NekaraRPG 1.2.0**:
 
-- tag: `v1.1.0`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.1.0>
+- tag: `v1.2.0`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.2.0>
 - deployable asset: `NekaraRPG.jar`
-- release merge commit: `ce594898c049ca7637443dcc3af4fcc628c4a0f7`
+- source PR: <https://github.com/Jonaczech/nekara-plugins/pull/5>
+- release merge commit: `44401180f12eee80d3246aa3cc1f9df95f79759d`
 - release JAR SHA-256:
-  `63ED962AE9AE94F3D09ECCDD2B9858E5C51A005FD0E7963D72AB66A2F093947D`
-- automated validation: 22 passing tests
+  `0D827BF58B7064BC3DA7AF37ED4F4D99FC76B0EFA760398EBC818548EB1D9691`
+- release asset size: `181561` bytes
+- automated validation: 35 passing tests
 
-An unreleased **1.2.0** candidate is currently on
-`codex/echo-vein-1.2.0`. It moves reduced Rested hunger loss behind the smoker
-camp feature, adds a configurable 10% Rested XP bonus across all ValhallaMMO
-skills, and introduces the optional Echo Vein Mining activity. It also adds an
-asynchronous, fail-closed GitHub updater that stages verified stable releases
-for Paper to install on restart. Live Purpur/ValhallaMMO and updater restart
-acceptance remain pending until the release is installed on the staging server.
+Release 1.2.0 moves reduced Rested hunger loss behind the smoker camp feature,
+adds a configurable 10% Rested XP bonus across all ValhallaMMO skills,
+introduces the optional Echo Vein Mining activity, and adds the asynchronous,
+fail-closed GitHub updater. GitHub's latest-release endpoint, asset name, size,
+SHA-256 digest, stable status, and tag target were verified after publication.
+Live Purpur/ValhallaMMO gameplay and updater restart consumption remain pending
+until 1.2.0 is installed manually on the staging server.
 
 Version numbers belong in plugin metadata, changelogs, and Git tags. The JAR
 filename intentionally stays stable so server deployment never creates a
