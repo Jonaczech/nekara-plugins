@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.1
+
+- Published the complete Echo Vein Mining activity in the first patch release
+  intended for end-to-end updater acceptance from a manually installed 1.2.0.
+- Kept the Mining level 50 trigger, ValhallaMMO XP bonus, finalized-drop bonus,
+  persistent cooldown, and reward-free `/nekararpg test vein` behavior unchanged.
+- No gameplay or configuration defaults changed from 1.2.0.
+
 ## 1.2.0
 
 - Added the optional `echo-vein` module: Mining level 50 players can rarely
