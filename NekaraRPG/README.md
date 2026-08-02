@@ -2,7 +2,8 @@
 
 NekaraRPG je modulární plugin pro Purpur/Paper, který zajišťuje RPG a imerzivní
 systémy Nekary. V jednom JARu aktuálně obsahuje NekaraAuth, NekaraFishing, volné
-sezení, odpočinek u ohně a NekaraMining s první ValhallaMMO aktivitou Echo Vein.
+sezení, odpočinek u ohně, NekaraMining s první ValhallaMMO aktivitou Echo Vein a
+NekaraMounts s jedním trvalým vanilla koněm na hráče.
 
 Plugin je záměrně konzervativní: nenahrazuje vanilla loot tabulky, nevytváří
 syntetické fishing eventy a nevyžaduje ValhallaMMO ani jiný plugin.
@@ -23,11 +24,14 @@ modules:
     enabled: true
   mining:
     enabled: true
+  mounts:
+    enabled: true
 ```
 
 Kořenový `config.yml` obsahuje pouze jádro, updater a přepínače modulů. Podrobné
 nastavení je rozdělené do `auth/config.yml`, `fishing/config.yml`,
-`sitting/config.yml`, `campfire/config.yml` a `mining/config.yml` uvnitř datové
+`sitting/config.yml`, `campfire/config.yml`, `mining/config.yml` a
+`mounts/config.yml` uvnitř datové
 složky pluginu. Při prvním upgradu ze starého monolitického configu se vlastní
 hodnoty automaticky přenesou do odpovídajících souborů.
 
@@ -40,12 +44,39 @@ Aktuální moduly:
 | `sitting` | produkční | Sezení řízené příkazem a nastavitelná detekce externích sedadel. |
 | `campfire` | produkční | Léčení, ochrana hladu, Rested bonus, skupinové škálování a roleplay v action baru u zapáleného ohně. |
 | `mining` | testovací | Aktivity NekaraMining, aktuálně prostorová výzva Echo Vein s nativními ValhallaMMO odměnami. |
+| `mounts` | testovací | Jeden trvalý vanilla kůň na hráče s bezpečným odvoláním, cooldownem po smrti a ochranou proti duplikaci. |
 
 Campfire přijímá sedadla NekaraRPG i nakonfigurovaná externí vehicle sedadla.
 Interní Sitting proto může být vypnutý, pokud sezení poskytuje jiný plugin.
 Budoucí moduly lze přidávat bez rozdělení projektu do nesouvisejících JARů.
 Vhodnými kandidáty jsou lockpicking, wounds, world events, rumors, territory,
-reputation a mounts.
+reputation.
+
+## NekaraMounts
+
+Hráč nepotřebuje hledat ani ochočovat vanilla koně. `/nekararpg mount` otevře
+prvotní GUI s výběrem barvy a následně bezpečnou kovadlinu pro jméno. Vznikne
+virtuální záznam jednoho koně a hráč dostane svázanou píšťalku. Administrátor může
+stejný průchod otevřít online hráči přes `/nekararpg mount grant <hráč>`.
+
+Pravé kliknutí píšťalkou nebo `mount call` vytvoří odvolaného koně 7-12 bloků od
+hráče a pošle ho na přesné místo písknutí. Tam se zastaví a bez jezdce se od něj
+nevzdaluje. Aktivní kůň se pouze přesměruje, nikdy nevznikne druhá entita; stav v
+nenačteném chunku se odmítne kopírovat. Přivolání má výchozí cooldown 30 sekund.
+`dismiss` uloží celý stav před odstraněním entity, stejně jako bezpečný unload,
+reload a vypnutí modulu.
+
+Vlastní patnáctisekundové PvP okno se ukládá do `mounts/data.yml`, takže reconnect
+blokaci neobejde. Smrt zachová vybavení uvnitř záznamu a výchozím stavem spustí
+minutový cooldown. Odvolání neléčí ani nemaže oheň, zamrznutí či potion efekty.
+Přejmenování, barva, sedlo, brnění a obnova píšťalky jsou v management GUI.
+Píšťalka je svázaná s hráčem: nelze ji zahodit, uložit do cizího inventáře ani
+sebrat jiným hráčem. `/nekararpg mount whistle <restore|remove>` odstraní všechny
+hráčovy nalezené kopie nebo vydá právě jednu novou.
+Jméno aktivní entity je vždy tučné. Smrt nic nedropuje a uložená výbava se vrátí
+po death cooldownu. Povolené světy, prostor, pathfinding, autosave, recall a oba
+cooldowny se nastavují v `mounts/config.yml`. První verze nemá přímou Lands API
+integraci; omezení regionů lze vynutit kontextovým oprávněním nebo seznamem světů.
 
 ## NekaraAuth
 
@@ -313,6 +344,8 @@ upozornění při přípravě releasu a znovu při připojení před restartem.
 | `/nekararpg update status` | `nekararpg.command.update` |
 | `/nekararpg sit` | `nekararpg.sitting.use` |
 | `/nekararpg stand` | žádné; hráč se musí vždy moci postavit |
+| `/nekararpg mount [menu\|status\|call\|dismiss\|whistle]` | `nekararpg.mount.use` |
+| `/nekararpg mount grant <hráč>` | `nekararpg.mount.admin` |
 | `/nekararpg test [fishing|vein]` | `nekararpg.command.test` |
 | `/nekararpg cancel [player]` | `nekararpg.command.cancel` |
 | `/nekaraauth` | žádné; otevře účetní GUI |

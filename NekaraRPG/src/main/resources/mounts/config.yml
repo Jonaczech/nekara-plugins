@@ -1,0 +1,36 @@
+# NekaraMounts owns one persistent vanilla horse per player.
+configuration-version: 2
+storage:
+  # Local YAML backend behind MountRepository; keep this path inside the plugin data folder.
+  file: mounts/data.yml
+death:
+  # A dead companion returns after this persisted cooldown (one minute by default).
+  cooldown-seconds: 60
+combat:
+  # Summon, dismiss, creation, and grants are blocked after player-versus-player damage.
+  block-seconds: 15
+summoning:
+  # Empty means every world. Add exact world names to restrict creation and summoning.
+  allowed-worlds: []
+  cooldown-seconds: 30
+  # The horse appears out of arm's reach, then pathfinds to the exact call location.
+  minimum-spawn-distance: 7
+  maximum-spawn-distance: 12
+  waiting-radius: 3.0
+  pathfinding-speed: 1.35
+persistence:
+  # Captures health, attributes, equipment, name, appearance, and negative effects.
+  autosave-period-ticks: 100
+  # A mount is safely stored when its owner disconnects, except during the persisted combat window.
+  recall-on-quit: true
+defaults:
+  max-health: 30.0
+  movement-speed: 0.225
+  jump-strength: 0.70
+naming:
+  minimum-length: 2
+  maximum-length: 24
+whistle:
+  # Tagged custom item; a resource pack can bind the configured model data later.
+  material: GOAT_HORN
+  custom-model-data: 260102

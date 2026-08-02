@@ -16,7 +16,8 @@ Samostatné čisté testy ověřují způsobilost a škálování ValhallaMMO Re
 Echo Vein testuje hody šance, XP bonus, vážený výběr dropu, vanilla-kompatibilní
 výškové hranice rud, Badlands zlato a Nether rozsah. Updater testuje sémantické
 verze, parsování GitHub release, důvěryhodný asset, SHA-256, identitu JARu a
-vloženou release verzi.
+vloženou release verzi. NekaraMounts navíc testuje normalizaci offline identity,
+hranice a formát cooldownu, atomický YAML round-trip a perzistenci combat okna.
 
 ## Ruční akceptace na Purpur 26.1.2
 
@@ -28,8 +29,8 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 1. Nainstaluj jediný release artefakt `NekaraRPG.jar`.
 2. Spusť server a ověř vznik kořenového `plugins/NekaraRPG/config.yml` a souborů
    `auth/config.yml`, `fishing/config.yml`, `sitting/config.yml`,
-   `campfire/config.yml` a `mining/config.yml`.
-3. Ověř výchozí hodnotu true u `modules.fishing.enabled`, `modules.sitting.enabled`, `modules.campfire.enabled` a `modules.mining.enabled`.
+   `campfire/config.yml`, `mining/config.yml` a `mounts/config.yml`.
+3. Ověř výchozí hodnotu true u `modules.fishing.enabled`, `modules.sitting.enabled`, `modules.campfire.enabled`, `modules.mining.enabled` a `modules.mounts.enabled`.
 4. Ověř, že kořenový config neobsahuje detailní sekce modulů. Spusť
    `/nekararpg status` a ověř zobrazení všech pěti modulů.
 5. Nastav `modules.fishing.enabled: false`, spusť `/nekararpg reload` a ověř, že rybářská minihra nezačne.
@@ -93,6 +94,32 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 18. Položené bloky nebo bloky bez Valhalla Mining XP nesmí aktivitu spustit.
 19. Během ozvěny začni rybařit a ověř, že Echo Vein ustoupí bez narušení rybaření.
 20. Odstraň `modules.mining.enabled`, nastav staré `modules.echo-vein.enabled: false`, reloaduj a ověř vypnutý NekaraMining. Poté přidej nový klíč a ověř jeho prioritu.
+
+### 3c. NekaraMounts
+
+1. Spusť `/nekararpg mount`, vyber barvu a platné jméno. Musí vzniknout virtuální
+   záznam a svázaná píšťalka; druhé vytvoření musí být odmítnuto.
+2. Pravým kliknutím píšťalkou přivolej koně. Musí se objevit 7-12 bloků daleko,
+   doběhnout na místo písknutí a tam čekat. Jméno nad entitou musí být tučné.
+3. Použij píšťalku dvakrát rychle. Druhé použití musí oznámit 30sekundový cooldown
+   a na serveru smí existovat právě jedna entita se stejným mount ID.
+4. Zkus píšťalku zahodit, shift-clicknout do truhly, vložit do Ender Chest a sebrat
+   druhým hráčem. Vše musí být odmítnuto. `mount whistle remove` ji odebere a
+   `mount whistle restore` vydá právě jednu; při plném inventáři nic nesmí spadnout.
+5. Odvolej koně, restartuj server a znovu ho přivolej. Porovnej jméno, zdraví,
+   maximální zdraví, rychlost, skok, barvu, styl, sedlo a brnění.
+6. Nech aktivnímu koni unloadnout chunk a vrať se. Starý záznam entity nesmí vydat
+   vybavení ani vytvořit kopii; odvolaný mount se musí dát bezpečně přivolat.
+7. Přes GUI změň jméno, barvu, sedlo a brnění. Nech cizího hráče zkusit nasednout,
+   otevřít inventář, přejmenovat a měnit výbavu. Vše musí být bezpečně odmítnuto.
+8. Způsob PvP zásah mezi dvěma hráči. `create`, `grant`, `call` i `dismiss` musí být
+   15 sekund blokované. Odpoj a připoj hráče; zbývající blokace musí pokračovat.
+9. Zabij mounta a ověř minutový cooldown i návrat stejné výbavy. Opakuj se smrtí
+   hráče: píšťalka nesmí dropnout a po respawnu se musí vrátit do inventáře.
+10. Vypni `modules.mounts.enabled` a reloaduj. Aktivní entita zmizí až po úspěšném
+   uložení, `mounts/data.yml` zůstane a ostatní modulové configy se nezmění.
+11. Znepřístupni kopii storage pouze na stagingu. Operace musí selhat uzavřeně,
+    aktivní entita se nesmí smazat a konzole musí ohlásit uzamčení modulu.
 
 ### 4. Neúspěšná minihra
 

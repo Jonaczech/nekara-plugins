@@ -42,6 +42,27 @@ Purpur serveru s ValhallaMMO a celý NekaraAuth průchod z `TESTING.md`.
 záměrně stabilní, aby při nasazení nevznikla druhá verzovaná kopie vedle
 aktivního pluginu.
 
+## Lokální kandidát 1.5.0
+
+Pracovní strom obsahuje zatím nevydaný modul NekaraMounts. Přidává virtuální
+vytvoření jednoho vanilla koně přes GUI pro barvu a jméno, svázanou píšťalku,
+management výbavy, atomický YAML backend za `MountRepository`, perzistentní PvP
+okno, cooldown po smrti a ochranu proti duplicitní entitě i vybavení. Testy jsou
+součástí akceptace; živé Purpur scénáře z `TESTING.md` a `LIVE_TESTING.md` musí
+proběhnout před publikací.
+
+Lokální release postup prošel se 64 testy. Kandidátní `NekaraRPG.jar` má velikost
+`296565` bajtů a SHA-256
+`4A83E5114E1310C37CB7C2B37F7AFD6DA9D207E22B49731147D40694ECD86087`.
+Stejný hash byl ověřen po FTP nasazení zpětným stažením.
+Hotfix migruje starší mount záznam bez `custom-name` na jméno `Bezejmenný`.
+Smrt koně má minutový cooldown a píšťalka je soulbound: nedropuje, nejde uložit do
+cizího inventáře, po smrti hráče se vrací a správa odstraňuje nalezené kopie.
+
+Rozhodnutí MVP jsou uzavřená v `ROADMAP.md`: žádné ochočování, GUI plus admin grant,
+30sekundová píšťalka, vzdálený spawn s doběhnutím na místo volání, vlastní
+perzistentní combat okno a normalizovaný nick jako stabilní offline identita.
+
 ## Vydané moduly NekaraRPG
 
 ### NekaraAuth
@@ -146,10 +167,9 @@ Nejdřív živě otestuj verzi 1.4.0 podle `NekaraRPG/TESTING.md` a
 - že +25 % XP vzniká právě jednou z označeného bloku,
 - že 50% řetězení a bonusový drop nejsou příliš štědré.
 
-Schválenou další implementační prioritou je modul `mounts`. Začni přečtením
-`ROADMAP.md`, zejména rozsahem MVP, bezpečnostními pravidly, akceptačním minimem a
-pěti otevřenými herními rozhodnutími. První verze používá jednoho trvalého
-vanilla koně na hráče, bez nákladního inventáře a bez modelu hoglina.
+Dalším krokem je živá akceptace kandidáta 1.5.0 podle `NekaraRPG/TESTING.md` a
+`NekaraRPG/LIVE_TESTING.md`, zejména GUI, píšťalka a pathfinding, restart, unload
+chunku, rychlé dvojí volání, smrt/cooldown, reconnect v PvP a cizí manipulace.
 
 Možná pozdější rozšíření Campfire:
 

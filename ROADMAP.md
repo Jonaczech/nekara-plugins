@@ -6,7 +6,7 @@ zůstávají v `PROJECT_MEMORY.md` a aktuální release stav v `HANDOFF.md`.
 ## Aktuální stav
 
 - Nejnovější stabilní release: **NekaraRPG 1.4.0**.
-- Nejbližší nový herní modul: **NekaraMounts** (`mounts`).
+- Implementovaný lokální kandidát: **NekaraRPG 1.5.0** s modulem **NekaraMounts** (`mounts`).
 - Modul zůstane součástí jediného `NekaraRPG.jar` a bude samostatně zapínatelný.
 
 ## NekaraMounts — první vydání
@@ -20,8 +20,8 @@ jehož stav přežije odvolání, restart i změnu chunku.
 - modul ID `mounts` a přepínač `modules.mounts.enabled` v kořenovém `config.yml`,
 - vlastní `mounts/config.yml`,
 - nejvýše jeden vlastněný vanilla `HORSE` na hráče,
-- řízené získání nebo registrace koně a jednoznačné vlastnictví,
-- přivolání, odvolání a zobrazení stavu přes `/nekararpg mount ...`,
+- virtuální vytvoření přes GUI s výběrem barvy a jména a jednoznačné vlastnictví,
+- svázaná píšťalka, přivolání k místu hráče, odvolání a správa přes GUI,
 - trvalé jméno, zdraví, maximální zdraví, rychlost, výška skoku, barva, styl,
   sedlo, koňské brnění, vlastník, stav smrti a cooldown,
 - nejvýše jedna aktivní entita stejného mounta na celém serveru,
@@ -39,7 +39,7 @@ jehož stav přežije odvolání, restart i změnu chunku.
   smrti, unloadu chunku, teleportu, restartu a pádu storage.
 - Při chybě persistence se operace odmítne bezpečně a existující entita se nesmí
   přepsat neúplným stavem.
-- Cizí hráč nesmí mounta převzít, odvolat, přejmenovat ani měnit jeho vybavení.
+- Cizí hráč nesmí mounta zranit, převzít, odvolat, přejmenovat ani měnit vybavení.
 - Modul musí při vypnutí a reloadu uklidit tasky a bezpečně uložit vlastněný stav.
 - Nevznikne hlavní příkaz `/mount`; všechny příkazy zůstanou pod `/nekararpg` a
   `/nrpg`, aby se předešlo konfliktům s jinými pluginy.
@@ -54,19 +54,17 @@ jehož stav přežije odvolání, restart i změnu chunku.
 - více současně vlastněných mountů,
 - automatické nahrazování systémů CMI, Lands, ValhallaMMO nebo MythicMobs.
 
-### Rozhodnutí před implementací
+### Uzavřená rozhodnutí první implementace
 
-Před prvním kódem je potřeba uzavřít tyto herní volby:
-
-1. Získání mounta: adopce ochočeného koně, stájové NPC, administrátorské přidělení,
-   nebo kombinace těchto cest.
-2. Smrt: pouze časový cooldown, cooldown s cenou za oživení, nebo trvalá ztráta.
-3. Přivolání: povolené světy, maximální vzdálenost, potřeba volného prostoru a
-   chování v regionech Lands.
-4. PvP blokace: vlastní jednoduché combat okno, nebo integrace s konkrétním
-   combat-tag pluginem používaným na serveru.
-5. Vazba vlastníka: stabilní interní identita kompatibilní s NekaraAuth a pozdější
-   databází/webem.
+1. Kůň vzniká virtuální evidencí přes hráčské GUI; ochočování neexistuje. Admin grant
+   otevře tentýž výběr cílovému online hráči a později jej může nahradit quest.
+2. Smrt používá perzistentní minutový cooldown bez ceny a bez trvalé ztráty.
+3. Píšťalka má 30sekundový perzistentní cooldown. Odvolaný kůň vznikne 7-12 bloků
+   daleko a doběhne na místo písknutí; aktivní entita se přesměruje bez teleportu.
+   Píšťalka je svázaná s hráčem, nedropuje a správa udržuje jedinou nalezenou kopii.
+4. PvP blokace používá vlastní jednoduché combat okno ukládané na disk.
+5. Vlastník se váže na normalizovaný nick chráněný NekaraAuth; poslední známé UUID
+   se ukládá jako doplňkový údaj a storage zůstává za repository rozhraním.
 
 ### Akceptační minimum
 
@@ -81,8 +79,8 @@ Před prvním kódem je potřeba uzavřít tyto herní volby:
 
 ## Pozdější rozšíření NekaraMounts
 
-Po stabilizaci MVP lze zvážit stáje, kosmetiku, důvěru mounta, krmení, více plemen,
-regionální pravidla a propojení s reputací nebo ekonomikou. Každé rozšíření musí
+Po stabilizaci MVP lze zvážit questové získání, stáje, kosmetiku, důvěru mounta,
+krmení, více plemen a nákup statistik za economy. Každé rozšíření musí
 nejdřív zachovat jednoznačné vlastnictví a ochranu proti duplikaci.
 
 ## Další backlog po NekaraMounts

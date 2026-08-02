@@ -31,3 +31,5 @@ modules:
     enabled: true
   mining:
     enabled: true
+  mounts:
+    enabled: true

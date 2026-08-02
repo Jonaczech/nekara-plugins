@@ -10,6 +10,7 @@ import cz.nekara.rpg.modules.auth.AuthModule;
 import cz.nekara.rpg.modules.campfire.CampfireModule;
 import cz.nekara.rpg.modules.fishing.FishingModule;
 import cz.nekara.rpg.modules.mining.MiningModule;
+import cz.nekara.rpg.modules.mounts.MountsModule;
 import cz.nekara.rpg.modules.sitting.SittingModule;
 import cz.nekara.rpg.sounds.SoundService;
 import cz.nekara.rpg.updater.UpdaterService;
@@ -28,6 +29,7 @@ public final class NekaraRPGPlugin extends JavaPlugin {
     private SittingModule sittingModule;
     private CampfireModule campfireModule;
     private MiningModule miningModule;
+    private MountsModule mountsModule;
 
     @Override
     public void onEnable() {
@@ -45,13 +47,15 @@ public final class NekaraRPGPlugin extends JavaPlugin {
         sittingModule = new SittingModule(this, messages);
         campfireModule = new CampfireModule(this, messages, sounds, sittingModule);
         miningModule = new MiningModule(this, messages, sounds, fishingModule);
+        mountsModule = new MountsModule(this, messages);
         modules.register(authModule);
         modules.register(fishingModule);
         modules.register(sittingModule);
         modules.register(campfireModule);
         modules.register(miningModule);
+        modules.register(mountsModule);
         fishingModule.registerCommand(new NekaraRPGCommand(
-                this, fishingModule, sittingModule, campfireModule, miningModule,
+                this, fishingModule, sittingModule, campfireModule, miningModule, mountsModule,
                 modules, messages, updater));
         AuthCommand authCommand = new AuthCommand(authModule, messages);
         for (String commandName : new String[]{"nekaraauth", "login", "register", "logout"}) {
@@ -107,6 +111,10 @@ public final class NekaraRPGPlugin extends JavaPlugin {
 
     public MiningModule miningModule() {
         return miningModule;
+    }
+
+    public MountsModule mountsModule() {
+        return mountsModule;
     }
 
     public UpdaterService updater() {

@@ -9,7 +9,7 @@ Tento repozitář obsahuje serverové Minecraft pluginy pro ekosystém Nekara.
 - [`PROJECT_MEMORY.md`](PROJECT_MEMORY.md) uchovává dlouhodobá produktová,
   kompatibilitní a release rozhodnutí.
 - [`ROADMAP.md`](ROADMAP.md) určuje schválenou prioritu další práce a rozsah
-  připravovaného modulu NekaraMounts.
+  kandidáta NekaraMounts.
 - [`AGENTS.md`](AGENTS.md) říká Codexu na každém zařízení, že má před změnami
   repozitáře tento kontext přečíst a zachovat.
 
@@ -17,16 +17,17 @@ Tento repozitář obsahuje serverové Minecraft pluginy pro ekosystém Nekara.
 
 | Plugin | Stav | Popis |
 | --- | --- | --- |
-| `NekaraRPG` | aktivní | Centrální modulární plugin s NekaraAuth, rybařením, sezením, odpočinkem u ohně a NekaraMining. |
+| `NekaraRPG` | aktivní | Centrální modulární plugin s NekaraAuth, rybařením, sezením, odpočinkem u ohně, NekaraMining a NekaraMounts. |
 
 ## Aktuální směr
 
 `NekaraRPG` se má stát centrálním pluginem pro propojené RPG a imerzivní
 systémy Nekary. Každá herní oblast je samostatný modul, který lze zapnout nebo
-vypnout v konfiguraci. Aktuální vydání obsahuje moduly `auth`, `fishing`,
-`sitting`, `campfire` a `mining`; Campfire používá Sitting jako základ stavu hráče.
+vypnout v konfiguraci. Kandidát 1.5.0 obsahuje moduly `auth`, `fishing`, `sitting`,
+`campfire`, `mining` a `mounts`; Campfire používá Sitting jako základ stavu hráče.
 
-Schválenou nejbližší prioritou je `mounts`; konkrétní MVP je v `ROADMAP.md`.
+NekaraMounts je implementovaný kandidát verze 1.5.0; rozsah a akceptace jsou v
+`ROADMAP.md`. Před vydáním vyžaduje živou Purpur akceptaci.
 Možné pozdější moduly:
 
 - `lockpicking`
