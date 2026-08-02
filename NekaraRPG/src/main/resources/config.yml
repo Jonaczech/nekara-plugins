@@ -23,8 +23,32 @@ modules:
     enabled: true
   campfire:
     enabled: true
+  # NekaraAuth chrání offline-mode identity. Před vypnutím musí ochranu převzít
+  # jiný autentizační systém, jinak se hráči připojí bez ověření.
+  auth:
+    enabled: true
   mining:
     enabled: true
+
+auth:
+  storage:
+    # První verze používá lokální YAML přes oddělené repository rozhraní.
+    # Databázový backend půjde později doplnit bez změny přihlašovací logiky.
+    file: auth/accounts.yml
+  nickname:
+    # Chrání také velikost písmen, protože offline UUID je na zápisu nicku závislé.
+    exact-case: true
+  password:
+    minimum-length: 8
+    maximum-length: 64
+    # PBKDF2-HMAC-SHA256; hodnotu snižuj pouze po měření na cílovém serveru.
+    pbkdf2-iterations: 600000
+  login:
+    maximum-attempts: 5
+    lockout-seconds: 60
+    timeout-seconds: 120
+  gui:
+    open-on-join: true
 
 # Rare activity available at every ValhallaMMO Mining level. A valid natural
 # Mining XP action may reveal one nearby pickaxe-mineable block. There is no

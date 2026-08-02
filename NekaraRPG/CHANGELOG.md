@@ -1,5 +1,26 @@
 # Přehled změn
 
+## 1.3.0
+
+- Přidán samostatně zapínatelný modul `auth` (NekaraAuth) pro registraci,
+  přihlášení a ochranu nicků na offline-mode serveru.
+- Přidáno výchozí souborové úložiště `auth/accounts.yml` za rozhraním
+  `AccountRepository`, připraveným pro pozdější databázový backend propojený s webem.
+- Hesla se ukládají pouze jako PBKDF2-HMAC-SHA256 hash s unikátní 128bitovou solí,
+  výchozími 600 000 iteracemi a verzovaným formátem; plaintext se nezapisuje.
+- Přidáno herní GUI účtu a zadávání hesla přes virtuální kovadlinu s dvojím
+  potvrzením registrace. `/login` a `/register` zůstávají jako fallback.
+- Nepřihlášeným hráčům se blokuje pohyb, teleport, chat, herní příkazy,
+  inventáře, interakce, boj, stavění, těžení, hlad a manipulace s itemy.
+- Přidána ochrana přesného zápisu registrovaného nicku, pět pokusů, minutový
+  lockout, dvouminutový timeout a fail-closed odmítnutí loginu při chybě storage.
+- Přidány administrativní příkazy `/nekaraauth status` a
+  `/nekaraauth unregister <hráč>`; nepřihlášený operátor je nemůže použít.
+- Přidána přechodová pojistka: pokud je při startu aktivní AuthMe, NekaraAuth se
+  nezapne. Po odstranění AuthMe převezme autentizaci při následujícím plném restartu.
+- Přidány jednotkové testy hashování, neplatných hashů, normalizace lockoutu a
+  výchozích auth hodnot v YAML resources.
+
 ## 1.2.5
 
 - Odhalování rud nově zohledňuje výšku. Overworld kandidáti respektují vanilla

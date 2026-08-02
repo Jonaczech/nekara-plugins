@@ -8,7 +8,8 @@ Spusť ověřený release postup:
 scripts\build-release.cmd
 ```
 
-Unit testy pokrývají pohyb indikátoru a odraz na hranách, hranice cíle, zásahy,
+Unit testy pokrývají hashování hesel, neplatné hash formáty, auth lockout,
+pohyb indikátoru a odraz na hranách, hranice cíle, zásahy,
 chyby, timeout, přechody stavů, ochranu před dvojím dokončením, fallback
 konfigurace, skupinové škálování Campfire a částečné snížení hladu Rested.
 Samostatné čisté testy ověřují způsobilost a škálování ValhallaMMO Rested XP.
@@ -185,6 +186,31 @@ chycenou entitu, již zrušený fishing event a vypnutí serveru.
 7. Proveď úplný restart. Paper nahradí aktivní JAR, odstraní staging kopii, načte novou verzi a zachová `config.yml`.
 8. Opakuj s neplatným digestem, názvem, manifest verzí, příliš velkým JARem, nedostupným API a timeoutem. Aktivní JAR musí vždy zůstat nedotčený.
 9. Vypni `updater.automatic-checks` a ověř ruční kontroly. Vypni `updater.enabled` a ověř zastavení obou režimů.
+
+### 16. NekaraAuth na offline-mode serveru
+
+1. Spusť čistý server s `online-mode=false`, modulem `auth` a bez AuthMe.
+2. Připoj nový nick. Musí se otevřít GUI registrace; pohyb, teleport, chat,
+   inventář, příkazy kromě auth, boj, stavění, těžení, drop a pickup musí být blokované.
+3. V kovadlině zadej krátké heslo, dvě různá hesla a nakonec dvě shodná platná
+   hesla. Účet vznikne jen v posledním případě a hráč se odemkne.
+4. Zkontroluj `auth/accounts.yml`: nesmí obsahovat plaintext heslo, hash musí mít
+   formát `$PBKDF2-SHA256$...`, unikátní salt a work factor 600000.
+5. Odpoj se a připoj znovu. Špatné heslo musí snižovat počet pokusů, pátý pokus
+   hráče vyhodí a stejný nick zůstane uzamčený i po okamžitém reconnectu.
+6. Přihlas se správně, spusť `/logout` a ověř nové uzamčení. GUI nesmí přidávat
+   papír ani potvrzovací itemy do hráčova inventáře při zavření.
+7. Zkus registrovaný nick s jinou velikostí písmen. Pre-login ho musí odmítnout
+   a zobrazit přesný chráněný tvar.
+8. Jako nepřihlášený operátor zkus `/nekaraauth unregister`; příkaz musí být
+   zablokovaný. Po přihlášení nebo z konzole ověř `status` a řízené `unregister`.
+9. Udělej `accounts.yml` nezapisovatelný nebo neplatný a restartuj. NekaraAuth
+   nesmí hráče pustit bez ověření a v logu musí být jasná storage chyba.
+10. Spusť `/nekararpg reload` během přihlášené relace a ověř zachování loginu,
+    jedinou sadu listenerů a aplikaci nových limitů na další pokusy.
+11. Nainstaluj aktivní AuthMe a restartuj. NekaraAuth musí zůstat vypnutý a
+    zalogovat důvod. Po zastavení serveru, odstranění AuthMe a dalším restartu
+    musí NekaraAuth převzít registraci a přihlášení.
 
 Zrychlený profil časovačů, CMI průchod, ValhallaMMO kompatibilitu a staging
 nasazení popisuje `LIVE_TESTING.md`.

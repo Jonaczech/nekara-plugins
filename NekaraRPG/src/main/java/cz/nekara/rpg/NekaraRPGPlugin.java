@@ -1,10 +1,12 @@
 package cz.nekara.rpg;
 
 import cz.nekara.rpg.command.NekaraRPGCommand;
+import cz.nekara.rpg.command.AuthCommand;
 import cz.nekara.rpg.configuration.ConfigurationService;
 import cz.nekara.rpg.configuration.PluginConfig;
 import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.modules.ModuleRegistry;
+import cz.nekara.rpg.modules.auth.AuthModule;
 import cz.nekara.rpg.modules.campfire.CampfireModule;
 import cz.nekara.rpg.modules.fishing.FishingModule;
 import cz.nekara.rpg.modules.mining.MiningModule;
@@ -13,12 +15,15 @@ import cz.nekara.rpg.sounds.SoundService;
 import cz.nekara.rpg.updater.UpdaterService;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Objects;
+
 public final class NekaraRPGPlugin extends JavaPlugin {
     private ConfigurationService configuration;
     private MessageService messages;
     private SoundService sounds;
     private UpdaterService updater;
     private ModuleRegistry modules;
+    private AuthModule authModule;
     private FishingModule fishingModule;
     private SittingModule sittingModule;
     private CampfireModule campfireModule;
@@ -35,10 +40,12 @@ public final class NekaraRPGPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(updater, this);
 
         modules = new ModuleRegistry();
+        authModule = new AuthModule(this, messages);
         fishingModule = new FishingModule(this, messages, sounds);
         sittingModule = new SittingModule(this, messages);
         campfireModule = new CampfireModule(this, messages, sounds, sittingModule);
         miningModule = new MiningModule(this, messages, sounds, fishingModule);
+        modules.register(authModule);
         modules.register(fishingModule);
         modules.register(sittingModule);
         modules.register(campfireModule);
@@ -46,6 +53,13 @@ public final class NekaraRPGPlugin extends JavaPlugin {
         fishingModule.registerCommand(new NekaraRPGCommand(
                 this, fishingModule, sittingModule, campfireModule, miningModule,
                 modules, messages, updater));
+        AuthCommand authCommand = new AuthCommand(authModule, messages);
+        for (String commandName : new String[]{"nekaraauth", "login", "register", "logout"}) {
+            var command = Objects.requireNonNull(getCommand(commandName),
+                    "Missing command declaration: " + commandName);
+            command.setExecutor(authCommand);
+            command.setTabCompleter(authCommand);
+        }
 
         reloadPlugin();
         getLogger().info("NekaraRPG " + getDescription().getVersion()
@@ -77,6 +91,10 @@ public final class NekaraRPGPlugin extends JavaPlugin {
 
     public FishingModule fishingModule() {
         return fishingModule;
+    }
+
+    public AuthModule authModule() {
+        return authModule;
     }
 
     public SittingModule sittingModule() {

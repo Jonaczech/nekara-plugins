@@ -34,6 +34,17 @@ Purpur serveru s ValhallaMMO.
 záměrně stabilní, aby při nasazení nevznikla druhá verzovaná kopie vedle
 aktivního pluginu.
 
+## Rozpracovaný kandidát 1.3.0
+
+Lokální pracovní strom po 1.2.5 obsahuje nový modul `auth` (NekaraAuth). Přidává
+GUI registraci a přihlášení přes virtuální kovadlinu, ochranu nicku pro
+offline-mode, PBKDF2-HMAC-SHA256, per-nick lockout a souborové repository
+`plugins/NekaraRPG/auth/accounts.yml`. Úložiště i chyby selhávají uzavřeně.
+
+Kandidát zatím není GitHub release a nesmí být automaticky nasazen do produkce.
+Před odstraněním AuthMe je nutný živý průchod sekce NekaraAuth v `TESTING.md`,
+plán migrace existujících AuthMe účtů a whitelist během prvotní rezervace nicků.
+
 ## Vydané moduly NekaraRPG
 
 ### Rybaření

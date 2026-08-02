@@ -35,6 +35,10 @@ class ResourceYamlTest {
             Map<String, Object> root = new Yaml().load(reader);
             Map<String, Object> updater = (Map<String, Object>) root.get("updater");
             Map<String, Object> modules = (Map<String, Object>) root.get("modules");
+            Map<String, Object> auth = (Map<String, Object>) root.get("auth");
+            Map<String, Object> authStorage = (Map<String, Object>) auth.get("storage");
+            Map<String, Object> authPassword = (Map<String, Object>) auth.get("password");
+            Map<String, Object> authLogin = (Map<String, Object>) auth.get("login");
             Map<String, Object> echoVein = (Map<String, Object>) root.get("echo-vein");
             Map<String, Object> oreReveal = (Map<String, Object>) echoVein.get("ore-reveal");
             Map<String, Object> sitting = (Map<String, Object>) root.get("sitting");
@@ -58,6 +62,12 @@ class ResourceYamlTest {
             assertEquals(0.20, ((Number) sitting.get("seat-y-offset")).doubleValue(), 0.0001);
             assertTrue((Boolean) updater.get("enabled"));
             assertNotNull(modules.get("mining"));
+            assertNotNull(modules.get("auth"));
+            assertEquals("auth/accounts.yml", authStorage.get("file"));
+            assertEquals(8, ((Number) authPassword.get("minimum-length")).intValue());
+            assertEquals(64, ((Number) authPassword.get("maximum-length")).intValue());
+            assertEquals(600_000, ((Number) authPassword.get("pbkdf2-iterations")).intValue());
+            assertEquals(5, ((Number) authLogin.get("maximum-attempts")).intValue());
             assertFalse(modules.containsKey("echo-vein"));
             assertFalse(echoVein.containsKey("minimum-mining-level"));
             assertEquals(0.05, ((Number) echoVein.get("trigger-chance")).doubleValue(), 0.0001);
@@ -114,6 +124,9 @@ class ResourceYamlTest {
             assertNotNull(messages.get("update-failed"));
             assertFalse(messages.containsKey("echo-vein-found"));
             assertNotNull(messages.get("echo-vein-test-unavailable"));
+            assertNotNull(messages.get("auth-login-required"));
+            assertNotNull(messages.get("auth-register-success"));
+            assertNotNull(messages.get("auth-too-many-attempts"));
             assertEquals(
                     "<green>Odpočatý</green> <dark_gray>|</dark_gray> <white>%remaining_text%</white>",
                     messages.get("campfire-rested-timer")
