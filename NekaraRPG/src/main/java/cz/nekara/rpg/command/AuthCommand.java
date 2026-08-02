@@ -29,6 +29,9 @@ public final class AuthCommand implements CommandExecutor, TabCompleter {
         if ("login".equals(name)) {
             if (!(sender instanceof Player player)) {
                 messages.send(sender, "player-only");
+            } else if (!auth.canUseFallbackCommands(player)) {
+                Arrays.fill(args, "");
+                messages.send(sender, "auth-fallback-disabled");
             } else if (args.length != 1) {
                 messages.send(sender, "auth-login-usage");
             } else {
@@ -41,6 +44,9 @@ public final class AuthCommand implements CommandExecutor, TabCompleter {
         if ("register".equals(name)) {
             if (!(sender instanceof Player player)) {
                 messages.send(sender, "player-only");
+            } else if (!auth.canUseFallbackCommands(player)) {
+                Arrays.fill(args, "");
+                messages.send(sender, "auth-fallback-disabled");
             } else if (args.length != 2) {
                 messages.send(sender, "auth-register-usage");
             } else {

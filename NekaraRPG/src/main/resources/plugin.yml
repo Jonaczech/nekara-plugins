@@ -19,13 +19,15 @@ commands:
     usage: /nekaraauth [menu|status|unregister <player>]
     aliases: [nauth]
   login:
-    description: Fallback NekaraAuth login command; the GUI is recommended.
+    description: Optional fallback NekaraAuth login command; disabled by default.
     usage: /login <password>
     aliases: [l]
+    permission: nekararpg.auth.fallback-commands
   register:
-    description: Fallback NekaraAuth registration command; the GUI is recommended.
+    description: Optional fallback NekaraAuth registration command; disabled by default.
     usage: /register <password> <password>
     aliases: [reg]
+    permission: nekararpg.auth.fallback-commands
   logout:
     description: Logs the current player out of NekaraAuth.
     usage: /logout
@@ -69,6 +71,9 @@ permissions:
   nekararpg.auth.admin:
     description: Allows authenticated players and console to administer NekaraAuth accounts.
     default: op
+  nekararpg.auth.fallback-commands:
+    description: Allows /login and /register only when commands.fallback-enabled is true in auth/config.yml.
+    default: false
   nekarafishing.use:
     description: Legacy permission for the fishing minigame.
     default: true

@@ -8,6 +8,9 @@ public record AuthConfig(
         int maximumAttempts,
         int lockoutSeconds,
         int authenticationTimeoutSeconds,
+        boolean sessionEnabled,
+        int sessionDurationSeconds,
+        boolean fallbackCommandsEnabled,
         boolean exactNameCase,
         boolean openMenuOnJoin
 ) {

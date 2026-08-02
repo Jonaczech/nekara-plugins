@@ -1,0 +1,118 @@
+minigame:
+  enabled: true
+  display: ACTION_BAR
+  bar-length: 20
+  update-period-ticks: 6
+  target-width: 5
+  target-relocation-max-distance: 6
+  hook-particles:
+    enabled: true
+    particle: SPLASH
+    radius: 0.8
+    count: 8
+    interval-ticks: 4
+    y-offset: 0.05
+  required-hits-min: 3
+  required-hits-max: 5
+  max-misses: 1
+  timeout-ticks: 160
+  time-bonus-ticks: 30
+  hook-pull-distance: 1.0
+  move-target-after-hit: true
+  randomize-start-position: true
+  indicator-direction: RANDOM
+  input-debounce-milliseconds: 150
+
+fishing:
+  preferred-mode: DEFERRED_CATCH
+  fallback-mode: DEFERRED_CATCH
+  cancel-on-teleport: true
+  cancel-on-world-change: true
+  cancel-on-item-change: true
+  cancel-on-damage: false
+  require-fishing-rod-in-main-hand: true
+  allow-creative: true
+  allow-spectator: false
+
+worlds:
+  mode: ALL
+  list:
+    - world
+
+sounds:
+  bite:
+    enabled: true
+    sound: minecraft:entity.fishing_bobber.splash
+    volume: 1.0
+    pitch: 1.0
+  hit:
+    enabled: true
+    sound: minecraft:entity.experience_orb.pickup
+    volume: 0.8
+    pitch: 1.3
+  miss:
+    enabled: true
+    sound: minecraft:entity.villager.no
+    volume: 0.8
+    pitch: 1.2
+  timeout:
+    enabled: true
+    sound: nekara:fishing.timeout
+    volume: 1.0
+    pitch: 1.0
+  escape:
+    enabled: true
+    sound: nekara:fishing.escape
+    volume: 1.0
+    pitch: 1.0
+  minigame-success:
+    enabled: true
+    sound: minecraft:block.note_block.pling
+    volume: 1.0
+    pitch: 1.5
+  catch-success:
+    enabled: true
+    sound: nekara:fishing.catch
+    volume: 1.0
+    pitch: 1.0
+
+effects:
+  success:
+    enabled: true
+    particle: HAPPY_VILLAGER
+    count: 12
+    duration-ticks: 8
+    radius: 0.9
+    y-offset: 0.05
+  failure:
+    enabled: true
+    particle: DAMAGE_INDICATOR
+    count: 12
+    duration-ticks: 8
+    radius: 0.9
+    y-offset: 0.05
+
+valhalla:
+  fishing-difficulty:
+    enabled: true
+    max-level-required-hits: 2
+    max-level-max-misses: 3
+    tiers:
+      novice:
+        min-level: 1
+        max-level: 30
+        required-hits-min: 3
+        required-hits-max: 5
+        max-misses: 1
+      skilled:
+        min-level: 31
+        max-level: 60
+        required-hits-min: 3
+        required-hits-max: 4
+        max-misses: 2
+      expert:
+        min-level: 61
+        max-level: 0
+        required-hits-min: 2
+        required-hits-max: 3
+        max-misses: 3

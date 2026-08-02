@@ -25,6 +25,12 @@ modules:
     enabled: true
 ```
 
+Kořenový `config.yml` obsahuje pouze jádro, updater a přepínače modulů. Podrobné
+nastavení je rozdělené do `auth/config.yml`, `fishing/config.yml`,
+`sitting/config.yml`, `campfire/config.yml` a `mining/config.yml` uvnitř datové
+složky pluginu. Při prvním upgradu ze starého monolitického configu se vlastní
+hodnoty automaticky přenesou do odpovídajících souborů.
+
 Aktuální moduly:
 
 | Modul | Stav | Popis |
@@ -51,14 +57,23 @@ velikost písmen a výchozím stavem vyžaduje také jeho přesný zápis.
 
 Hlavní ovládání je herní GUI `/nekaraauth`. Registrace a login používají
 virtuální kovadlinu, takže heslo nejde běžným chatem; registrace vyžaduje druhé
-zadání stejného hesla. Kompatibilní `/login` a `/register` jsou jen fallback,
+zadání stejného hesla. `/login` a `/register` jsou pro běžné hráče vypnuté,
 protože příkaz může vidět jiný serverový plugin pracující s command eventy.
+Nouzový fallback musí administrátor výslovně zapnout v konfiguraci a povolit
+samostatným oprávněním.
+
+Po úspěšném přihlášení si NekaraAuth výchozím stavem ponechá desetiminutovou
+session pouze v paměti. Návrat se stejným nickem a IP adresou během této doby
+hráče automaticky ověří. `/logout`, kick, zrušení účtu, reload, restart, změna IP
+nebo vypršení platnosti session znovu vyžadují heslo. Pokud proxy nepředává
+Paperu skutečnou adresu hráče nebo všichni klienti sdílejí jednu proxy adresu,
+session vypni v `auth/config.yml` pomocí `session.enabled: false`.
 
 Účty se v první verzi ukládají do `plugins/NekaraRPG/auth/accounts.yml`.
 Hesla v něm nejsou čitelná: používá se PBKDF2-HMAC-SHA256 s unikátní solí a
 výchozími 600 000 iteracemi. Storage je oddělená rozhraním `AccountRepository`,
 aby pozdější databáze propojila herní identitu s webem bez přepsání login flow.
-Webový obchod ani databázový backend nejsou součástí 1.3.0.
+Webový obchod ani databázový backend nejsou součástí 1.4.0.
 
 Při upgradu může updater nový JAR bezpečně připravit ještě s nainstalovaným
 AuthMe. Pokud je AuthMe při startu aktivní, NekaraAuth se záměrně nezapne. Pro
@@ -74,7 +89,8 @@ vypnutí modulu, čištění při reloadu a ukončení serveru.
 NekaraRPG záměrně neregistruje hlavní příkaz `/sit`. CMI a jiné sitting pluginy
 tak zůstávají vlastníky svých příkazů. Campfire výchozím stavem detekuje externí
 sedadla `ARMOR_STAND`, takže `/cmi sit` funguje bez compile-time závislosti na
-CMI. Další vehicle typy lze přidat pod `sitting.external-seat-entity-types`.
+CMI. Další vehicle typy lze přidat pod `external-seat-entity-types` v
+`sitting/config.yml`.
 
 ## Odpočinek u ohně
 
@@ -121,7 +137,7 @@ závislost a NekaraRPG funguje i bez něj.
 Roleplay nabíjení zůstává v action baru. Nabitý Rested zobrazuje stručný text
 `Odpočatý | m:ss` nezávisle na Haste. Časovač ustupuje rybářské minihře a
 zprávám nabíjení. Lze ho vypnout hodnotou
-`campfire.visuals.rested.indicator: NONE`. Další částice jsou volitelné. Dokončení
+`visuals.rested.indicator: NONE` v `campfire/config.yml`. Další částice jsou volitelné. Dokončení
 20sekundového nabíjení potvrzuje jemný nastavitelný ametystový zvuk.
 
 S ValhallaMMO přidává Rested výchozím stavem 10 % k běžným skill-action a
@@ -253,11 +269,16 @@ Zkopíruj JAR z `dist/` do serverového `plugins/`, spusť Purpur a uprav:
 
 - `plugins/NekaraRPG/config.yml`
 - `plugins/NekaraRPG/messages.yml`
+- `plugins/NekaraRPG/auth/config.yml`
+- `plugins/NekaraRPG/fishing/config.yml`
+- `plugins/NekaraRPG/sitting/config.yml`
+- `plugins/NekaraRPG/campfire/config.yml`
+- `plugins/NekaraRPG/mining/config.yml`
 - `plugins/NekaraRPG/auth/accounts.yml` (vznikne po prvním spuštění NekaraAuth)
 
-Při upgradu není nutné mazat stávající `plugins/NekaraRPG`. Chybějící nové klíče
-použijí runtime defaults. Zabalenou sekci přidávej do existující konfigurace
-jen tehdy, když ji potřebuješ na serveru měnit nebo dokumentovat.
+Při upgradu není nutné mazat stávající `plugins/NekaraRPG`. Starý monolitický
+config se při prvním načtení bezpečně migruje a chybějící nové klíče používají
+zabalené runtime defaults.
 
 Po změně konfigurace použij `/nekararpg reload`. Reload bezpečně ukončí aktivní
 relace a neregistruje duplicitní listenery ani ticker tasky. JAR se reloadem
@@ -295,8 +316,8 @@ upozornění při přípravě releasu a znovu při připojení před restartem.
 | `/nekararpg test [fishing|vein]` | `nekararpg.command.test` |
 | `/nekararpg cancel [player]` | `nekararpg.command.cancel` |
 | `/nekaraauth` | žádné; otevře účetní GUI |
-| `/login <heslo>` | žádné; fallback přihlášení |
-| `/register <heslo> <heslo>` | žádné; fallback registrace |
+| `/login <heslo>` | výchozím stavem vypnuto; `nekararpg.auth.fallback-commands` a zapnutý fallback v konfiguraci |
+| `/register <heslo> <heslo>` | výchozím stavem vypnuto; `nekararpg.auth.fallback-commands` a zapnutý fallback v konfiguraci |
 | `/logout` | žádné |
 | `/nekaraauth status` | `nekararpg.auth.admin` |
 | `/nekaraauth unregister <hráč>` | `nekararpg.auth.admin` |
@@ -326,7 +347,7 @@ přítomné. Action bar se sestavuje interně bez závislosti na PlaceholderAPI.
 
 - První registrace si nick nárokuje. Při prvotním nasazení ponech whitelist,
   dokud si administrátoři a vlastníci rezervovaných nicků nevytvoří účty.
-- Verze 1.3.0 automaticky neimportuje existující AuthMe účty a neobsahuje
+- NekaraAuth automaticky neimportuje existující AuthMe účty a neobsahuje
   databázový ani webový backend; před odstraněním AuthMe je proto nutná řízená migrace.
 - Fishing je záměrně časovací brána v action baru a nenahrazuje Minecraft rybaření.
 - Sitting používá serverové passenger sedadlo a nepřidává klientský keybind.

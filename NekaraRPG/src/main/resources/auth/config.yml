@@ -1,0 +1,27 @@
+storage:
+  # The first backend is local YAML behind a replaceable repository interface.
+  file: auth/accounts.yml
+nickname:
+  # Offline UUID depends on nickname case, so the registered spelling is protected.
+  exact-case: true
+password:
+  minimum-length: 8
+  maximum-length: 64
+  # PBKDF2-HMAC-SHA256; lower this only after measuring the target server.
+  pbkdf2-iterations: 600000
+login:
+  maximum-attempts: 5
+  lockout-seconds: 60
+  # An unauthenticated player sees a countdown and is kicked when it expires.
+  timeout-seconds: 120
+session:
+  # A short relog from the same nickname and IP does not require another password.
+  # Sessions are memory-only and are always cleared by a server restart.
+  enabled: true
+  duration-seconds: 600
+commands:
+  # Password commands can be observed by other plugins handling command events.
+  # The recommended and default flow is GUI-only.
+  fallback-enabled: false
+gui:
+  open-on-join: true

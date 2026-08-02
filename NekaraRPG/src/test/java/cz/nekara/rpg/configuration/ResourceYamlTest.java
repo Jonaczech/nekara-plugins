@@ -17,7 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ResourceYamlTest {
     @Test
     void bundledYamlResourcesAreValid() throws Exception {
-        for (String resource : new String[]{"config.yml", "messages.yml", "plugin.yml"}) {
+        for (String resource : new String[]{"config.yml", "messages.yml", "plugin.yml",
+                "auth/config.yml", "fishing/config.yml", "sitting/config.yml",
+                "campfire/config.yml", "mining/config.yml"}) {
             InputStream stream = getClass().getClassLoader().getResourceAsStream(resource);
             assertNotNull(stream, resource + " is missing from the test classpath");
             try (stream; InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
@@ -29,24 +31,27 @@ class ResourceYamlTest {
     @Test
     @SuppressWarnings("unchecked")
     void bundledCampfireDefaultsExposeExternalSeatsAndVisualFeedback() throws Exception {
-        InputStream stream = getClass().getClassLoader().getResourceAsStream("config.yml");
-        assertNotNull(stream);
-        try (stream; InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
-            Map<String, Object> root = new Yaml().load(reader);
+        Map<String, Object> root = loadYaml("config.yml");
+        Map<String, Object> auth = loadYaml("auth/config.yml");
+        Map<String, Object> sitting = loadYaml("sitting/config.yml");
+        Map<String, Object> campfire = loadYaml("campfire/config.yml");
+        Map<String, Object> mining = loadYaml("mining/config.yml");
+        Map<String, Object> fishing = loadYaml("fishing/config.yml");
+
             Map<String, Object> updater = (Map<String, Object>) root.get("updater");
             Map<String, Object> modules = (Map<String, Object>) root.get("modules");
-            Map<String, Object> auth = (Map<String, Object>) root.get("auth");
             Map<String, Object> authStorage = (Map<String, Object>) auth.get("storage");
             Map<String, Object> authPassword = (Map<String, Object>) auth.get("password");
             Map<String, Object> authLogin = (Map<String, Object>) auth.get("login");
-            Map<String, Object> echoVein = (Map<String, Object>) root.get("echo-vein");
+            Map<String, Object> authSession = (Map<String, Object>) auth.get("session");
+            Map<String, Object> authCommands = (Map<String, Object>) auth.get("commands");
+            Map<String, Object> echoVein = (Map<String, Object>) mining.get("echo-vein");
             Map<String, Object> oreReveal = (Map<String, Object>) echoVein.get("ore-reveal");
-            Map<String, Object> sitting = (Map<String, Object>) root.get("sitting");
-            Map<String, Object> campfire = (Map<String, Object>) root.get("campfire");
-            Map<String, Object> sounds = (Map<String, Object>) root.get("sounds");
-            Map<String, Object> restedSound = (Map<String, Object>) sounds.get("campfire-rested");
-            Map<String, Object> veinSound = (Map<String, Object>) sounds.get("echo-vein-pulse");
-            Map<String, Object> oreSound = (Map<String, Object>) sounds.get("echo-vein-ore-reveal");
+            Map<String, Object> campfireSounds = (Map<String, Object>) campfire.get("sounds");
+            Map<String, Object> miningSounds = (Map<String, Object>) mining.get("sounds");
+            Map<String, Object> restedSound = (Map<String, Object>) campfireSounds.get("campfire-rested");
+            Map<String, Object> veinSound = (Map<String, Object>) miningSounds.get("echo-vein-pulse");
+            Map<String, Object> oreSound = (Map<String, Object>) miningSounds.get("echo-vein-ore-reveal");
             Map<String, Object> campfireRested = (Map<String, Object>) campfire.get("rested");
             Map<String, Object> haste = (Map<String, Object>) campfireRested.get("haste");
             Map<String, Object> valhallaExperience =
@@ -61,13 +66,24 @@ class ResourceYamlTest {
 
             assertEquals(0.20, ((Number) sitting.get("seat-y-offset")).doubleValue(), 0.0001);
             assertTrue((Boolean) updater.get("enabled"));
+            assertEquals(2, ((Number) root.get("configuration-layout")).intValue());
             assertNotNull(modules.get("mining"));
             assertNotNull(modules.get("auth"));
+            assertFalse(root.containsKey("auth"));
+            assertFalse(root.containsKey("campfire"));
+            assertFalse(root.containsKey("minigame"));
+            assertFalse(root.containsKey("sounds"));
+            assertNotNull(fishing.get("minigame"));
+            assertNotNull(fishing.get("sounds"));
             assertEquals("auth/accounts.yml", authStorage.get("file"));
             assertEquals(8, ((Number) authPassword.get("minimum-length")).intValue());
             assertEquals(64, ((Number) authPassword.get("maximum-length")).intValue());
             assertEquals(600_000, ((Number) authPassword.get("pbkdf2-iterations")).intValue());
             assertEquals(5, ((Number) authLogin.get("maximum-attempts")).intValue());
+            assertEquals(120, ((Number) authLogin.get("timeout-seconds")).intValue());
+            assertTrue((Boolean) authSession.get("enabled"));
+            assertEquals(600, ((Number) authSession.get("duration-seconds")).intValue());
+            assertFalse((Boolean) authCommands.get("fallback-enabled"));
             assertFalse(modules.containsKey("echo-vein"));
             assertFalse(echoVein.containsKey("minimum-mining-level"));
             assertEquals(0.05, ((Number) echoVein.get("trigger-chance")).doubleValue(), 0.0001);
@@ -108,7 +124,6 @@ class ResourceYamlTest {
             assertTrue((Boolean) veinSound.get("enabled"));
             assertTrue((Boolean) oreSound.get("enabled"));
             assertFalse(veinSound.get("sound").equals(oreSound.get("sound")));
-        }
     }
 
     @Test
@@ -127,10 +142,22 @@ class ResourceYamlTest {
             assertNotNull(messages.get("auth-login-required"));
             assertNotNull(messages.get("auth-register-success"));
             assertNotNull(messages.get("auth-too-many-attempts"));
+            assertNotNull(messages.get("auth-session-restored"));
+            assertNotNull(messages.get("auth-time-remaining"));
+            assertNotNull(messages.get("auth-fallback-disabled"));
             assertEquals(
                     "<green>Odpočatý</green> <dark_gray>|</dark_gray> <white>%remaining_text%</white>",
                     messages.get("campfire-rested-timer")
             );
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> loadYaml(String resource) throws Exception {
+        InputStream stream = getClass().getClassLoader().getResourceAsStream(resource);
+        assertNotNull(stream, resource + " is missing from the test classpath");
+        try (stream; InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+            return new Yaml().load(reader);
         }
     }
 }
