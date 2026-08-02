@@ -2,6 +2,7 @@ package cz.nekara.rpg.sounds;
 
 import cz.nekara.rpg.configuration.SoundSettings;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Location;
 import org.bukkit.Registry;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -22,6 +23,10 @@ public final class SoundService {
     }
 
     public void play(Player player, String event) {
+        playAt(player, event, player.getLocation());
+    }
+
+    public void playAt(Player player, String event, Location location) {
         SoundSettings settings = sounds.get(event);
         if (settings == null || !settings.enabled() || settings.id().isBlank()) {
             return;
@@ -29,7 +34,7 @@ public final class SoundService {
         if (!validate(event, settings)) {
             return;
         }
-        player.playSound(player.getLocation(), settings.id(), settings.volume(), settings.pitch());
+        player.playSound(location, settings.id(), settings.volume(), settings.pitch());
     }
 
     private boolean validate(String event, SoundSettings settings) {

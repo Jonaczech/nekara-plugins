@@ -25,13 +25,14 @@ class CampfireRestMathTest {
 
     @Test
     void restedBonusCanBeRefreshedWhilePlayerRemainsAtTheFire() {
-        RestedBonusState state = new RestedBonusState(2_000L, 300, false);
-        state.refresh(5_000L, 420, true);
+        RestedBonusState state = new RestedBonusState(2_000L, 300, false, false);
+        state.refresh(5_000L, 420, true, true);
 
         assertEquals(true, state.isActive(4_999L));
         assertEquals(1L, state.remainingSeconds(4_001L));
         assertEquals(420, state.durationSeconds());
         assertEquals(true, state.hasteEnabled());
+        assertEquals(true, state.hungerReductionEnabled());
     }
 
     @Test

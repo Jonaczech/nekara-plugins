@@ -4,12 +4,19 @@ public final class RestedBonusState {
     private long expiresAtMillis;
     private int durationSeconds;
     private boolean hasteEnabled;
+    private boolean hungerReductionEnabled;
     private double hungerLossCarry;
 
-    public RestedBonusState(long expiresAtMillis, int durationSeconds, boolean hasteEnabled) {
+    public RestedBonusState(
+            long expiresAtMillis,
+            int durationSeconds,
+            boolean hasteEnabled,
+            boolean hungerReductionEnabled
+    ) {
         this.expiresAtMillis = expiresAtMillis;
         this.durationSeconds = durationSeconds;
         this.hasteEnabled = hasteEnabled;
+        this.hungerReductionEnabled = hungerReductionEnabled;
     }
 
     public boolean isActive(long nowMillis) {
@@ -21,10 +28,16 @@ public final class RestedBonusState {
         return (remainingMillis + 999L) / 1_000L;
     }
 
-    public void refresh(long expiresAtMillis, int durationSeconds, boolean hasteEnabled) {
+    public void refresh(
+            long expiresAtMillis,
+            int durationSeconds,
+            boolean hasteEnabled,
+            boolean hungerReductionEnabled
+    ) {
         this.expiresAtMillis = expiresAtMillis;
         this.durationSeconds = durationSeconds;
         this.hasteEnabled = hasteEnabled;
+        this.hungerReductionEnabled = hungerReductionEnabled;
     }
 
     public int durationSeconds() {
@@ -33,6 +46,10 @@ public final class RestedBonusState {
 
     public boolean hasteEnabled() {
         return hasteEnabled;
+    }
+
+    public boolean hungerReductionEnabled() {
+        return hungerReductionEnabled;
     }
 
     public double hungerLossCarry() {

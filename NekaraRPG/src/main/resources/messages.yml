@@ -1,4 +1,16 @@
 prefix: "&8[&bNekaraRPG&8] &r"
+update-help: |-
+  &f/nekararpg update check &7- zkontroluje a připraví aktualizaci
+  &f/nekararpg update status &7- zobrazí stav aktualizace
+update-disabled: "%prefix%&7Automatické aktualizace jsou vypnuté v konfiguraci."
+update-status-idle: "%prefix%&7Aktualizace zatím nebyly zkontrolovány. Aktuální verze: &f%current%&7."
+update-check-started: "%prefix%&7Kontroluji nejnovější stabilní verzi na GitHubu..."
+update-check-busy: "%prefix%&7Kontrola aktualizace už probíhá."
+update-current: "%prefix%&aNekaraRPG je aktuální. &7Nainstalovaná verze: &f%current%&7."
+update-available: "%prefix%&eJe dostupná verze &f%latest%&e. &7Automatické stažení je vypnuté."
+update-staged: "%prefix%&aVerze &f%latest% &aje ověřená a připravená. &7Nainstaluje se při příštím úplném restartu serveru."
+update-failed: "%prefix%&cKontrola aktualizace selhala: &f%reason%"
+update-usage: "%prefix%&7Použij &f/nekararpg update <check|status>&7."
 campfire-rested-timer: "<green>Odpočatý</green> <dark_gray>|</dark_gray> <white>%remaining_text%</white>"
 bite: "%prefix%&eRyba zabrala! &fZatáhni ve správný okamžik."
 hit: ""
@@ -20,13 +32,14 @@ help: |-
   &f/nekararpg status &7- zobrazí stav pluginu
   &f/nekararpg sit &7- posadí tě na aktuálním místě
   &f/nekararpg stand &7- ukončí sezení
-  &f/nekararpg test &7- spustí testovací rybářskou minihru
+  &f/nekararpg test <fishing|vein> &7- spustí vybranou testovací minihru
   &f/nekararpg cancel [hráč] &7- zruší aktivní minihru
   &8&m--------------------------------
-status: "%prefix%&7Verze: &f%version% &7| Moduly: &f%modules% &7| Fishing: &f%mode%/%active% &7| Sedí: &f%seated% &7| Odpočívá: &f%resting% &7| Rested: &f%rested%"
+status: "%prefix%&7Verze: &f%version% &7| Moduly: &f%modules% &7| Fishing: &f%mode%/%active% &7| Ozvěna: &f%echo_active% &7| Sedí: &f%seated% &7| Odpočívá: &f%resting% &7| Rested: &f%rested%"
 test-player-only: "%prefix%&cTento příkaz může použít pouze hráč."
 test-started: "%prefix%&bTestovací minihra spuštěna."
 test-already-active: "%prefix%&cTento hráč už má aktivní minihru."
+test-usage: "%prefix%&7Použij &f/nekararpg test <fishing|vein>&7."
 player-not-found: "%prefix%&cHráč nebyl nalezen."
 player-cancelled: "%prefix%&7Minihra hráče %player% byla zrušena."
 no-active-game: "%prefix%&7Hráč nemá aktivní minihru."
@@ -49,3 +62,11 @@ campfire-rested-granted: "<green>Jsi odpočatý.</green> <gray>Rested bonus: %du
 campfire-rested-active: "<green>Rested je aktivní.</green> <gray>Zbývá %remaining% s · skupina %group% · %multiplier%x</gray>"
 campfire-rest-complete: "<gold>U ohně ses plně zotavil.</gold>"
 campfire-rest-left: "<gray>Vzdálil ses od tepla ohně.</gray>"
+echo-vein-start: "%prefix%&bOzvěna žíly! &7Najdi pulzující puklinu a udeř do ní krumpáčem."
+echo-vein-active: "<aqua>Ozvěna žíly</aqua> <dark_gray>|</dark_gray> <white>%seconds% s</white>"
+echo-vein-success: "%prefix%&aŽíla odpověděla. &7Získáváš &f%xp% Mining XP%drop%&7."
+echo-vein-failure: "%prefix%&7Ozvěna utichla."
+echo-vein-test-started: "%prefix%&bTestovací Ozvěna žíly spuštěna. &7Tento pokus nedává odměnu."
+echo-vein-test-success: "%prefix%&aTestovací puklinu jsi našel."
+echo-vein-test-failure: "%prefix%&7Testovací ozvěna utichla."
+echo-vein-test-unavailable: "%prefix%&cOzvěnu nelze spustit. &7Potřebuješ volnou viditelnou stěnu a nesmí běžet jiná minihra."

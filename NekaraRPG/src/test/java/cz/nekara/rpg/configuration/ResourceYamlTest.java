@@ -32,12 +32,17 @@ class ResourceYamlTest {
         assertNotNull(stream);
         try (stream; InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
             Map<String, Object> root = new Yaml().load(reader);
+            Map<String, Object> updater = (Map<String, Object>) root.get("updater");
+            Map<String, Object> modules = (Map<String, Object>) root.get("modules");
+            Map<String, Object> echoVein = (Map<String, Object>) root.get("echo-vein");
             Map<String, Object> sitting = (Map<String, Object>) root.get("sitting");
             Map<String, Object> campfire = (Map<String, Object>) root.get("campfire");
             Map<String, Object> sounds = (Map<String, Object>) root.get("sounds");
             Map<String, Object> restedSound = (Map<String, Object>) sounds.get("campfire-rested");
             Map<String, Object> campfireRested = (Map<String, Object>) campfire.get("rested");
             Map<String, Object> haste = (Map<String, Object>) campfireRested.get("haste");
+            Map<String, Object> valhallaExperience =
+                    (Map<String, Object>) campfireRested.get("valhalla-experience");
             Map<String, Object> camping = (Map<String, Object>) campfire.get("camping");
             Map<String, Object> spawnProtection =
                     (Map<String, Object>) camping.get("spawn-protection");
@@ -47,10 +52,26 @@ class ResourceYamlTest {
             Map<String, Object> rested = (Map<String, Object>) visuals.get("rested");
 
             assertEquals(0.20, ((Number) sitting.get("seat-y-offset")).doubleValue(), 0.0001);
+            assertTrue((Boolean) updater.get("enabled"));
+            assertNotNull(modules.get("echo-vein"));
+            assertEquals(50, ((Number) echoVein.get("minimum-mining-level")).intValue());
+            assertEquals(0.04, ((Number) echoVein.get("trigger-chance")).doubleValue(), 0.0001);
+            assertEquals(480, ((Number) echoVein.get("cooldown-seconds")).intValue());
+            assertEquals(0.25,
+                    ((Number) echoVein.get("experience-bonus-multiplier")).doubleValue(), 0.0001);
+            assertTrue((Boolean) echoVein.get("bonus-drop-enabled"));
+            assertTrue((Boolean) updater.get("automatic-checks"));
+            assertTrue((Boolean) updater.get("auto-download"));
+            assertTrue((Boolean) updater.get("notify-admins"));
+            assertEquals(6, ((Number) updater.get("check-interval-hours")).intValue());
+            assertEquals(16, ((Number) updater.get("maximum-jar-size-megabytes")).intValue());
             assertTrue((Boolean) sitting.get("detect-external-seats"));
             assertEquals(List.of("ARMOR_STAND"), sitting.get("external-seat-entity-types"));
             assertEquals(5.0, ((Number) campfire.get("radius")).doubleValue(), 0.0001);
             assertEquals(300, ((Number) campfireRested.get("duration-seconds")).intValue());
+            assertEquals(0.5, ((Number) campfireRested.get("hunger-loss-multiplier")).doubleValue(), 0.0001);
+            assertTrue((Boolean) valhallaExperience.get("enabled"));
+            assertEquals(1.10, ((Number) valhallaExperience.get("multiplier")).doubleValue(), 0.0001);
             assertTrue((Boolean) haste.get("enabled"));
             assertEquals(0, ((Number) haste.get("amplifier")).intValue());
             assertTrue((Boolean) haste.get("icon"));
@@ -77,6 +98,13 @@ class ResourceYamlTest {
         assertNotNull(stream);
         try (stream; InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
             Map<String, Object> messages = new Yaml().load(reader);
+            assertNotNull(messages.get("update-check-started"));
+            assertNotNull(messages.get("update-current"));
+            assertNotNull(messages.get("update-staged"));
+            assertNotNull(messages.get("update-failed"));
+            assertNotNull(messages.get("echo-vein-start"));
+            assertNotNull(messages.get("echo-vein-success"));
+            assertNotNull(messages.get("echo-vein-test-unavailable"));
             assertEquals(
                     "<green>Odpočatý</green> <dark_gray>|</dark_gray> <white>%remaining_text%</white>",
                     messages.get("campfire-rested-timer")

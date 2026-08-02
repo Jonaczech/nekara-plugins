@@ -77,6 +77,18 @@ try {
     finally {
         $reader.Dispose()
     }
+
+    $manifestEntry = $archive.GetEntry("META-INF/MANIFEST.MF")
+    if ($null -eq $manifestEntry) {
+        throw "META-INF/MANIFEST.MF is missing from $stableJar."
+    }
+    $manifestReader = [System.IO.StreamReader]::new($manifestEntry.Open())
+    try {
+        $manifestText = $manifestReader.ReadToEnd()
+    }
+    finally {
+        $manifestReader.Dispose()
+    }
 }
 finally {
     $archive.Dispose()
@@ -84,6 +96,12 @@ finally {
 
 if ($pluginYaml -notmatch "(?m)^version: $escapedVersion$") {
     throw "plugin.yml inside the JAR does not report version $version."
+}
+if ($manifestText -notmatch "(?m)^Implementation-Title: NekaraRPG\r?$") {
+    throw "JAR manifest does not identify NekaraRPG."
+}
+if ($manifestText -notmatch "(?m)^Implementation-Version: $escapedVersion\r?$") {
+    throw "JAR manifest does not report version $version."
 }
 
 $hash = Get-FileHash -Algorithm SHA256 -LiteralPath $stableJar

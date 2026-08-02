@@ -5,9 +5,11 @@ import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.minigame.FishingMinigameManager;
 import cz.nekara.rpg.modules.ModuleRegistry;
 import cz.nekara.rpg.modules.campfire.CampfireModule;
+import cz.nekara.rpg.modules.echovein.EchoVeinModule;
 import cz.nekara.rpg.modules.fishing.FishingModule;
 import cz.nekara.rpg.modules.sitting.SittingModule;
 import cz.nekara.rpg.sitting.SitResult;
+import cz.nekara.rpg.updater.UpdaterService;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -25,23 +27,29 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
     private final FishingModule fishingModule;
     private final SittingModule sittingModule;
     private final CampfireModule campfireModule;
+    private final EchoVeinModule echoVeinModule;
     private final ModuleRegistry modules;
     private final MessageService messages;
+    private final UpdaterService updater;
 
     public NekaraRPGCommand(
             NekaraRPGPlugin plugin,
             FishingModule fishingModule,
             SittingModule sittingModule,
             CampfireModule campfireModule,
+            EchoVeinModule echoVeinModule,
             ModuleRegistry modules,
-            MessageService messages
+            MessageService messages,
+            UpdaterService updater
     ) {
         this.plugin = plugin;
         this.fishingModule = fishingModule;
         this.sittingModule = sittingModule;
         this.campfireModule = campfireModule;
+        this.echoVeinModule = echoVeinModule;
         this.modules = modules;
         this.messages = messages;
+        this.updater = updater;
     }
 
     @Override
@@ -51,6 +59,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
             case "help" -> {
                 if (!require(sender, "nekararpg.command.help", "nekarafishing.command.help")) yield true;
                 messages.send(sender, "help");
+                messages.send(sender, "update-help");
                 yield true;
             }
             case "reload" -> {
@@ -69,10 +78,23 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                         "seated", sittingModule.seatedCount(),
                         "resting", campfireModule.restingCount(),
                         "rested", campfireModule.restedCount(),
+                        "echo_active", echoVeinModule.activeCount(),
                         "modules", modules.enabledModuleIds().isEmpty()
                                 ? "none"
                                 : String.join(", ", modules.enabledModuleIds())
                 ));
+                yield true;
+            }
+            case "update" -> {
+                if (!require(sender, "nekararpg.command.update")) yield true;
+                String action = args.length < 2 ? "status" : args[1].toLowerCase(Locale.ROOT);
+                if ("check".equals(action)) {
+                    updater.requestCheck(sender);
+                } else if ("status".equals(action)) {
+                    updater.sendStatus(sender);
+                } else {
+                    messages.send(sender, "update-usage");
+                }
                 yield true;
             }
             case "sit" -> {
@@ -108,12 +130,25 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
             }
             case "test" -> {
                 if (!require(sender, "nekararpg.command.test", "nekarafishing.command.test")) yield true;
-                if (!modules.isEnabled(FishingModule.ID)) {
-                    messages.send(sender, "module-disabled", Map.of("module", FishingModule.ID));
-                    yield true;
-                }
                 if (!(sender instanceof Player player)) {
                     messages.send(sender, "test-player-only");
+                    yield true;
+                }
+                String testType = args.length >= 2 ? args[1].toLowerCase(Locale.ROOT) : "fishing";
+                if ("vein".equals(testType) || "echo".equals(testType)) {
+                    if (!modules.isEnabled(EchoVeinModule.ID)) {
+                        messages.send(sender, "module-disabled", Map.of("module", EchoVeinModule.ID));
+                    } else if (!echoVeinModule.startTest(player)) {
+                        messages.send(sender, "echo-vein-test-unavailable");
+                    }
+                    yield true;
+                }
+                if (!"fishing".equals(testType)) {
+                    messages.send(sender, "test-usage");
+                    yield true;
+                }
+                if (!modules.isEnabled(FishingModule.ID)) {
+                    messages.send(sender, "module-disabled", Map.of("module", FishingModule.ID));
                     yield true;
                 }
                 FishingMinigameManager manager = fishingModule.minigames();
@@ -140,7 +175,11 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                     messages.send(sender, "invalid-command");
                     yield true;
                 }
-                if (!manager.cancelByCommand(target.getUniqueId(), sender, target.getName())) {
+                boolean cancelledFishing = manager.cancelByCommand(
+                        target.getUniqueId(), sender, target.getName());
+                boolean cancelledEcho = !cancelledFishing && echoVeinModule.cancelByCommand(
+                        target.getUniqueId(), sender, target.getName());
+                if (!cancelledFishing && !cancelledEcho) {
                     messages.send(sender, "no-active-game");
                 }
                 yield true;
@@ -171,7 +210,13 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return prefix(List.of("help", "reload", "status", "sit", "stand", "test", "cancel"), args[0]);
+            return prefix(List.of("help", "reload", "status", "update", "sit", "stand", "test", "cancel"), args[0]);
+        }
+        if (args.length == 2 && "update".equalsIgnoreCase(args[0])) {
+            return prefix(List.of("check", "status"), args[1]);
+        }
+        if (args.length == 2 && "test".equalsIgnoreCase(args[0])) {
+            return prefix(List.of("fishing", "vein"), args[1]);
         }
         if (args.length == 2 && "cancel".equalsIgnoreCase(args[0])) {
             List<String> names = Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();

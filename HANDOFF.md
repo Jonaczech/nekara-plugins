@@ -16,6 +16,14 @@ The latest shipped plugin is **NekaraRPG 1.1.0**:
   `63ED962AE9AE94F3D09ECCDD2B9858E5C51A005FD0E7963D72AB66A2F093947D`
 - automated validation: 22 passing tests
 
+An unreleased **1.2.0** candidate is currently on
+`codex/echo-vein-1.2.0`. It moves reduced Rested hunger loss behind the smoker
+camp feature, adds a configurable 10% Rested XP bonus across all ValhallaMMO
+skills, and introduces the optional Echo Vein Mining activity. It also adds an
+asynchronous, fail-closed GitHub updater that stages verified stable releases
+for Paper to install on restart. Live Purpur/ValhallaMMO and updater restart
+acceptance remain pending until the release is installed on the staging server.
+
 Version numbers belong in plugin metadata, changelogs, and Git tags. The JAR
 filename intentionally stays stable so server deployment never creates a
 second versioned copy beside the active plugin.
@@ -53,6 +61,15 @@ second versioned copy beside the active plugin.
 - Rested uses text-only action-bar UI: `Odpočatý | m:ss`. It yields to campfire
   charging messages and the fishing minigame. It does not create a bossbar.
 
+### Echo Vein
+
+- Requires a real ValhallaMMO Mining XP action and Mining level 50 by default.
+- Uses a rare six-second spatial pulse with an eight-minute persistent cooldown.
+- Success grants 25% of the final source Mining XP with reason `PLUGIN`.
+- The optional bonus is one item from that action's finalized Mining drops; no
+  Digging table, custom loot table, or Fortune reroll is used.
+- `/nekararpg test vein` exercises the visuals without XP, drops, or cooldown.
+
 ## Build and Deployment
 
 From `NekaraRPG` run:
@@ -77,24 +94,23 @@ For server deployment:
 Do not delete `plugins/NekaraRPG` during routine upgrades. Missing new keys use
 bundled runtime defaults.
 
+Starting with 1.2.0, later releases can be downloaded automatically from the
+latest stable GitHub release into Paper's configured update folder. The updater
+checks the exact asset name, size, SHA-256, JAR identity, and semantic version.
+It never restarts the server; operators must perform a full restart and inspect
+startup logs. Version 1.2.0 itself still needs one manual deployment because
+1.1.0 does not contain the updater.
+
 ## Next Session
 
-The user wants to design another plugin. Its purpose and ownership boundary are
-not selected yet. Start by deciding:
+After live acceptance of 1.2.0, the next approved design direction is a
+`mounts` module. Its first version should use a vanilla horse, one persistent
+mount per player, no cargo inventory, and no hoglin model. Preserve saddle,
+armor, name, health, ownership, and death cooldown while preventing summon,
+dismiss, logout, and healing abuse in PvP.
 
-1. What player or staff problem does it solve?
-2. Does it need direct access to Rested, fishing, sitting, or other NekaraRPG
-   state? If yes, prefer a new NekaraRPG module.
-3. Does it have an independent lifecycle, data model, commands, permissions, or
-   administrator audience? If yes, prefer a separate plugin JAR.
-4. Which existing server plugins already own adjacent behavior?
+Potential later Campfire extensions after the 1.2.0 candidate:
 
-Candidate ideas already recorded are lockpicking, wounds, world events, rumors,
-territory ambience, and reputation. No candidate is approved as the next build.
-
-Potential later Campfire extensions, not part of 1.1.0:
-
-- ValhallaMMO XP bonuses while Rested,
 - unique gameplay bonuses for smoker, barrel, cauldron, cartography table, and
   grindstone,
 - richer camp-quality progression based on structures around the fire.

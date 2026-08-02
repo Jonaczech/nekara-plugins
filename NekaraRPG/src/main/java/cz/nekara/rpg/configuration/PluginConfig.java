@@ -14,6 +14,8 @@ public record PluginConfig(
         FishingConfig fishing,
         SittingConfig sitting,
         CampfireConfig campfire,
+        EchoVeinConfig echoVein,
+        UpdaterConfig updater,
         WorldConfig worlds,
         Map<String, SoundSettings> sounds
 ) {
