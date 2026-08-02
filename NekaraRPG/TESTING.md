@@ -64,16 +64,18 @@ enabled world.
 
 ### 3b. Echo Vein
 
-1. Confirm ValhallaMMO Mining is enabled and give the player Mining level 50.
-2. Run `/nekararpg test vein` in a cave with a visible solid wall. Verify one nearby block pulses for six seconds and the command states that no reward will be granted.
+1. Confirm ValhallaMMO Mining is enabled. Test with both a new Mining profile and an experienced player; neither has a level gate.
+2. Run `/nekararpg test vein` in a cave with a visible wall. Verify a subtle pulse covers the target's immediate area, a denser pulse marks its visible face for six seconds, and the command states that no reward will be granted.
 3. Hit the pulsing block with a pickaxe and verify the reward-free test succeeds. Repeat and hit another block, then let a test time out; both should fail cleanly.
-4. Temporarily set `echo-vein.trigger-chance` to `1.0` and `cooldown-seconds` to `0`, reload, then mine a natural XP-granting Mining block.
-5. Verify the original block and all normal Valhalla drops arrive before the echo starts.
-6. Complete the echo and verify the player receives exactly 25% of the final triggering Mining XP plus at most one item selected from that action's finalized drops.
-7. Repeat while Rested and verify the source XP contains the Rested bonus, but the 25% echo reward is not multiplied by Rested again.
-8. Restore the eight-minute cooldown, trigger an echo, reconnect, and verify another echo cannot trigger until the stored cooldown expires.
-9. Verify placed blocks or blocks that grant no Valhalla Mining XP do not trigger Echo Vein.
-10. Begin fishing during an echo and verify the echo yields without affecting fishing.
+4. Repeat the test around stone, ores, dirt, gravel, and wood. Only blocks in Paper's pickaxe-mineable tag may become the target.
+5. Temporarily set `echo-vein.trigger-chance` to `1.0` and `cooldown-seconds` to `0`, reload, then mine a natural XP-granting Mining block.
+6. Verify the original block and all normal Valhalla drops arrive before the echo starts. Chat should contain only the timed discovery message.
+7. Complete the echo and verify the player receives exactly 25% of the final triggering Mining XP plus at most one item selected from that action's finalized drops, with no success chat message.
+8. Let a natural echo expire and verify there is no failure chat message.
+9. Repeat while Rested and verify the source XP contains the Rested bonus, but the 25% echo reward is not multiplied by Rested again.
+10. Restore the eight-minute cooldown, trigger an echo, reconnect, and verify another echo cannot trigger until the stored cooldown expires.
+11. Verify placed blocks or blocks that grant no Valhalla Mining XP do not trigger Echo Vein.
+12. Begin fishing during an echo and verify the echo yields without affecting fishing.
 
 ### 4. Failed Minigame
 

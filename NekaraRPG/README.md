@@ -31,7 +31,7 @@ Current modules:
 | `fishing` | production | Non-invasive fishing timing minigame with vanilla/ValhallaMMO compatibility. |
 | `sitting` | production | Command-driven sitting plus configurable detection of external seats. |
 | `campfire` | production | Healing, hunger protection, visual Rested bonus, group scaling, and action-bar roleplay near lit campfires. |
-| `echo-vein` | testing | Rare Mining 50 activity with a short spatial reaction challenge and Valhalla-native rewards. |
+| `echo-vein` | testing | Rare Mining activity with a short spatial reaction challenge and Valhalla-native rewards. |
 
 Campfire accepts both NekaraRPG seats and configured external vehicle-based
 seats. The internal sitting module may therefore be disabled when another
@@ -109,11 +109,14 @@ resets, redemptions, and migration refunds are not multiplied.
 
 ## Echo Vein
 
-Echo Vein is an optional ValhallaMMO Mining activity. At Mining level 50 or
-higher, an eligible natural Mining XP action has a 4% chance by default to
-reveal a nearby pulsing block. The player has six seconds to find and left-click
-that block with a pickaxe. The original mining action always completes first;
-missing the echo never removes its drops or XP.
+Echo Vein is an optional ValhallaMMO Mining activity available at every Mining
+level. An eligible natural Mining XP action has a 4% chance by default to reveal
+a nearby block from Paper's pickaxe-mineable tag. Dirt, gravel, wood, and other
+non-pickaxe blocks cannot become the fissure. The player has six seconds to find
+and left-click the target with a pickaxe. A subtle pulse covers its immediate
+one-block area while a denser effect marks the visible face of the target.
+The original mining action always completes first; missing the echo never
+removes its drops or XP.
 
 A successful echo grants 25% of the final triggering Mining XP with Valhalla's
 `PLUGIN` reason, preventing Rested and global XP multipliers from being applied
@@ -125,7 +128,9 @@ drop stack are never rerolled or duplicated.
 The default cooldown is eight minutes and is stored on the player, so reconnects
 and server restarts do not reset it. Fishing has interaction priority and an
 active echo yields when fishing begins. `/nekararpg test vein` starts a
-reward-free visual test without requiring Mining 50 or consuming the cooldown.
+reward-free visual test without consuming the cooldown. Natural attempts send
+one discovery message with the time limit; their outcome does not add another
+chat message.
 
 ## Fishing Compatibility Mode
 
@@ -292,6 +297,7 @@ dependency.
 - External seat detection is vehicle-type based. `ARMOR_STAND` is the safe default; plugins using another seat entity must add that type to configuration.
 - Campfire and Rested action-bar feedback can temporarily replace other non-priority action-bar text. NekaraRPG's fishing minigame always takes priority over the Rested timer.
 - Echo Vein needs ValhallaMMO Mining for automatic triggers. Its test command still verifies target visibility without awarding rewards.
+- Existing `minimum-mining-level` values from 1.2.1 and older are ignored.
 - Echo Vein derives one bonus item from the triggering action's finalized drops. It does not call the Digging treasure table or invent a separate loot table.
 - Rested uses a text-only action-bar timer; crafting-table camps additionally use the vanilla Haste icon. A uniquely branded status icon would require a client resource-pack or mod solution.
 - Smoker camps reduce Rested hunger loss, crafting-table camps grant configurable Haste, and ValhallaMMO skill XP receives the configured Rested multiplier.

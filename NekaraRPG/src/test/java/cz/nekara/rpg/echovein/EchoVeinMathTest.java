@@ -10,12 +10,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EchoVeinMathTest {
     @Test
-    void triggerRequiresLevelExpiredCooldownAndWinningRoll() {
-        assertTrue(EchoVeinMath.canTrigger(50, 50, 1_000, 1_000, 0.039, 0.04));
-        assertFalse(EchoVeinMath.canTrigger(49, 50, 0, 1_000, 0.0, 0.04));
-        assertFalse(EchoVeinMath.canTrigger(50, 50, 1_001, 1_000, 0.0, 0.04));
-        assertFalse(EchoVeinMath.canTrigger(50, 50, 0, 1_000, 0.04, 0.04));
-        assertFalse(EchoVeinMath.canTrigger(50, 50, 0, 1_000, Double.NaN, 0.04));
+    void triggerRequiresExpiredCooldownAndWinningRoll() {
+        assertTrue(EchoVeinMath.canTrigger(1_000, 1_000, 0.039, 0.04));
+        assertFalse(EchoVeinMath.canTrigger(1_001, 1_000, 0.0, 0.04));
+        assertFalse(EchoVeinMath.canTrigger(0, 1_000, 0.04, 0.04));
+        assertFalse(EchoVeinMath.canTrigger(0, 1_000, Double.NaN, 0.04));
     }
 
     @Test

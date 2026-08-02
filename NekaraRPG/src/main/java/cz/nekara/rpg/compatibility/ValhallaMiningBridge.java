@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
-/** Optional reflection bridge for ValhallaMMO mining level, XP, and prepared drops. */
+/** Optional reflection bridge for ValhallaMMO Mining XP and prepared drops. */
 public final class ValhallaMiningBridge implements Listener {
     private static final String VALHALLA_PLUGIN = "ValhallaMMO";
     private static final String EXPERIENCE_EVENT =
@@ -35,10 +35,7 @@ public final class ValhallaMiningBridge implements Listener {
     private Method getLeveledSkill;
     private Method getReason;
     private Method getProfileType;
-    private Method getSkillProfile;
-    private Method getMergedProfile;
     private Method getPersistentProfile;
-    private Method getLevel;
     private Method getTotalExperience;
     private Method addExperience;
     private Object pluginExperienceReason;
@@ -80,12 +77,9 @@ public final class ValhallaMiningBridge implements Listener {
             Class<?> profileType = (Class<?>) getProfileType.invoke(miningSkill);
             Class<?> profileRegistry = Class.forName(
                     "me.athlaeos.valhallammo.playerstats.profiles.ProfileRegistry", true, loader);
-            getSkillProfile = profileRegistry.getMethod("getSkillProfile", Player.class, Class.class);
-            getMergedProfile = profileRegistry.getMethod("getMergedProfile", Player.class, Class.class);
             getPersistentProfile = profileRegistry.getMethod("getPersistentProfile", Player.class, Class.class);
             Class<?> profileClass = Class.forName(
                     "me.athlaeos.valhallammo.playerstats.profiles.Profile", true, loader);
-            getLevel = profileClass.getMethod("getLevel");
             getTotalExperience = profileClass.getMethod("getTotalEXP");
 
             Class<?> reasonClass = getReason.getReturnType();
@@ -129,32 +123,6 @@ public final class ValhallaMiningBridge implements Listener {
 
     public boolean isAvailable() {
         return registered;
-    }
-
-    public int miningLevel(Player player) {
-        if (!registered) {
-            return 0;
-        }
-        try {
-            Class<?> profileType = (Class<?>) getProfileType.invoke(miningSkill);
-            return Math.max(
-                    readLevel(getMergedProfile.invoke(null, player, profileType)),
-                    Math.max(
-                            readLevel(getSkillProfile.invoke(null, player, profileType)),
-                            readLevel(getPersistentProfile.invoke(null, player, profileType))));
-        } catch (ReflectiveOperationException | ClassCastException exception) {
-            plugin.getLogger().warning("Could not read ValhallaMMO Mining level for "
-                    + player.getName() + ": " + exception.getMessage());
-            return 0;
-        }
-    }
-
-    private int readLevel(Object profile) throws ReflectiveOperationException {
-        if (profile == null) {
-            return 0;
-        }
-        Object value = getLevel.invoke(profile);
-        return value instanceof Number number ? Math.max(0, number.intValue()) : 0;
     }
 
     private double totalExperience(Player player) throws ReflectiveOperationException {

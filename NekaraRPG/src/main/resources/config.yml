@@ -26,10 +26,9 @@ modules:
   echo-vein:
     enabled: true
 
-# Rare Mining activity unlocked through ValhallaMMO. A valid natural Mining XP
-# action may reveal one nearby block; hit it with a pickaxe before the pulse ends.
+# Rare activity available at every ValhallaMMO Mining level. A valid natural
+# Mining XP action may reveal one nearby pickaxe-mineable block.
 echo-vein:
-  minimum-mining-level: 50
   # 0.04 means a 4% chance after an eligible mining action.
   trigger-chance: 0.04
   cooldown-seconds: 480
@@ -44,6 +43,7 @@ echo-vein:
   # Valhalla-prepared drops. Stack size and Fortune are never rerolled.
   bonus-drop-enabled: true
   particles:
+    # A subtle nearby hint is combined with a denser pulse on the visible face.
     particle: END_ROD
     count: 8
     spread: 0.35
