@@ -1,138 +1,143 @@
-# Nekara Plugins Handoff
+# Předání projektu Nekara Plugins
 
-## Current State
+## Aktuální stav
 
-The repository is published at
+Repozitář je publikovaný jako
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
-The default branch is `main`.
+Výchozí větev je `main`.
 
-The latest shipped plugin is **NekaraRPG 1.2.5**:
+Nejnovější vydaná verze je **NekaraRPG 1.2.5**:
 
 - tag: `v1.2.5`
 - GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.2.5>
-- deployable asset: `NekaraRPG.jar`
-- source PR: <https://github.com/Jonaczech/nekara-plugins/pull/15>
+- nasazovaný soubor: `NekaraRPG.jar`
+- zdrojové PR: <https://github.com/Jonaczech/nekara-plugins/pull/15>
 - release merge commit: `47944ab70e7a88a07376a9945449ea5470c80e73`
-- release JAR SHA-256:
+- SHA-256 vydaného JARu:
   `D6D95DBE342DF9F9161EA154DC1709286BC50611C3B8C5B8AEF7166AD0A4AFA2`
-- release asset size: `190588` bytes
-- automated validation: 42 passing tests
+- velikost release assetu: `190588` bajtů
+- automatické ověření: 42 úspěšných testů
 
-Release 1.2.5 keeps the 1.2.4 Echo Vein flow and makes ore reveal
-height-aware. Candidates follow vanilla-compatible Y bands and relative height
-biases, including high Badlands gold and the Nether Y 10-117 range. Diamond and
-redstone cannot appear high above their normal region. Seed noise and vanilla
-air-exposure suppression are intentionally not reproduced. Successful ore
-transformation now uses a brighter amethyst sound distinct from the lower vein
-discovery chime. GitHub release metadata, downloaded JAR hash, stable status,
-single asset, and tag target were verified. Live Purpur/ValhallaMMO sound and
-balance acceptance remains pending.
+Verze 1.2.5 zachovává tok Echo Vein z 1.2.4 a přidává výškově řízené
+odhalování rud. Kandidáti respektují vanilla rozsahy Y a relativní výškové
+váhy, včetně zlata ve vyšších polohách Badlands a netherového rozsahu Y 10-117.
+Diamant ani redstone se nemohou objevit vysoko mimo svoji přirozenou oblast.
+Seedový noise a vanilla potlačení rud vystavených vzduchu se záměrně
+nesimulují. Úspěšná přeměna na rudu používá jasnější ametystový zvuk, odlišný od
+hlubšího zvuku objevení žíly.
 
-Version numbers belong in plugin metadata, changelogs, and Git tags. The JAR
-filename intentionally stays stable so server deployment never creates a
-second versioned copy beside the active plugin.
+Metadata GitHub release, hash zpětně staženého JARu, stabilní stav, jediný asset
+i cíl tagu byly ověřeny. Zbývá živě ověřit zvuky, pořadí událostí a vyvážení na
+Purpur serveru s ValhallaMMO.
 
-## Shipped NekaraRPG Modules
+Čísla verzí patří do metadat pluginu, changelogu a Git tagů. Název JARu zůstává
+záměrně stabilní, aby při nasazení nevznikla druhá verzovaná kopie vedle
+aktivního pluginu.
 
-### Fishing
+## Vydané moduly NekaraRPG
 
-- Uses deferred catch handling while preserving the original vanilla item and XP.
-- Preserves optional ValhallaMMO loot, profession XP, and difficulty behavior.
-- Uses action-bar timing and its own minigame bossbar.
+### Rybaření
 
-### Sitting
+- Používá odložené dokončení úlovku a zachovává původní vanilla item i XP.
+- Zachovává volitelné ValhallaMMO loot odměny, profesní XP a škálování obtížnosti.
+- Časování zobrazuje v action baru a používá vlastní bossbar minihry.
 
-- Commands: `/nekararpg sit`, `/nrpg sit`, and `/nekararpg stand`.
-- Does not register top-level `/sit`; CMI remains the owner of that command.
-- Detects configured external seats, with `ARMOR_STAND` as the default for CMI.
-- Current server-side seat Y offset is `0.20`.
+### Sezení
 
-### Campfire
+- Příkazy: `/nekararpg sit`, `/nrpg sit` a `/nekararpg stand`.
+- Neregistruje hlavní `/sit`; vlastníkem tohoto příkazu zůstává CMI.
+- Rozpoznává nakonfigurovaná externí sedadla; výchozí typ pro CMI je `ARMOR_STAND`.
+- Aktuální serverový posun sedadla na ose Y je `0.20`.
 
-- Accepts NekaraRPG or supported external seating within five blocks of a lit
-  campfire or soul campfire.
-- Heals slowly, blocks hunger loss, restores a small amount of hunger, and uses
-  a capped per-fire group multiplier.
-- Grants Rested after 20 real-time seconds. The base duration is five minutes.
-- Every unique camping feature type adds one minute: crafting table, bed,
-  smoker, barrel, water cauldron, cartography table, and grindstone.
-- Duplicate feature blocks do not stack. All seven defaults produce a maximum
-  Rested duration of 12 minutes.
-- A crafting table adds managed Haste I. A bed creates a 24-block safe-camp
-  radius against natural hostile spawns.
-- Optional MythicMobs support blocks natural `NekaraHostile` random spawns but
-  leaves `NekaraFauna`, existing mobs, and scripted encounters untouched.
-- Rested uses text-only action-bar UI: `Odpočatý | m:ss`. It yields to campfire
-  charging messages and the fishing minigame. It does not create a bossbar.
+### Táboření
+
+- Přijímá NekaraRPG i podporované externí sezení do pěti bloků od zapáleného
+  campfire nebo soul campfire.
+- Pomalu léčí, blokuje ztrátu hladu, mírně doplňuje hlad a používá omezený
+  skupinový násobitel pro každý oheň.
+- Udělí stav Rested po 20 skutečných sekundách. Základní délka je pět minut.
+- Každý unikátní typ táborového prvku přidá jednu minutu: crafting table, bed,
+  smoker, barrel, water cauldron, cartography table a grindstone.
+- Duplicitní bloky stejného typu se nesčítají. Všech sedm výchozích prvků dává
+  maximální délku Rested 12 minut.
+- Crafting table přidává řízený Haste I. Bed vytváří ochranný táborový radius
+  24 bloků proti přirozenému spawnu nepřátel.
+- Volitelná podpora MythicMobs blokuje náhodný přirozený spawn frakce
+  `NekaraHostile`, ale neovlivňuje `NekaraFauna`, existující moby ani skriptovaná
+  setkání.
+- Rested používá text v action baru: `Odpočatý | m:ss`. Ustupuje nabíjení
+  odpočinku a rybářské minihře. Nevytváří bossbar.
 
 ### NekaraMining / Echo Vein
 
-- Uses module ID `mining`; legacy `modules.echo-vein.enabled` is the fallback
-  until `modules.mining.enabled` is explicitly present.
-- Requires a real ValhallaMMO Mining XP action but has no level gate.
-- Triggers from and selects only stone, deepslate, netherrack, and end stone in
-  Paper's `MINEABLE_PICKAXE` tag. There is no cooldown.
-- Marks the visible target face more strongly than the surrounding one-block
-  area and requires the target to be actually mined for natural completion.
-- Success grants 25% of the marked block's final Mining XP with reason `PLUGIN`.
-- The optional bonus is one item from that marked block's finalized Mining
-  drops; no Digging table, custom loot table, or Fortune reroll is used.
-- Completion has a 50% chance to continue into a visible face-adjacent host.
-- First target damage rolls a one-time 25% weighted ore reveal. Stone and
-  deepslate use height-compatible Overworld ores, netherrack uses quartz or
-  gold only from Y 10 through 117, and end stone remains unchanged. Badlands
-  can reveal elevated gold.
-- Striking or mining another block does not cancel the active target.
-- Natural attempts use no chat, one discovery sound, one success sound, and a
-  silent timeout. Successful ore transformation adds its own brighter related
-  sound. The action bar still carries the timer.
-- `/nekararpg test vein` exercises the visuals without XP, drops, ore reveal,
-  or chaining.
+- Používá ID modulu `mining`; staré `modules.echo-vein.enabled` slouží jako
+  fallback, dokud není výslovně uvedeno `modules.mining.enabled`.
+- Vyžaduje skutečnou ValhallaMMO Mining XP akci, ale nemá podmínku úrovně.
+- Spouští se jen z `STONE`, `DEEPSLATE`, `NETHERRACK` a `END_STONE` v Paper tagu
+  `MINEABLE_PICKAXE` a vybírá pouze tyto bloky. Nemá cooldown.
+- Viditelnou stěnu cíle označuje silněji než okolí v radiusu jednoho bloku.
+  Přirozený pokus je dokončen pouze skutečným vytěžením cíle.
+- Úspěch přidá 25 % finálních Mining XP označeného bloku s důvodem `PLUGIN`.
+- Volitelný bonus je jeden item z finálních Mining dropů označeného bloku.
+  Nepoužívá Digging tabulku, vlastní loot tabulku ani nový Fortune hod.
+- Dokončený cíl má 50% šanci pokračovat na viditelný blok sousedící stěnou.
+- První poškození cíle provede jediný 25% hod na odhalení rudy. Stone a
+  deepslate používají výškově odpovídající Overworld rudy, netherrack quartz
+  nebo gold pouze od Y 10 do 117 a end stone zůstává beze změny. Badlands mohou
+  odhalit zlato i ve vyšší poloze.
+- Těžba nebo úder do jiného bloku aktivní cíl nezruší.
+- Přirozené pokusy nepíšou do chatu. Objevení žíly, odhalení rudy a finální
+  úspěch mají odlišné zvuky; timeout je tichý. Časovač zůstává v action baru.
+- `/nekararpg test vein` ověřuje vizuál bez XP, dropu, přeměny rudy a řetězení.
 
-## Build and Deployment
+## Sestavení a nasazení
 
-From `NekaraRPG` run:
+V adresáři `NekaraRPG` spusť:
 
 ```powershell
 scripts\build-release.cmd
 ```
 
-The script builds and verifies the single artifact at
-`NekaraRPG/dist/NekaraRPG.jar`. If local TLS inspection causes a PKIX error,
-pass a machine-local PKCS12 truststore through `-JavaTrustStore`; never commit
-the truststore or disable TLS verification.
+Skript sestaví a ověří jediný artefakt
+`NekaraRPG/dist/NekaraRPG.jar`. Pokud lokální TLS inspekce způsobí chybu PKIX,
+předej lokální PKCS12 truststore parametrem `-JavaTrustStore`; truststore nikdy
+necommituj a nevypínej TLS ověřování.
 
-For server deployment:
+Nasazení na server:
 
-1. Stop the server.
-2. Confirm there is no second `NekaraRPG*.jar` or legacy `NekaraFishing*.jar`.
-3. Replace only `plugins/NekaraRPG.jar`.
-4. Start the server and inspect startup logs.
-5. Use `/nekararpg reload` only for configuration/messages, never to replace a JAR.
+1. Zastav server.
+2. Ověř, že v `plugins` není druhý `NekaraRPG*.jar` ani starý `NekaraFishing*.jar`.
+3. Nahraď pouze `plugins/NekaraRPG.jar`.
+4. Spusť server a zkontroluj startovací logy.
+5. `/nekararpg reload` používej jen pro konfiguraci a zprávy, nikdy k výměně JARu.
 
-Do not delete `plugins/NekaraRPG` during routine upgrades. Missing new keys use
-bundled runtime defaults.
+Při běžném upgradu nemaž `plugins/NekaraRPG`. Chybějící nové klíče získají
+výchozí hodnoty zabalené v pluginu.
 
-Starting with 1.2.0, later releases can be downloaded automatically from the
-latest stable GitHub release into Paper's configured update folder. The updater
-checks the exact asset name, size, SHA-256, JAR identity, and semantic version.
-It never restarts the server; operators must perform a full restart and inspect
-startup logs. Version 1.2.0 itself still needs one manual deployment because
-1.1.0 does not contain the updater.
+Od verze 1.2.0 může updater stáhnout novější stabilní GitHub release do
+aktualizační složky Paperu. Kontroluje přesný název assetu, velikost, SHA-256,
+identitu JARu a sémantickou verzi. Server nikdy nerestartuje; administrátor musí
+provést úplný restart a zkontrolovat startovací logy.
 
-## Next Session
+## Další práce
 
-After live acceptance of 1.2.3, the next approved design direction is a
-`mounts` module. Its first version should use a vanilla horse, one persistent
-mount per player, no cargo inventory, and no hoglin model. Preserve saddle,
-armor, name, health, ownership, and death cooldown while preventing summon,
-dismiss, logout, and healing abuse in PvP.
+Nejdřív živě otestuj verzi 1.2.5 podle `NekaraRPG/LIVE_TESTING.md`, zejména:
 
-Potential later Campfire extensions after the 1.2.3 acceptance pass:
+- že se vysoké rudy neobjevují mimo vanilla rozsahy,
+- že jsou tři zvuky Echo Vein jasně rozlišitelné,
+- že +25 % XP vzniká právě jednou z označeného bloku,
+- že 50% řetězení a bonusový drop nejsou příliš štědré.
 
-- unique gameplay bonuses for smoker, barrel, cauldron, cartography table, and
-  grindstone,
-- richer camp-quality progression based on structures around the fire.
+Po akceptaci je schváleným dalším návrhovým směrem modul `mounts`. První verze
+má použít vanilla koně, jednoho trvalého mounta na hráče, bez nákladního
+inventáře a bez modelu hoglina. Musí uchovávat sedlo, brnění, jméno, zdraví,
+vlastnictví a cooldown po smrti a zabránit zneužití přivolání, odvolání,
+odhlášení a léčení v PvP.
 
-Before starting new code, run `git status`, fetch `origin/main`, and re-check the
-latest GitHub release so this snapshot is not mistaken for live state.
+Možná pozdější rozšíření Campfire:
+
+- unikátní herní bonusy pro smoker, barrel, cauldron, cartography table a grindstone,
+- bohatší postup kvality tábora podle staveb kolem ohně.
+
+Před další změnou spusť `git status`, stáhni `origin/main` a znovu ověř nejnovější
+GitHub release, aby tento snapshot nebyl omylem považovaný za živý stav.

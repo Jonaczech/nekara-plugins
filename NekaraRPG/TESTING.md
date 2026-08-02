@@ -1,192 +1,190 @@
-# NekaraRPG Testing Guide
+# Testovací příručka NekaraRPG
 
-## Automated Checks
+## Automatické kontroly
 
-Run the verified release workflow:
+Spusť ověřený release postup:
 
 ```text
 scripts\build-release.cmd
 ```
 
-The unit tests cover indicator movement and edge reflection, target boundaries,
-hits, misses, timeout, target bounds, state transitions, double completion
-prevention, configuration fallback validation, campfire group scaling, and
-fractional Rested hunger reduction. Rested ValhallaMMO XP eligibility and
-scaling have focused pure-logic coverage as well. Echo Vein tests cover
-chance rolls, XP bonus, and quantity-weighted drop selection. Updater tests cover strict
-semantic versions, GitHub release parsing, trusted asset selection, SHA-256,
-JAR identity, and embedded release version validation.
+Unit testy pokrývají pohyb indikátoru a odraz na hranách, hranice cíle, zásahy,
+chyby, timeout, přechody stavů, ochranu před dvojím dokončením, fallback
+konfigurace, skupinové škálování Campfire a částečné snížení hladu Rested.
+Samostatné čisté testy ověřují způsobilost a škálování ValhallaMMO Rested XP.
+Echo Vein testuje hody šance, XP bonus, vážený výběr dropu, vanilla-kompatibilní
+výškové hranice rud, Badlands zlato a Nether rozsah. Updater testuje sémantické
+verze, parsování GitHub release, důvěryhodný asset, SHA-256, identitu JARu a
+vloženou release verzi.
 
-## Purpur 26.1.2 Manual Acceptance
+## Ruční akceptace na Purpur 26.1.2
 
-Use a clean test server with Java 25 and only the target server plus NekaraRPG
-first. Give the test player the relevant permissions and place the player in an
-enabled world.
+Nejdřív použij čistý testovací server s Javou 25, cílovým serverem a pouze
+NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povoleného světa.
 
-### 1. Startup and Module Config
+### 1. Start a konfigurace modulů
 
-1. Install the single release artifact `NekaraRPG.jar`.
-2. Start the server and verify the plugin creates `plugins/NekaraRPG/config.yml`.
-3. Verify `modules.fishing.enabled`, `modules.sitting.enabled`, `modules.campfire.enabled`, and `modules.mining.enabled` are true by default.
-4. Run `/nekararpg status` and verify all four modules are listed.
-5. Set `modules.fishing.enabled: false`, run `/nekararpg reload`, and verify fishing minigames no longer start.
-6. Re-enable the module and reload again.
+1. Nainstaluj jediný release artefakt `NekaraRPG.jar`.
+2. Spusť server a ověř vznik `plugins/NekaraRPG/config.yml`.
+3. Ověř výchozí hodnotu true u `modules.fishing.enabled`, `modules.sitting.enabled`, `modules.campfire.enabled` a `modules.mining.enabled`.
+4. Spusť `/nekararpg status` a ověř zobrazení všech čtyř modulů.
+5. Nastav `modules.fishing.enabled: false`, spusť `/nekararpg reload` a ověř, že rybářská minihra nezačne.
+6. Modul znovu zapni a proveď další reload.
 
-### 2. Normal Successful Fishing
+### 2. Běžné úspěšné rybaření
 
-1. Cast a fishing rod.
-2. Wait for the real bite.
-3. Right-click once to create the real catch event and start the action-bar minigame; verify no item is delivered yet.
-4. Complete the configured number of hits; verify each successful hit gives back the configured time bonus.
-5. Verify exactly one original vanilla catch is delivered after the final hit.
-6. Verify vanilla XP remains present and the catch-success sound plays separately from the minigame-success sound.
-7. Verify the action bar has no `FISH` label and the BossBar above it fills after each successful pull.
-8. Repeat enough sessions to observe different required hit counts between 3 and 5.
-9. After each successful pull, verify the real bobber moves toward the player and stops before a solid wall; verify `minigame.hook-pull-distance: 0` disables that movement.
+1. Nahoď prut.
+2. Počkej na skutečný záběr.
+3. Jednou klikni pravým tlačítkem, čímž vznikne skutečný catch event a začne minihra; ověř, že item zatím nebyl doručen.
+4. Dokonči nastavený počet zásahů a ověř, že každý úspěch vrací nastavený časový bonus.
+5. Po finálním zásahu ověř doručení přesně jednoho původního vanilla úlovku.
+6. Ověř zachování vanilla XP a samostatný zvuk úlovku oproti zvuku dokončení minihry.
+7. Ověř, že action bar nemá popisek `FISH` a BossBar nad ním se po každém úspěchu plní.
+8. Opakuj dost relací, aby se objevily různé počty požadovaných zásahů od 3 do 5.
+9. Po každém úspěchu ověř přitažení skutečného splávku bez průchodu pevnou stěnou; `minigame.hook-pull-distance: 0` musí pohyb vypnout.
 
-### 3. ValhallaMMO Fishing Difficulty Scaling
+### 3. Škálování rybaření podle ValhallaMMO
 
-1. Confirm ValhallaMMO is installed and `valhalla.fishing-difficulty.enabled` is `true`.
-2. Enable debug logging and start a fishing minigame; verify the console reports the player's FishingSkill level and effective required-hit/miss values.
-3. Compare players in levels 1-30, 31-60, and 61+. They should receive the configured tier values: 3-5/1 miss, 3-4/2 misses, and 2-3/3 misses respectively.
-4. Verify the actual ValhallaMMO max-level player receives the exact override of 2 pulls and 3 misses.
-5. Verify the original vanilla/ValhallaMMO loot and fishing XP are unchanged.
+1. Ověř instalaci ValhallaMMO a `valhalla.fishing-difficulty.enabled: true`.
+2. Zapni debug, spusť minihru a ověř v konzoli FishingSkill level a účinné hodnoty zásahů/chyb.
+3. Porovnej levely 1-30, 31-60 a 61+. Mají dostat nakonfigurované hodnoty 3-5/1 chyba, 3-4/2 chyby a 2-3/3 chyby.
+4. Hráč na skutečném ValhallaMMO max levelu musí dostat přesně 2 zatažení a 3 chyby.
+5. Ověř, že původní vanilla/ValhallaMMO loot a fishing XP zůstaly stejné.
 
-### 3a. ValhallaMMO Rested XP Bonus
+### 3a. ValhallaMMO Rested XP bonus
 
-1. Confirm ValhallaMMO is installed and `campfire.rested.valhalla-experience.enabled` is `true`.
-2. Gain the same amount of skill-action XP without Rested and with Rested; the Rested amount should be exactly `1.10x` by default.
-3. Repeat with several skills, including Fishing and one combat or gathering skill. The bonus must not filter by skill type.
-4. Gain shared party XP and verify it receives the same bonus.
-5. Grant XP by an administrator command and verify the amount is not multiplied.
-6. Complete a Rested fishing minigame and verify its deferred XP receives one 10% bonus, not two.
-7. Disable the camping module or the Rested XP setting and verify normal ValhallaMMO XP resumes.
+1. Ověř ValhallaMMO a `campfire.rested.valhalla-experience.enabled: true`.
+2. Získej stejné skill-action XP bez Rested a s Rested; Rested hodnota má být výchozím stavem přesně `1.10x`.
+3. Opakuj s více skilly včetně Fishing a jednoho combat nebo gathering skillu. Bonus nesmí filtrovat podle typu.
+4. Získej sdílená party XP a ověř stejný bonus.
+5. Uděl XP administrativním příkazem a ověř, že se nenásobí.
+6. Dokonči rybářskou minihru s Rested a ověř jeden 10% bonus odložených XP, ne dva.
+7. Vypni Campfire nebo Rested XP nastavení a ověř návrat běžných ValhallaMMO XP.
 
 ### 3b. Echo Vein
 
-1. Confirm ValhallaMMO Mining is enabled. Test with both a new Mining profile and an experienced player; neither has a level gate.
-2. Run `/nekararpg test vein` in a cave with a visible wall. Verify a subtle pulse covers the target's immediate area, a denser pulse marks its visible face for six seconds, and the command states that no reward will be granted.
-3. Hit the pulsing block with a pickaxe and verify the reward-free test succeeds. Repeat and hit another block, then let a test time out; both should fail cleanly.
-4. Repeat the test around stone, deepslate, netherrack, end stone, ores, dirt, gravel, and wood. Only the four configured host types may become the target.
-5. Temporarily set `echo-vein.trigger-chance` to `1.0`, reload, then mine an XP-granting host block. Mining an ore must not trigger Echo Vein.
-6. Verify the original block and all normal Valhalla drops arrive before the echo starts. Chat should contain no natural Echo Vein message and the discovery sound should play exactly once.
-7. Mine or strike several non-target blocks while the echo is active. Verify the timer and target persist, then actually mine the marked target.
-8. With debug enabled, verify `markedBlockXp`, `bonusXp`, `xpGranted`, and the Valhalla profile delta. The bonus must be exactly 25% of the marked block's finalized Mining XP and must occur once.
-9. Verify at most one bonus item is selected from the marked block's finalized drops. It must preserve metadata and must not reroll Fortune.
-10. Set `ore-reveal.chance` to `1.0`. At Y 70 verify stone can reveal only coal, copper, or iron; diamond, redstone, lapis, and normal gold must be impossible.
-11. Repeat below Y 16 and near Y -64. Verify diamond/redstone become eligible and occur more often deeper down. At Y 48 verify copper is eligible; at Y 97 it must not be.
-12. Test Y 70 in a normal biome and Badlands. High gold must be exclusive to Badlands. Test netherrack at Y 9, 10, 117, and 118; only Y 10-117 may reveal Nether ore. End stone remains unchanged.
-13. Verify vein discovery uses the lower chime and a successful ore transformation uses the brighter related sound exactly once. Repeated target damage must not reroll or replay it.
-14. Set `chain-chance` to `1.0`, complete a target beside another visible host block, and verify the next target is face-adjacent. The completed target must not also start a separate base echo.
-15. Let a natural echo expire and verify there is no failure chat message or failure sound.
-16. Repeat while Rested and verify the marked-block XP contains the Rested bonus, but the 25% echo reward is not multiplied by Rested again.
-17. Restore defaults (`0.05`, no cooldown, `0.50` chain, `0.25` ore reveal) and verify eligible actions can trigger consecutively.
-18. Verify placed blocks or blocks that grant no Valhalla Mining XP do not trigger Echo Vein.
-19. Begin fishing during an echo and verify the echo yields without affecting fishing.
-20. Remove `modules.mining.enabled`, set legacy `modules.echo-vein.enabled: false`, reload, and verify NekaraMining stays disabled. Then configure the new key explicitly and verify it takes precedence.
+1. Ověř zapnutý ValhallaMMO Mining. Testuj nový i zkušený profil; level gate neexistuje.
+2. V jeskyni spusť `/nekararpg test vein`. Ověř jemný pulz v okolí, hustší šestisekundové označení viditelné stěny a informaci, že test nedá odměnu.
+3. Udeř do pulzujícího bloku krumpáčem a ověř úspěch bez odměny. Opakuj úderem do jiného bloku a timeoutem; oba mají čistě selhat.
+4. Opakuj kolem stone, deepslate, netherrack, end stone, ores, dirt, gravel a wood. Cílem smí být jen čtyři hostitelské typy.
+5. Dočasně nastav `echo-vein.trigger-chance: 1.0`, reloaduj a vytěž hostitelský blok s Mining XP. Těžba rudy nesmí Echo Vein spustit.
+6. Ověř doručení původního bloku a všech běžných Valhalla dropů před startem ozvěny. Chat zůstává prázdný a zvuk objevení zazní jednou.
+7. Vytěž nebo udeř do několika jiných bloků. Cíl i časovač musí zůstat; potom označený blok skutečně vytěž.
+8. S debugem ověř `markedBlockXp`, `bonusXp`, `xpGranted` a změnu profilu. Bonus je právě jednou a přesně 25 % finálních Mining XP označeného bloku.
+9. Ověř nejvýše jeden bonusový item z finálních dropů cíle, zachování metadat a žádný nový Fortune hod.
+10. Nastav `ore-reveal.chance: 1.0`. Na Y 70 smí stone odhalit jen coal, copper nebo iron; diamond, redstone, lapis a běžné gold jsou nemožné.
+11. Opakuj pod Y 16 a kolem Y -64. Diamond/redstone se stanou možnými a hlouběji mají vyšší váhu. Copper je možný na Y 48, ne na Y 97.
+12. Testuj Y 70 v běžném biomu a Badlands. Vysoké gold patří jen Badlands. Netherrack testuj na Y 9, 10, 117 a 118; Nether ruda je možná jen Y 10-117. End stone se nemění.
+13. Ověř hlubší chime objevení žíly a jediné přehrání jasnějšího zvuku při přeměně na rudu. Opakované poškození nesmí znovu házet ani přehrávat zvuk.
+14. Nastav `chain-chance: 1.0`, dokonči cíl vedle viditelného hostitelského bloku a ověř pokračování na souseda stěnou. Dokončený blok nesmí současně spustit samostatnou základní ozvěnu.
+15. Nech přirozenou ozvěnu vypršet a ověř tichý timeout bez zprávy.
+16. Opakuj s Rested. XP cíle obsahují Rested bonus, ale 25% Echo odměna se už znovu nenásobí.
+17. Vrať defaults (`0.05`, bez cooldownu, `0.50` chain, `0.25` ore reveal) a ověř nezávislé po sobě jdoucí bloky.
+18. Položené bloky nebo bloky bez Valhalla Mining XP nesmí aktivitu spustit.
+19. Během ozvěny začni rybařit a ověř, že Echo Vein ustoupí bez narušení rybaření.
+20. Odstraň `modules.mining.enabled`, nastav staré `modules.echo-vein.enabled: false`, reloaduj a ověř vypnutý NekaraMining. Poté přidej nový klíč a ověř jeho prioritu.
 
-### 4. Failed Minigame
+### 4. Neúspěšná minihra
 
-1. Cast and wait for a bite.
-2. Miss until the configured miss limit is exceeded, or wait for timeout.
-3. Verify the escape/timeout feedback appears.
-4. Verify no item is created, no replacement loot appears, and the active session count returns to zero.
-5. Verify the failure particle effect appears briefly around the bobber and the bobber/session are then cleaned up.
+1. Nahoď a počkej na záběr.
+2. Chybuj do překročení limitu nebo počkej na timeout.
+3. Ověř zpětnou vazbu o úniku/timeoutu.
+4. Ověř, že nevznikl item ani náhradní loot a počet relací se vrátil na nulu.
+5. Ověř krátký efekt částic kolem splávku a následné vyčištění splávku i relace.
 
-### 5. Disconnect
+### 5. Odpojení
 
-1. Start the minigame.
-2. Disconnect the player.
-3. Verify the session is removed and the console contains no exception.
+1. Spusť minihru.
+2. Odpoj hráče.
+3. Ověř odstranění relace bez výjimky v konzoli.
 
 ### 6. Teleport
 
-1. Start the minigame.
-2. Teleport the player to another location or world.
-3. Verify the session is canceled, the hook does not remain active, and the session count returns to zero.
+1. Spusť minihru.
+2. Teleportuj hráče na jiné místo nebo do jiného světa.
+3. Ověř zrušení relace, odstranění háčku a návrat počtu relací na nulu.
 
 ### 7. Reload
 
-1. Start a minigame.
-2. Run `/nekararpg reload`.
-3. Verify the active session is cleaned up and configuration/messages are reloaded.
-4. Start another minigame and verify there is one action-bar update stream, not duplicated updates or sounds.
+1. Spusť minihru.
+2. Spusť `/nekararpg reload`.
+3. Ověř vyčištění relace a nové načtení konfigurace/zpráv.
+4. Spusť další minihru a ověř jediný proud action baru bez duplicitních zvuků.
 
-### 8. Two Players
+### 8. Dva hráči
 
-1. Have two players cast at approximately the same time.
-2. Verify their action bars, counters, targets, clicks, and outcomes remain independent.
+1. Nech dva hráče nahodit přibližně současně.
+2. Ověř nezávislé action bary, počítadla, cíle, kliknutí a výsledky.
 
-### 9. Custom Sound
+### 9. Vlastní zvuk
 
-1. Configure a valid resource-pack ID such as `nekara:fishing.hit`.
-2. Load a resource pack containing that sound and verify playback.
-3. Configure an invalid ID, reload, and verify the plugin logs a warning and continues running.
+1. Nastav platné resource-pack ID, například `nekara:fishing.hit`.
+2. Načti resource pack se zvukem a ověř přehrání.
+3. Nastav neplatné ID, reloaduj a ověř varování v logu bez pádu pluginu.
 
-### 10. Another Plugin Changes Loot
+### 10. Jiný plugin mění loot
 
-1. Install a test plugin that changes the existing `CAUGHT_FISH` event's `ItemStack` or XP.
-2. Complete NekaraRPG fishing.
-3. Verify NekaraRPG does not replace the `Item`, alter its metadata, add another item, or change XP.
-4. Verify a canceled `CAUGHT_FISH` event does not produce a catch-success message or sound.
+1. Nainstaluj testovací plugin měnící ItemStack nebo XP existujícího `CAUGHT_FISH` eventu.
+2. Dokonči rybaření NekaraRPG.
+3. Ověř, že NekaraRPG nenahradí `Item`, nezmění metadata, nepřidá druhý item ani nezmění XP.
+4. Zrušený `CAUGHT_FISH` nesmí vytvořit zprávu ani zvuk úspěšného úlovku.
 
-## Additional Edge Cases
+## Další okrajové případy
 
-Also verify off-hand duplicate interactions, changing the held item, dropping
-the rod, opening an inventory, death, spectator mode, creative mode, a broken
-rod, a missing hook, a caught entity, an already-canceled fishing event, and
-server shutdown.
+Ověř také duplicitní interakce off-hand, změnu drženého itemu, zahození prutu,
+otevření inventáře, smrt, spectator, creative, rozbitý prut, chybějící háček,
+chycenou entitu, již zrušený fishing event a vypnutí serveru.
 
-### 11. Sitting
+### 11. Sezení
 
-1. Run `/nekararpg sit` and verify the player assumes a seated pose at the current grounded position.
-2. Verify the player model touches the supporting surface without intersecting or visibly floating above it.
-3. Run `/nekararpg stand`, then repeat using the normal dismount key.
-4. Verify teleport, death, disconnect, damage, reload, and shutdown remove the invisible seat.
-5. Verify sitting fails cleanly while flying, swimming, gliding, sleeping, or already riding another entity.
-6. Install CMI and verify its top-level `/sit` command is unchanged; NekaraRPG uses only its own subcommand namespace.
-7. Use `/cmi sit` and verify `/nekararpg status` includes the externally seated player.
+1. Spusť `/nekararpg sit` a ověř sedící pózu na aktuální uzemněné pozici.
+2. Model hráče se musí dotýkat podkladu bez průniku nebo viditelného levitování.
+3. Spusť `/nekararpg stand` a opakuj běžnou klávesou sesednutí.
+4. Teleport, smrt, odpojení, poškození, reload a shutdown musí sedadlo odstranit.
+5. Sezení musí čistě selhat při létání, plavání, glidingu, spánku nebo jízdě na jiné entitě.
+6. S CMI ověř nezměněný hlavní `/sit`; NekaraRPG používá jen svůj subcommand.
+7. Použij `/cmi sit` a ověř externě sedícího hráče v `/nekararpg status`.
 
-### 12. Campfire Rest
+### 12. Odpočinek u ohně
 
-1. Lower health and hunger, sit within the configured radius of a lit campfire, and verify slow healing.
-2. Verify hunger does not decrease while resting, rises at the configured interval, and active-rest particles appear.
-3. Extinguish or break the fire and verify active rest ends within one update period.
-4. Repeat with a lit soul campfire and outside the configured radius.
-5. Wait 20 real-time seconds at a bare fire and verify one soft amethyst chime plays, the text-only action bar reads `Odpočatý | 5:00`, no Rested bossbar appears, and no Haste is granted. An older server `messages.yml` must not cause the raw `campfire-rested-timer` key to appear.
-6. Leave the bare fire and verify hunger falls at its normal rate while Rested remains active.
-7. Add a smoker, recharge Rested, leave the fire, and verify hunger falls at half the normal average rate until Rested expires.
-8. Add a crafting table and verify the next Rested bonus gains one minute and Haste I with its top-right potion icon.
-9. Add the other configured camping features and verify each unique type adds one minute, while duplicate blocks do not stack.
-10. Add a bed and verify natural hostile spawns are blocked within 24 blocks of the lit fire, including after leaving and returning to the camp.
-11. Verify existing mobs can enter, Mythic `NekaraFauna` still spawns, and command, summon, quest, and boss spawns are unaffected.
-12. Shorten the duration for testing and verify the Rested timer disappears on expiry, reload, and plugin shutdown; managed Haste must disappear with it.
-13. Apply a stronger external Haste effect before resting and verify it is preserved.
+1. Sniž zdraví a hlad, sedni do radiusu zapáleného ohně a ověř pomalé léčení.
+2. Hlad během odpočinku neklesá, v intervalu roste a zobrazují se částice.
+3. Uhas nebo rozbij oheň; aktivní odpočinek skončí do jednoho update intervalu.
+4. Opakuj se soul campfire a mimo nastavený radius.
+5. U holého ohně čekej 20 skutečných sekund. Musí jednou zaznít jemný chime, action bar ukázat `Odpočatý | 5:00`, nesmí vzniknout bossbar ani Haste. Starý `messages.yml` nesmí zobrazit klíč `campfire-rested-timer`.
+6. Odejdi od holého ohně a ověř běžný pokles hladu při aktivním Rested.
+7. Přidej smoker, znovu nabij Rested, odejdi a ověř poloviční průměrnou ztrátu hladu.
+8. Přidej crafting table a ověř minutu navíc a Haste I s potion ikonou.
+9. Přidej ostatní prvky; každý unikátní typ přidá minutu, duplicity se nesčítají.
+10. Přidej bed a ověř blokování přirozených nepřátel do 24 bloků i po návratu.
+11. Existující mobové mohou vejít, Mythic `NekaraFauna` se spawnuje a command/summon/quest/boss spawny zůstávají.
+12. Zkrať dobu a ověř zmizení časovače po expiraci, reloadu a shutdownu; řízený Haste musí zmizet také.
+13. Před odpočinkem použij silnější externí Haste a ověř jeho zachování.
 
-### 13. Group Rest
+### 13. Skupinový odpočinek
 
-1. Seat two players near one campfire and verify the action bar shows two players and a `1.15x` multiplier.
-2. Verify both players remain independent and receive stronger healing than a solo player.
-3. Move one player to another fire and verify each campfire becomes a separate `1.00x` group.
-4. Verify `/nekararpg status` reports the expected seated, resting, and Rested counts.
+1. Posaď dva hráče u jednoho ohně a ověř dva hráče a násobitel `1.15x` v action baru.
+2. Oba hráči zůstávají nezávislí a léčí se rychleji než samotný hráč.
+3. Přesuň jednoho k jinému ohni; každý oheň se stane skupinou `1.00x`.
+4. `/nekararpg status` musí hlásit očekávané počty sedících, odpočívajících a Rested.
 
-### 14. Module Dependencies and Reload
+### 14. Závislosti modulů a reload
 
-1. Disable `modules.campfire.enabled`, reload, and verify sitting remains available without campfire effects.
-2. Re-enable campfire, disable sitting, reload, and verify Campfire still works through a configured CMI seat.
-3. Re-enable both modules and verify no duplicate listeners, action-bar streams, or scheduler effects appear.
+1. Vypni `modules.campfire.enabled`, reloaduj a ověř sezení bez efektů ohně.
+2. Zapni Campfire, vypni Sitting a ověř Campfire přes nakonfigurované CMI sedadlo.
+3. Zapni oba a ověř, že nevznikly duplicitní listenery, action bary ani scheduler efekty.
 
-### 15. GitHub Updater
+### 15. GitHub updater
 
-1. Install 1.2.0 manually; versions before it cannot update themselves.
-2. Run `/nekararpg update status` and verify it reports an idle or completed state without blocking the server tick.
-3. Run `/nekararpg update check` while the published release is the same or older and verify it reports the installed version as current.
-4. Publish a newer staging release with the exact `NekaraRPG.jar` asset and verify the plugin first creates a hash-matching rollback JAR under `plugins/NekaraRPG/backups`, then creates `plugins/update/NekaraRPG.jar` only after release digest and identity validation.
-5. Verify an online operator receives the staged-update message and receives it again after reconnecting before restart.
-6. Run the check twice and verify only one network operation runs at a time and the already verified staged JAR is reused.
-7. Restart the server fully and verify Paper replaces the active JAR, removes the staged copy, loads the new embedded version, and preserves `plugins/NekaraRPG/config.yml`.
-8. Repeat with an invalid digest, wrong asset name, mismatched manifest version, oversized JAR, unavailable GitHub API, and timeout; every case must fail without touching the active JAR.
-9. Disable `updater.automatic-checks`, reload, and verify manual checks still work. Disable `updater.enabled` and verify both automatic and manual checks stop.
+1. Verzi 1.2.0 bylo nutné nainstalovat ručně; starší se neumí samy aktualizovat.
+2. `/nekararpg update status` musí bez blokování ticku hlásit idle nebo dokončený stav.
+3. `/nekararpg update check` při stejném nebo starším releasu označí instalaci za aktuální.
+4. Publikuj novější staging release s přesným `NekaraRPG.jar`. Plugin musí nejdřív vytvořit hashově shodný rollback v `plugins/NekaraRPG/backups` a až po ověření digestu a identity `plugins/update/NekaraRPG.jar`.
+5. Online operátor dostane zprávu o připravené aktualizaci a znovu po připojení před restartem.
+6. Spusť kontrolu dvakrát; běží jediná síťová operace a již ověřený JAR se znovu použije.
+7. Proveď úplný restart. Paper nahradí aktivní JAR, odstraní staging kopii, načte novou verzi a zachová `config.yml`.
+8. Opakuj s neplatným digestem, názvem, manifest verzí, příliš velkým JARem, nedostupným API a timeoutem. Aktivní JAR musí vždy zůstat nedotčený.
+9. Vypni `updater.automatic-checks` a ověř ruční kontroly. Vypni `updater.enabled` a ověř zastavení obou režimů.
 
-For the staged deployment workflow, accelerated timer profile, CMI pass, and
-ValhallaMMO compatibility pass, see `LIVE_TESTING.md`.
+Zrychlený profil časovačů, CMI průchod, ValhallaMMO kompatibilitu a staging
+nasazení popisuje `LIVE_TESTING.md`.

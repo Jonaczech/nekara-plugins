@@ -1,117 +1,113 @@
-# NekaraRPG Development and Release
+# Vývoj a vydávání NekaraRPG
 
-## Release Contract
+## Release smlouva
 
-Every shipped change ends as one version of the single `NekaraRPG` plugin JAR.
-Modules are not built as separate plugins. A release is complete only when:
+Každá vydaná změna končí jako jedna verze jediného pluginu `NekaraRPG` v JARu.
+Moduly se nesestavují jako samostatné pluginy. Release je úplný pouze tehdy, když:
 
-1. `gradle.properties` contains the intended `plugin_version`.
-2. `CHANGELOG.md` contains a matching `## <version>` heading.
-3. `scripts\build-release.cmd` completes successfully.
-4. All unit tests pass before release artifacts are copied.
-5. The version embedded in `plugin.yml` and the JAR implementation manifest
-   matches `plugin_version`.
-6. The only deployable artifact is `dist\NekaraRPG.jar`; the version is stored
-   inside its `plugin.yml` metadata rather than its filename.
-7. The JAR passes the relevant checks in `TESTING.md` on a Purpur staging server.
-8. The published GitHub release is stable, tagged `v<version>`, contains exactly
-   one `NekaraRPG.jar`, and exposes its SHA-256 digest through release metadata.
+1. `gradle.properties` obsahuje zamýšlenou hodnotu `plugin_version`.
+2. `CHANGELOG.md` obsahuje odpovídající nadpis `## <version>`.
+3. `scripts\build-release.cmd` úspěšně doběhne.
+4. Všechny unit testy projdou před kopírováním release artefaktů.
+5. Verze vložená do `plugin.yml` a implementačního manifestu JARu odpovídá
+   `plugin_version`.
+6. Jediný nasazovaný artefakt je `dist\NekaraRPG.jar`; verze je uložená v
+   metadatech `plugin.yml`, ne v názvu souboru.
+7. JAR projde relevantními kontrolami z `TESTING.md` na staging Purpur serveru.
+8. Publikovaný GitHub release je stabilní, označený `v<version>`, obsahuje přesně
+   jeden `NekaraRPG.jar` a zpřístupňuje jeho SHA-256 v release metadatech.
 
-Use a patch version for fixes and a minor version for a new module or meaningful
-gameplay behavior. Keep fishing, sitting, campfire, and mining independently toggleable
-under `modules` in `config.yml`.
+Pro opravy používej patch verzi, pro nový modul nebo významnou herní změnu minor
+verzi. Fishing, sitting, campfire a mining musí zůstat samostatně zapínatelné
+pod `modules` v `config.yml`.
 
-## Standard Workflow
+## Standardní postup
 
-From the `NekaraRPG` directory:
+Z adresáře `NekaraRPG` spusť:
 
 ```powershell
 scripts\build-release.cmd
 ```
 
-The script performs a clean Gradle `release`. The Gradle task runs `build`, which
-includes compilation and all tests, before copying any release artifact. It then
-checks the embedded plugin version and prints the SHA-256 hash.
+Skript provede čistý Gradle task `release`. Ten před kopírováním artefaktu spustí
+`build`, tedy kompilaci i všechny testy. Poté zkontroluje vloženou verzi pluginu
+a vypíše SHA-256.
 
-If local antivirus or a proxy replaces HTTPS certificates, Java may report a
-`PKIX path building failed` error while resolving dependencies. Import the local
-trusted root into a temporary Java truststore and pass it without committing it:
+Pokud lokální antivirus nebo proxy nahrazuje HTTPS certifikáty, může Java při
+stahování závislostí nahlásit `PKIX path building failed`. Importuj lokální
+důvěryhodný root do dočasného Java truststore a předej ho bez commitnutí:
 
 ```powershell
 scripts\build-release.cmd -JavaTrustStore C:\path\to\truststore.p12
 ```
 
-Never disable Gradle TLS verification and never commit a machine-specific root
-certificate or truststore.
+Nikdy nevypínej TLS ověřování Gradlu a nikdy necommituj certifikát nebo
+truststore konkrétního zařízení.
 
-## Module Shape
+## Podoba modulu
 
-Each module implements `NekaraModule`, owns its listeners and scheduler tasks,
-and must clean all player state and entities in `disable()`. Register modules in
-dependency order in `NekaraRPGPlugin`: `fishing`, `sitting`, `campfire`, then `mining`.
+Každý modul implementuje `NekaraModule`, vlastní své listenery a scheduler tasky
+a v `disable()` musí uklidit všechny hráčské stavy a entity. Moduly registruj v
+`NekaraRPGPlugin` v pořadí závislostí: `fishing`, `sitting`, `campfire`, `mining`.
 
-Configuration belongs in a typed record under `configuration`, defaults belong
-in `config.yml`, and player-facing text belongs in `messages.yml`. Add pure unit
-tests for timing, scaling, or state calculations whenever Bukkit itself is not
-required.
+Konfigurace patří do typovaného recordu pod `configuration`, výchozí hodnoty do
+`config.yml` a hráčské texty do `messages.yml`. Pro výpočty času, škálování nebo
+stavů přidávej čisté unit testy, pokud nepotřebují samotný Bukkit.
 
-## NekaraMining and Echo Vein Contract
+## Smlouva NekaraMining a Echo Vein
 
-Echo Vein is the first activity in the optional `mining` module and must remain fail-soft when
-ValhallaMMO or its Mining skill is unavailable. A Bukkit block break alone is
-not eligibility evidence: the module correlates the break with a non-cancelled
-ValhallaMMO Mining `SKILL_ACTION` XP event.
+Echo Vein je první aktivita volitelného modulu `mining` a při chybějícím
+ValhallaMMO nebo Mining skillu musí selhat bezpečně. Samotný Bukkit block break
+neprokazuje způsobilost: modul ho koreluje s nezrušeným ValhallaMMO Mining XP
+eventem `SKILL_ACTION`.
 
-The marked block's XP amount is observed after other XP modifiers. Delayed
-success uses Valhalla's `PLUGIN` reason so Mining, global, and Rested multipliers
-are not applied again. Bonus loot is selected from cloned final natural drops
-and Valhalla's prepared block drops for the marked block. Selection is weighted
-by actual stack amount, then capped to one item; never recalculate Fortune or
-generate a separate loot table.
+XP označeného bloku se sledují až po ostatních násobitelích. Odložený úspěch
+používá důvod `PLUGIN`, takže se Mining, globální ani Rested násobitele
+neaplikují znovu. Bonusový loot se vybírá z naklonovaných finálních přirozených
+a Valhalla-prepared dropů označeného bloku. Výběr je vážený skutečným množstvím
+a omezený na jeden item; Fortune se nepřepočítává a vlastní loot tabulka nevzniká.
 
-Echo Vein is available at every Mining level. Automatic triggers and targets
-are restricted to stone, deepslate, netherrack, and end stone in Paper's
-`MINEABLE_PICKAXE` tag. The activity has no cooldown. Each completed target may
-chain once to a visible face-adjacent host and must not also roll the independent
-base trigger.
+Echo Vein je dostupná na každé Mining úrovni. Automatické spuštění a cíle jsou
+omezené na stone, deepslate, netherrack a end stone v Paper tagu
+`MINEABLE_PICKAXE`. Aktivita nemá cooldown. Každý dokončený cíl může pokračovat
+na viditelný blok sousedící stěnou a zároveň nesmí provést nezávislý základní hod.
 
-The first natural `BlockDamageEvent` rolls ore reveal exactly once. Candidate
-ores must pass `OreHeightDistribution`, which mirrors vanilla Y bands and
-relative biases without attempting to reproduce seed noise or air-exposure
-rules. Badlands gold uses the target biome key. Netherrack uses Y 10-117 and end
-stone has no ore candidate. A transformed target updates the session material
-before the ticker validates it.
+První přirozený `BlockDamageEvent` provede hod na odhalení rudy právě jednou.
+Kandidát musí projít `OreHeightDistribution`, která napodobuje vanilla rozsahy
+Y a relativní váhy, ale ne seedový noise ani pravidla vystavení vzduchu. Zlato v
+Badlands používá biome key cíle. Netherrack používá Y 10-117 a end stone nemá
+žádného kandidáta. Přeměněný cíl aktualizuje materiál relace před kontrolou tickeru.
 
-Other block interactions do not cancel the activity. Natural attempts have no
-chat output: vein discovery, successful ore reveal, and final completion each
-use a distinct sound, the action bar carries the timer, and timeout is silent.
+Interakce s jinými bloky aktivitu neruší. Přirozené pokusy nepíšou do chatu:
+objevení žíly, úspěšné odhalení rudy a finální dokončení mají odlišný zvuk,
+časovač je v action baru a timeout je tichý.
 
-The module ID is `mining`. When that key is absent, upgrades must preserve the
-legacy `modules.echo-vein.enabled` value. Activity-specific `echo-vein` settings
-and permissions remain stable.
+ID modulu je `mining`. Pokud klíč chybí, upgrade musí zachovat hodnotu starého
+`modules.echo-vein.enabled`. Nastavení aktivity a oprávnění zůstávají pod
+`echo-vein`.
 
-Legacy cooldown settings and player timestamps are ignored. Transient pending
-breaks and active challenges stay in memory and must be cleared on disable,
-reload, disconnect, or invalid state.
+Staré nastavení a timestampy cooldownu se ignorují. Dočasné rozpracované block
+breaky a aktivní výzvy zůstávají v paměti a musí se vyčistit při vypnutí,
+reloadu, odpojení nebo neplatném stavu.
 
-## Updater Contract
+## Smlouva updateru
 
-The updater is a core service because it owns the lifecycle of the complete JAR,
-not one gameplay module. GitHub checks and downloads run asynchronously. Only
-the fixed public repository, latest stable release endpoint, stable asset name,
-and HTTPS GitHub download path are trusted.
+Updater je služba jádra, protože vlastní životní cyklus celého JARu, ne jednoho
+herního modulu. Kontroly a stahování z GitHubu běží asynchronně. Důvěryhodný je
+jen pevně nastavený veřejný repozitář, endpoint nejnovějšího stabilního releasu,
+stabilní název assetu a HTTPS cesta GitHub downloadu.
 
-The downloaded artifact is first written to a unique temporary file with a
-configured size limit. It must match GitHub's declared size and SHA-256 digest,
-contain `plugin.yml`, and identify itself as the release version of NekaraRPG in
-its JAR manifest. Only then is it moved into Paper's configured update folder.
-Before staging, the running JAR is copied into the plugin data folder and its
-SHA-256 is checked so an operator has a manual rollback artifact. The service
-must never overwrite the active JAR, invoke Bukkit reload, or restart the server.
+Stažený artefakt se nejprve zapíše do unikátního dočasného souboru s nastaveným
+limitem velikosti. Musí odpovídat velikosti a SHA-256 z GitHubu, obsahovat
+`plugin.yml` a v manifestu se identifikovat jako release verze NekaraRPG. Teprve
+potom se přesune do aktualizační složky Paperu. Před přípravou aktualizace se
+aktivní JAR zkopíruje do datové složky pluginu a ověří se jeho SHA-256, aby měl
+administrátor ruční rollback. Služba nikdy nepřepisuje aktivní JAR, nespouští
+Bukkit reload a nerestartuje server.
 
-## GitHub Handoff
+## Předání přes GitHub
 
-Before publishing, inspect `git status` and the complete diff. Commit the source,
-configuration, tests, changelog, and documentation together. Do not commit
-`build/`, `dist/`, server files, Gradle caches, or truststores. The pull request
-must state the version, modules changed, automated checks, and live-test status.
+Před publikací zkontroluj `git status` a celý diff. Zdrojový kód, konfiguraci,
+testy, changelog a dokumentaci commituj společně. Necommituj `build/`, `dist/`,
+serverové soubory, Gradle cache ani truststore. Pull request musí uvést verzi,
+změněné moduly, automatické kontroly a stav živého testování.

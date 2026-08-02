@@ -1,43 +1,43 @@
-# Repository Guidance
+# Pokyny pro repozitář
 
-These instructions apply to the whole `nekara-plugins` repository.
+Tyto pokyny platí pro celý repozitář `nekara-plugins`.
 
-## Start Here
+## Začni zde
 
-Before changing code or planning a new plugin, read:
+Před změnou kódu nebo návrhem nového pluginu přečti:
 
-1. `HANDOFF.md` for the current release and immediate next steps.
-2. `PROJECT_MEMORY.md` for durable product and compatibility decisions.
-3. The target plugin's `README.md`, `CHANGELOG.md`, `DEVELOPMENT.md`, and
-   `TESTING.md` when those files exist.
+1. `HANDOFF.md` pro aktuální release a bezprostřední další kroky.
+2. `PROJECT_MEMORY.md` pro dlouhodobá produktová a kompatibilitní rozhodnutí.
+3. `README.md`, `CHANGELOG.md`, `DEVELOPMENT.md` a `TESTING.md` cílového pluginu,
+   pokud existují.
 
-Re-check Git, GitHub, build output, and server state when current facts matter;
-handoff snapshots can become stale.
+Pokud záleží na aktuálním stavu, znovu ověř Git, GitHub, výstup buildu a server;
+snapshot v handoffu může zastarat.
 
-## Communication
+## Komunikace
 
-- Communicate with the user in Czech unless they request another language.
-- Keep player-facing Minecraft messages in Czech.
-- Do not silently turn a proposed independent plugin into a NekaraRPG module,
-  or the reverse. Establish the ownership boundary first.
+- S uživatelem komunikuj česky, pokud nepožádá o jiný jazyk.
+- Hráčské Minecraft zprávy udržuj v češtině.
+- Navržený samostatný plugin neměň bez upozornění na modul NekaraRPG ani naopak.
+  Nejdřív stanov hranici vlastnictví.
 
-## Engineering
+## Vývoj
 
-- Preserve existing plugin and server integrations unless a change is explicit.
-- Keep modules independently configurable and clean up listeners, tasks,
-  entities, UI, and player state when disabled or reloaded.
-- Prefer typed configuration, bundled defaults, and focused tests for pure
-  timing, scaling, deduplication, and state logic.
-- Do not commit build output, server files, credentials, Gradle caches, local
-  truststores, or anything under `dist/`.
-- Never expose credentials from local server or FTP configuration files.
+- Zachovej existující integrace pluginu a serveru, pokud změna není výslovná.
+- Moduly nech samostatně konfigurovatelné a při vypnutí nebo reloadu vyčisti
+  listenery, tasky, entity, UI a hráčský stav.
+- Preferuj typovanou konfiguraci, zabalené výchozí hodnoty a zaměřené testy
+  čistého časování, škálování, deduplikace a stavové logiky.
+- Necommituj výstup buildu, serverové soubory, přihlašovací údaje, Gradle cache,
+  lokální truststore ani nic pod `dist/`.
+- Nikdy nezveřejňuj přihlašovací údaje z lokální serverové nebo FTP konfigurace.
 
-## NekaraRPG Releases
+## Vydávání NekaraRPG
 
-- Use semantic versions internally, in changelog headings, and in Git tags.
-- The only deployable filename is `NekaraRPG.jar`; never add a version to it.
-- Run `NekaraRPG\scripts\build-release.cmd` before publishing.
-- Keep exactly one NekaraRPG JAR in a server's `plugins` directory, replace it
-  only while the server is stopped, and restart instead of using Bukkit reload.
-- Publish releases through a reviewed branch/PR, merge to `main`, then create a
-  GitHub release whose only plugin asset is `NekaraRPG.jar`.
+- Interně, v nadpisech changelogu a Git tazích používej sémantické verze.
+- Jediný nasazovaný název je `NekaraRPG.jar`; verzi do názvu nikdy nepřidávej.
+- Před publikací spusť `NekaraRPG\scripts\build-release.cmd`.
+- V serverovém `plugins` ponech právě jeden NekaraRPG JAR, nahrazuj ho jen při
+  vypnutém serveru a místo Bukkit reloadu proveď restart.
+- Release publikuj přes zkontrolovanou větev/PR, sluč do `main` a potom vytvoř
+  GitHub release, jehož jediným pluginovým assetem je `NekaraRPG.jar`.
