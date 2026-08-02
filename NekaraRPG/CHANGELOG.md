@@ -1,5 +1,25 @@
 # Přehled změn
 
+## 1.4.0
+
+- Rozdělen monolitický `config.yml`: kořenový soubor obsahuje pouze nastavení jádra,
+  updater a přepínače modulů, zatímco moduly používají vlastní
+  `<module>/config.yml`.
+- Přidána jednorázová bezpečná migrace starého configu. Existující vlastní hodnoty
+  se nejprve uloží do modulových souborů a až poté se odstraní z kořenového configu.
+- Přidána krátkodobá relog session: přihlášený hráč se při návratu se stejným
+  nickem a IP adresou do deseti minut automaticky ověří bez dalšího zadání hesla.
+- Session zůstává pouze v paměti a ruší se při `/logout`, kicku, zrušení účtu,
+  reloadu modulu i restartu serveru. Změna IP nebo vypršení platnosti vyžaduje login.
+- Dvouminutový limit přihlášení nyní ukazuje průběžný odpočet v action baru a po
+  vypršení hráče automaticky odpojí.
+- Hlavní položka přihlašovacího a registračního GUI používá hlavu a skin právě
+  připojeného hráče místo obecné ikony.
+- `/login` a `/register` jsou pro běžné hráče výchozím stavem vypnuté. Nouzový
+  fallback vyžaduje současně konfiguraci `auth.commands.fallback-enabled: true`
+  a oprávnění `nekararpg.auth.fallback-commands`.
+- Přidány jednotkové testy relog session a kontroly nových výchozích hodnot YAML.
+
 ## 1.3.0
 
 - Přidán samostatně zapínatelný modul `auth` (NekaraAuth) pro registraci,

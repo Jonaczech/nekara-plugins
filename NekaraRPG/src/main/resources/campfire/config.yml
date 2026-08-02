@@ -1,0 +1,65 @@
+# Only lit CAMPFIRE and SOUL_CAMPFIRE blocks count.
+radius: 5.0
+update-period-ticks: 20
+healing:
+  amount: 1.0
+  period-seconds: 5
+hunger:
+  restore-amount: 1
+  restore-period-seconds: 10
+rested:
+  # Charge and duration use real wall-clock seconds even when the server lags.
+  charge-seconds: 20
+  duration-seconds: 300
+  hunger-loss-multiplier: 0.5
+  valhalla-experience:
+    enabled: true
+    multiplier: 1.10
+  haste:
+    enabled: true
+    amplifier: 0
+    ambient: true
+    particles: true
+    icon: true
+camping:
+  feature-radius: 5.0
+  duration-per-feature-seconds: 60
+  features:
+    - CRAFTING_TABLE
+    - BED
+    - SMOKER
+    - BARREL
+    - WATER_CAULDRON
+    - CARTOGRAPHY_TABLE
+    - GRINDSTONE
+  spawn-protection:
+    enabled: true
+    radius: 24.0
+    natural-only: true
+    mythic-hostile-faction: NekaraHostile
+group:
+  multiplier-per-extra-player: 0.15
+  maximum-multiplier: 1.75
+visuals:
+  resting-particles:
+    enabled: true
+    particle: HAPPY_VILLAGER
+    count: 4
+    radius: 0.7
+    y-offset: 0.35
+  rested:
+    # ACTION_BAR shows the timer above the hotbar; NONE disables it.
+    indicator: ACTION_BAR
+    particles:
+      enabled: false
+      particle: END_ROD
+      count: 2
+      radius: 0.55
+      y-offset: 0.75
+
+sounds:
+  campfire-rested:
+    enabled: true
+    sound: minecraft:block.amethyst_block.chime
+    volume: 0.65
+    pitch: 1.15

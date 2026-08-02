@@ -26,11 +26,17 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 ### 1. Start a konfigurace modulů
 
 1. Nainstaluj jediný release artefakt `NekaraRPG.jar`.
-2. Spusť server a ověř vznik `plugins/NekaraRPG/config.yml`.
+2. Spusť server a ověř vznik kořenového `plugins/NekaraRPG/config.yml` a souborů
+   `auth/config.yml`, `fishing/config.yml`, `sitting/config.yml`,
+   `campfire/config.yml` a `mining/config.yml`.
 3. Ověř výchozí hodnotu true u `modules.fishing.enabled`, `modules.sitting.enabled`, `modules.campfire.enabled` a `modules.mining.enabled`.
-4. Spusť `/nekararpg status` a ověř zobrazení všech čtyř modulů.
+4. Ověř, že kořenový config neobsahuje detailní sekce modulů. Spusť
+   `/nekararpg status` a ověř zobrazení všech pěti modulů.
 5. Nastav `modules.fishing.enabled: false`, spusť `/nekararpg reload` a ověř, že rybářská minihra nezačne.
 6. Modul znovu zapni a proveď další reload.
+7. Upgraduj kopii starého monolitického configu s několika změněnými hodnotami.
+   První start je musí přenést do správných modulových souborů a odstranit staré
+   detailní sekce až po úspěšném zápisu. Druhý start nesmí vlastní hodnoty přepsat.
 
 ### 2. Běžné úspěšné rybaření
 
@@ -42,7 +48,8 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 6. Ověř zachování vanilla XP a samostatný zvuk úlovku oproti zvuku dokončení minihry.
 7. Ověř, že action bar nemá popisek `FISH` a BossBar nad ním se po každém úspěchu plní.
 8. Opakuj dost relací, aby se objevily různé počty požadovaných zásahů od 3 do 5.
-9. Po každém úspěchu ověř přitažení skutečného splávku bez průchodu pevnou stěnou; `minigame.hook-pull-distance: 0` musí pohyb vypnout.
+9. Po každém úspěchu ověř přitažení skutečného splávku bez průchodu pevnou stěnou;
+   `hook-pull-distance: 0` pod `minigame` ve `fishing/config.yml` musí pohyb vypnout.
 
 ### 3. Škálování rybaření podle ValhallaMMO
 
@@ -54,7 +61,8 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 
 ### 3a. ValhallaMMO Rested XP bonus
 
-1. Ověř ValhallaMMO a `campfire.rested.valhalla-experience.enabled: true`.
+1. Ověř ValhallaMMO a `rested.valhalla-experience.enabled: true` v
+   `campfire/config.yml`.
 2. Získej stejné skill-action XP bez Rested a s Rested; Rested hodnota má být výchozím stavem přesně `1.10x`.
 3. Opakuj s více skilly včetně Fishing a jednoho combat nebo gathering skillu. Bonus nesmí filtrovat podle typu.
 4. Získej sdílená party XP a ověř stejný bonus.
@@ -68,7 +76,8 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 2. V jeskyni spusť `/nekararpg test vein`. Ověř jemný pulz v okolí, hustší šestisekundové označení viditelné stěny a informaci, že test nedá odměnu.
 3. Udeř do pulzujícího bloku krumpáčem a ověř úspěch bez odměny. Opakuj úderem do jiného bloku a timeoutem; oba mají čistě selhat.
 4. Opakuj kolem stone, deepslate, netherrack, end stone, ores, dirt, gravel a wood. Cílem smí být jen čtyři hostitelské typy.
-5. Dočasně nastav `echo-vein.trigger-chance: 1.0`, reloaduj a vytěž hostitelský blok s Mining XP. Těžba rudy nesmí Echo Vein spustit.
+5. Dočasně nastav `echo-vein.trigger-chance: 1.0` v `mining/config.yml`, reloaduj
+   a vytěž hostitelský blok s Mining XP. Těžba rudy nesmí Echo Vein spustit.
 6. Ověř doručení původního bloku a všech běžných Valhalla dropů před startem ozvěny. Chat zůstává prázdný a zvuk objevení zazní jednou.
 7. Vytěž nebo udeř do několika jiných bloků. Cíl i časovač musí zůstat; potom označený blok skutečně vytěž.
 8. S debugem ověř `markedBlockXp`, `bonusXp`, `xpGranted` a změnu profilu. Bonus je právě jednou a přesně 25 % finálních Mining XP označeného bloku.
@@ -211,6 +220,17 @@ chycenou entitu, již zrušený fishing event a vypnutí serveru.
 11. Nainstaluj aktivní AuthMe a restartuj. NekaraAuth musí zůstat vypnutý a
     zalogovat důvod. Po zastavení serveru, odstranění AuthMe a dalším restartu
     musí NekaraAuth převzít registraci a přihlášení.
+12. Nech nepřihlášeného hráče stát v přihlašovací obrazovce. Action bar musí
+    odpočítávat zbývající čas a po výchozích 120 sekundách hráče automaticky odpojit.
+13. Přihlas se, normálně se odpoj a do deseti minut se vrať ze stejné IP adresy.
+    Hráč se musí automaticky ověřit bez hesla. Jiná IP, vypršení deseti minut,
+    `/logout`, kick, reload nebo restart serveru musí znovu vyžadovat přihlášení.
+14. V registračním i přihlašovacím GUI ověř, že hlavní položka zobrazuje hlavu
+    a skin právě připojeného nicku.
+15. S výchozí konfigurací ověř, že běžný hráč nemůže použít ani tab-completem
+    získat `/login` a `/register`. Nouzový fallback musí fungovat teprve při
+    `commands.fallback-enabled: true` v `auth/config.yml` a oprávnění
+    `nekararpg.auth.fallback-commands`.
 
 Zrychlený profil časovačů, CMI průchod, ValhallaMMO kompatibilitu a staging
 nasazení popisuje `LIVE_TESTING.md`.

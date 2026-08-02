@@ -3,6 +3,7 @@ package cz.nekara.rpg.modules.auth;
 import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.auth.AccountRepository;
 import cz.nekara.rpg.auth.AuthAccount;
+import cz.nekara.rpg.auth.AuthSessionManager;
 import cz.nekara.rpg.auth.LoginThrottle;
 import cz.nekara.rpg.auth.PasswordHasher;
 import cz.nekara.rpg.auth.YamlAccountRepository;
@@ -49,12 +50,15 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.inventory.view.AnvilView;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -89,6 +93,7 @@ public final class AuthModule implements NekaraModule, Listener {
     private AccountRepository accounts;
     private PasswordHasher passwordHasher;
     private LoginThrottle throttle;
+    private AuthSessionManager sessions;
     private ExecutorService hashExecutor;
     private String storageFailure;
     private boolean enabled;
@@ -116,6 +121,7 @@ public final class AuthModule implements NekaraModule, Listener {
         AuthConfig config = config();
         passwordHasher = new PasswordHasher(config.passwordIterations());
         throttle = new LoginThrottle(config.maximumAttempts(), Duration.ofSeconds(config.lockoutSeconds()));
+        sessions = new AuthSessionManager(Duration.ofSeconds(config.sessionDurationSeconds()));
         hashExecutor = new ThreadPoolExecutor(
                 2, 2, 0L, TimeUnit.MILLISECONDS,
                 new ArrayBlockingQueue<>(32), new AuthThreadFactory(),
@@ -169,6 +175,10 @@ public final class AuthModule implements NekaraModule, Listener {
         prompts.clear();
         processing.clear();
         authenticated.clear();
+        if (sessions != null) {
+            sessions.clear();
+            sessions = null;
+        }
         if (hashExecutor != null) {
             hashExecutor.shutdownNow();
             hashExecutor = null;
@@ -182,6 +192,10 @@ public final class AuthModule implements NekaraModule, Listener {
         AuthConfig current = config();
         passwordHasher = new PasswordHasher(current.passwordIterations());
         throttle = new LoginThrottle(current.maximumAttempts(), Duration.ofSeconds(current.lockoutSeconds()));
+        if (sessions != null) {
+            sessions.clear();
+        }
+        sessions = new AuthSessionManager(Duration.ofSeconds(current.sessionDurationSeconds()));
     }
 
     @Override
@@ -201,6 +215,11 @@ public final class AuthModule implements NekaraModule, Listener {
         return accounts == null ? 0 : accounts.count();
     }
 
+    public boolean canUseFallbackCommands(Player player) {
+        return enabled && config().fallbackCommandsEnabled()
+                && player.hasPermission("nekararpg.auth.fallback-commands");
+    }
+
     public void openMenu(Player player) {
         if (!enabled) {
             messages.send(player, "auth-disabled");
@@ -218,19 +237,21 @@ public final class AuthModule implements NekaraModule, Listener {
             inventory.setItem(slot, filler);
         }
         if (loggedIn) {
-            inventory.setItem(ACTION_SLOT, item(Material.LIME_DYE,
+            inventory.setItem(ACTION_SLOT, playerHead(player,
                     Component.text("Účet je přihlášený", NamedTextColor.GREEN),
                     Component.text(player.getName(), NamedTextColor.GRAY)));
             inventory.setItem(LOGOUT_SLOT, item(Material.BARRIER,
                     Component.text("Odhlásit se", NamedTextColor.RED),
                     Component.text("Po odhlášení bude pohyb znovu uzamčen.", NamedTextColor.GRAY)));
         } else if (registered) {
-            inventory.setItem(ACTION_SLOT, item(Material.TRIPWIRE_HOOK,
+            inventory.setItem(ACTION_SLOT, playerHead(player,
                     Component.text("Přihlásit se", NamedTextColor.AQUA),
+                    Component.text(player.getName(), NamedTextColor.WHITE),
                     Component.text("Klikni a zadej heslo v kovadlině.", NamedTextColor.GRAY)));
         } else {
-            inventory.setItem(ACTION_SLOT, item(Material.WRITABLE_BOOK,
+            inventory.setItem(ACTION_SLOT, playerHead(player,
                     Component.text("Vytvořit účet", NamedTextColor.GREEN),
+                    Component.text(player.getName(), NamedTextColor.WHITE),
                     Component.text("Klikni a zvol heslo v kovadlině.", NamedTextColor.GRAY),
                     Component.text("Registrací si chráníš tento nick.", NamedTextColor.DARK_GRAY)));
         }
@@ -315,6 +336,9 @@ public final class AuthModule implements NekaraModule, Listener {
     }
 
     public void logout(Player player) {
+        if (sessions != null) {
+            sessions.invalidate(player.getName());
+        }
         if (!enabled || !authenticated.remove(player.getUniqueId())) {
             messages.send(player, "auth-not-logged-in");
             return;
@@ -329,6 +353,9 @@ public final class AuthModule implements NekaraModule, Listener {
         }
         boolean removed = accounts.delete(username);
         if (removed) {
+            if (sessions != null) {
+                sessions.invalidate(username);
+            }
             Player online = Bukkit.getPlayerExact(username);
             if (online != null) {
                 authenticated.remove(online.getUniqueId());
@@ -358,16 +385,27 @@ public final class AuthModule implements NekaraModule, Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        requireAuthentication(event.getPlayer());
+        Player player = event.getPlayer();
+        if (!restoreSession(player)) {
+            requireAuthentication(player);
+        }
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        cleanupPlayer(event.getPlayer().getUniqueId());
+        Player player = event.getPlayer();
+        if (config().sessionEnabled() && isAuthenticated(player) && sessions != null) {
+            remoteAddress(player).ifPresent(address ->
+                    sessions.remember(player.getName(), address, Instant.now()));
+        }
+        cleanupPlayer(player.getUniqueId());
     }
 
     @EventHandler
     public void onKick(PlayerKickEvent event) {
+        if (sessions != null) {
+            sessions.invalidate(event.getPlayer().getName());
+        }
         cleanupPlayer(event.getPlayer().getUniqueId());
     }
 
@@ -394,13 +432,16 @@ public final class AuthModule implements NekaraModule, Listener {
             return;
         }
         String command = event.getMessage().trim().toLowerCase(java.util.Locale.ROOT);
-        if (command.startsWith("/login ") || command.startsWith("/l ")
-                || command.startsWith("/register ") || command.startsWith("/reg ")
-                || command.equals("/nekaraauth") || command.equals("/nauth")) {
+        if (command.equals("/nekaraauth") || command.equals("/nauth")) {
+            return;
+        }
+        boolean credentialCommand = isCredentialCommand(command);
+        if (canUseFallbackCommands(event.getPlayer()) && credentialCommand) {
             return;
         }
         event.setCancelled(true);
-        messages.send(event.getPlayer(), "auth-required");
+        messages.send(event.getPlayer(), credentialCommand
+                ? "auth-fallback-disabled" : "auth-required");
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -734,11 +775,27 @@ public final class AuthModule implements NekaraModule, Listener {
         prompts.remove(playerId);
         cancelTimeout(playerId);
         int timeoutSeconds = config().authenticationTimeoutSeconds();
-        timeoutTasks.put(playerId, Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (player.isOnline() && requiresAuthentication(player)) {
-                player.kick(messages.component("auth-timeout", Map.of()));
+        Instant deadline = Instant.now().plusSeconds(timeoutSeconds);
+        BukkitTask timeoutTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!player.isOnline() || !requiresAuthentication(player)) {
+                    cancel();
+                    timeoutTasks.remove(playerId);
+                    return;
+                }
+                long remainingSeconds = roundedSeconds(Duration.between(Instant.now(), deadline));
+                if (!Instant.now().isBefore(deadline)) {
+                    cancel();
+                    timeoutTasks.remove(playerId);
+                    player.kick(messages.component("auth-timeout", Map.of()));
+                    return;
+                }
+                messages.sendActionBar(player, "auth-time-remaining",
+                        Map.of("seconds", remainingSeconds));
             }
-        }, timeoutSeconds * 20L));
+        }.runTaskTimer(plugin, 0L, 20L);
+        timeoutTasks.put(playerId, timeoutTask);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline() || !requiresAuthentication(player)) {
                 return;
@@ -749,6 +806,34 @@ public final class AuthModule implements NekaraModule, Listener {
                 openMenu(player);
             }
         }, 2L);
+    }
+
+    private boolean restoreSession(Player player) {
+        if (!config().sessionEnabled() || sessions == null
+                || findAccount(player.getName()).isEmpty()) {
+            return false;
+        }
+        Optional<InetAddress> address = remoteAddress(player);
+        if (address.isEmpty()
+                || !sessions.isValid(player.getName(), address.get(), Instant.now())) {
+            return false;
+        }
+        authenticate(player, "auth-session-restored");
+        return true;
+    }
+
+    private Optional<InetAddress> remoteAddress(Player player) {
+        if (player.getAddress() == null || player.getAddress().getAddress() == null) {
+            return Optional.empty();
+        }
+        return Optional.of(player.getAddress().getAddress());
+    }
+
+    private boolean isCredentialCommand(String command) {
+        return command.equals("/login") || command.startsWith("/login ")
+                || command.equals("/l") || command.startsWith("/l ")
+                || command.equals("/register") || command.startsWith("/register ")
+                || command.equals("/reg") || command.startsWith("/reg ");
     }
 
     private void openPasswordPrompt(Player player, Prompt prompt) {
@@ -857,6 +942,18 @@ public final class AuthModule implements NekaraModule, Listener {
     private ItemStack item(Material material, Component name, Component... lore) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
+        meta.displayName(name);
+        if (lore.length > 0) {
+            meta.lore(List.of(lore));
+        }
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private ItemStack playerHead(Player player, Component name, Component... lore) {
+        ItemStack item = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta meta = (SkullMeta) item.getItemMeta();
+        meta.setPlayerProfile(player.getPlayerProfile());
         meta.displayName(name);
         if (lore.length > 0) {
             meta.lore(List.of(lore));

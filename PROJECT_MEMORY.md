@@ -90,6 +90,11 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
   mimo Bukkit main thread a neomezený paralelní výpočet hesel není povolen.
 - První backend je `auth/accounts.yml` za `AccountRepository`. Databáze a webové
   propojení tuto hranici zachovají; Minecraft heslo se nemá veřejně předávat webu.
+- Krátkodobá relog session je jen v paměti, váže normalizovaný nick na IP adresu
+  a ruší se při logoutu, kicku, zrušení účtu, reloadu i restartu. Na proxy bez
+  správně předané skutečné IP se musí vypnout.
+- `/login` a `/register` jsou pro běžné hráče vypnuté. Nouzový fallback vyžaduje
+  současně zapnutou konfiguraci a oprávnění `nekararpg.auth.fallback-commands`.
 - První registrace si nick nárokuje. Počáteční nasazení proto používá whitelist,
   dokud nejsou vytvořené účty administrátorů a rezervovaných nicků.
 - AuthMe se nesmí odstranit před řízenou migrací existujících účtů a živou
@@ -97,6 +102,12 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
 
 ## Konfigurace a upgrady
 
+- Kořenový `config.yml` obsahuje pouze jádro, updater a přepínače modulů.
+  Podrobné hodnoty patří do `<module>/config.yml`; současné moduly používají
+  složky `auth`, `fishing`, `sitting`, `campfire` a `mining`.
+- Přechod ze starého monolitického configu musí nejprve úspěšně uložit vlastní
+  hodnoty do modulových souborů a teprve potom odstranit staré sekce. Existující
+  modulový config má při opakovaném startu přednost a nesmí se přepsat.
 - Zabalené výchozí hodnoty musí pokrýt chybějící klíče ve stávajících
   `config.yml` a `messages.yml`; běžný upgrade nesmí vyžadovat smazání složky pluginu.
 - Zachovej uživatelsky upravené hodnoty a zprávy. Migruj pouze známé

@@ -18,15 +18,17 @@ import java.util.function.Consumer;
 
 public final class ConfigurationService {
     private final JavaPlugin plugin;
+    private final ModuleConfigurationStore moduleConfigurations;
     private PluginConfig current;
 
     public ConfigurationService(JavaPlugin plugin) {
         this.plugin = plugin;
+        this.moduleConfigurations = new ModuleConfigurationStore(plugin);
     }
 
     public PluginConfig reload() {
         plugin.reloadConfig();
-        FileConfiguration config = plugin.getConfig();
+        FileConfiguration config = moduleConfigurations.reload(plugin.getConfig());
         Consumer<String> warning = message -> plugin.getLogger().warning(message);
 
         int legacyRequiredHits = config.getInt("minigame.required-hits", -1);
@@ -278,6 +280,10 @@ public final class ConfigurationService {
                         5, 3_600, 60, "auth.login.lockout-seconds", warning),
                 validateInt(config.getInt("auth.login.timeout-seconds", 120),
                         15, 3_600, 120, "auth.login.timeout-seconds", warning),
+                config.getBoolean("auth.session.enabled", true),
+                validateInt(config.getInt("auth.session.duration-seconds", 600),
+                        30, 86_400, 600, "auth.session.duration-seconds", warning),
+                config.getBoolean("auth.commands.fallback-enabled", false),
                 config.getBoolean("auth.nickname.exact-case", true),
                 config.getBoolean("auth.gui.open-on-join", true)
         );

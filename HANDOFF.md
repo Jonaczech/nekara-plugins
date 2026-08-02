@@ -25,6 +25,26 @@ per-nick lockout a fail-closed souborové repository
 NekaraAuth zůstane vypnutý a převezme autentizaci až po odstranění AuthMe a
 následujícím plném restartu.
 
+## Rozpracovaný kandidát 1.4.0
+
+Lokální pracovní strom obsahuje kandidáta 1.4.0, který ještě není vydaný. Přidává
+desetiminutovou paměťovou relog session svázanou s nickem a IP adresou, viditelný
+odpočet dvouminutového login timeoutu, hráčskou hlavu se skinem v auth GUI a
+výchozí vypnutí `/login` a `/register`. Nouzové příkazy vyžadují současně
+`auth.commands.fallback-enabled: true` a `nekararpg.auth.fallback-commands`.
+Session se ruší při logoutu, kicku, unregisteru, reloadu a restartu a na proxy
+bez správného předávání skutečné IP se má vypnout.
+Kandidát prošel 53 testy a release buildem. Lokální artefakt je
+`NekaraRPG/dist/NekaraRPG.jar` (243819 bajtů, SHA-256
+`5F87F3BE595B737F9A38E52DBD37170C626049E9E83DB0752760F19AAC276619`).
+
+Kandidát dále rozděluje konfiguraci: kořenový `config.yml` drží jen jádro,
+updater a zapnutí modulů; podrobnosti jsou v `auth/config.yml`,
+`fishing/config.yml`, `sitting/config.yml`, `campfire/config.yml` a
+`mining/config.yml`. První start bezpečně migruje vlastní hodnoty ze starého
+monolitického souboru. Všech šest zabalených configů bylo ověřeno uvnitř
+kandidátního JARu.
+
 Metadata GitHub release, hash zpětně staženého JARu, stabilní stav, jediný asset
 i cíl tagu byly ověřeny. Zbývá živě ověřit zvuky, pořadí událostí a vyvážení na
 Purpur serveru s ValhallaMMO a celý NekaraAuth průchod z `TESTING.md`.

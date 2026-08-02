@@ -52,9 +52,12 @@ a v `disable()` musí uklidit všechny hráčské stavy a entity. Moduly registr
 `mining`. Auth se registruje první, aby nepřihlášení hráči nevstoupili do
 herních listenerů ostatních modulů.
 
-Konfigurace patří do typovaného recordu pod `configuration`, výchozí hodnoty do
-`config.yml` a hráčské texty do `messages.yml`. Pro výpočty času, škálování nebo
-stavů přidávej čisté unit testy, pokud nepotřebují samotný Bukkit.
+Konfigurace patří do typovaného recordu pod `configuration`. Kořenový `config.yml`
+smí obsahovat jen nastavení jádra, updater a přepínače `modules.*.enabled`;
+výchozí hodnoty modulu patří do `<module>/config.yml`. Hráčské texty zůstávají v
+`messages.yml`. Rozšíření musí zachovat jednorázovou migraci starých kořenových
+klíčů a nesmí přepsat existující modulový soubor. Pro výpočty času, škálování
+nebo stavů přidávej čisté unit testy, pokud nepotřebují samotný Bukkit.
 
 ## Bezpečnostní smlouva NekaraAuth
 
@@ -67,6 +70,12 @@ Hashování běží mimo hlavní serverový thread v omezeném worker poolu.
 zápis chrání offline UUID před změnou velikosti písmen. Lockout se váže na
 normalizovaný nick a chybný pokus se započítá i při odpojení během ověřování.
 Nepřihlášený hráč, včetně operátora, nesmí spustit administrativní auth příkaz.
+
+Krátkodobá relog session je pouze v paměti a musí být svázaná s normalizovaným
+nickem i IP adresou. Ruší se při logoutu, kicku, zrušení účtu, reloadu a restartu;
+nesmí nahrazovat účet ani být ukládána do YAML. Na proxy bez správného předávání
+skutečné klientské IP musí zůstat vypnutá. Příkazy s heslem `/login` a `/register`
+jsou výchozím stavem vypnuté a nouzový fallback vyžaduje konfiguraci i oprávnění.
 
 `AccountRepository` je hranice storage. Současný YAML backend zapisuje přes
 dočasný soubor a atomický replace; databázová implementace nesmí přesunout
@@ -103,7 +112,7 @@ objevení žíly, úspěšné odhalení rudy a finální dokončení mají odli�
 
 ID modulu je `mining`. Pokud klíč chybí, upgrade musí zachovat hodnotu starého
 `modules.echo-vein.enabled`. Nastavení aktivity a oprávnění zůstávají pod
-`echo-vein`.
+`echo-vein` v `mining/config.yml`.
 
 Staré nastavení a timestampy cooldownu se ignorují. Dočasné rozpracované block
 breaky a aktivní výzvy zůstávají v paměti a musí se vyčistit při vypnutí,
