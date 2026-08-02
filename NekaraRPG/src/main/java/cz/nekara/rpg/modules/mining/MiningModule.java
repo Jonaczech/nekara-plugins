@@ -17,6 +17,7 @@ import org.bukkit.Particle;
 import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -25,6 +26,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerFishEvent;
@@ -33,7 +35,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
@@ -42,16 +43,23 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class MiningModule implements NekaraModule, Listener {
     public static final String ID = "mining";
     private static final long PENDING_MAX_AGE_MILLIS = 3_000L;
+    private static final Set<Material> HOST_MATERIALS = Collections.unmodifiableSet(EnumSet.of(
+            Material.STONE,
+            Material.DEEPSLATE,
+            Material.NETHERRACK,
+            Material.END_STONE));
 
     private final NekaraRPGPlugin plugin;
     private final MessageService messages;
@@ -62,7 +70,6 @@ public final class MiningModule implements NekaraModule, Listener {
     private final Map<BlockPosition, PendingMiningAction> awaitingDrops = new HashMap<>();
     private final Map<UUID, Deque<BlockPosition>> awaitingByPlayer = new HashMap<>();
     private final Map<UUID, EchoVeinSession> sessions = new HashMap<>();
-    private final org.bukkit.NamespacedKey cooldownKey;
     private EchoVeinConfig config;
     private BukkitTask ticker;
     private boolean enabled;
@@ -78,7 +85,6 @@ public final class MiningModule implements NekaraModule, Listener {
         this.sounds = sounds;
         this.fishingModule = fishingModule;
         this.valhalla = new ValhallaMiningBridge(plugin, this::prepareExperienceCapture);
-        this.cooldownKey = new org.bukkit.NamespacedKey(plugin, "echo_vein_cooldown_until");
     }
 
     @Override
@@ -143,11 +149,15 @@ public final class MiningModule implements NekaraModule, Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void beginMiningAction(BlockBreakEvent event) {
         Player player = event.getPlayer();
-        if (!canObserve(player)) {
+        EchoVeinSession activeSession = sessions.get(player.getUniqueId());
+        EchoVeinSession targetSession = isNaturalTarget(player, event.getBlock(), activeSession)
+                ? activeSession : null;
+        if (targetSession == null && (!isHostMaterial(event.getBlock().getType()) || !canObserve(player))) {
             return;
         }
         PendingMiningAction action = new PendingMiningAction(
-                player.getUniqueId(), BlockPosition.of(event.getBlock()), event.getBlock().getLocation());
+                player.getUniqueId(), BlockPosition.of(event.getBlock()),
+                event.getBlock().getLocation(), event.getBlock().getType(), targetSession);
         activeBreaks.computeIfAbsent(player.getUniqueId(), ignored -> new ArrayDeque<>()).addLast(action);
     }
 
@@ -163,6 +173,10 @@ public final class MiningModule implements NekaraModule, Listener {
     public void finishMiningEvent(BlockBreakEvent event) {
         PendingMiningAction action = popActiveAction(event.getPlayer(), event.getBlock());
         if (action == null || event.isCancelled()) {
+            return;
+        }
+        if (action.echoSession() != null
+                && !sessions.remove(action.playerId(), action.echoSession())) {
             return;
         }
         awaitingDrops.put(action.position(), action);
@@ -191,11 +205,12 @@ public final class MiningModule implements NekaraModule, Listener {
             return;
         }
         EchoVeinSession session = sessions.get(event.getPlayer().getUniqueId());
-        if (session == null || !isPickaxe(event.getPlayer().getInventory().getItemInMainHand())) {
+        if (session == null || !session.test()
+                || !isPickaxe(event.getPlayer().getInventory().getItemInMainHand())) {
             return;
         }
         if (session.target().equals(BlockPosition.of(event.getClickedBlock()))) {
-            completeSuccess(event.getPlayer(), session);
+            completeTestSuccess(event.getPlayer());
         }
     }
 
@@ -236,7 +251,7 @@ public final class MiningModule implements NekaraModule, Listener {
         if (target == null) {
             return false;
         }
-        startSession(player, target, 0.0, null, true, false);
+        startSession(player, target, true);
         return true;
     }
 
@@ -320,19 +335,23 @@ public final class MiningModule implements NekaraModule, Listener {
         awaitingDrops.remove(action.position());
         removeAwaiting(action.playerId(), action.position());
         Player player = plugin.getServer().getPlayer(action.playerId());
-        if (player == null || !canObserve(player) || action.experience() <= 0.0
+        if (player == null || !player.isOnline()
                 || System.currentTimeMillis() - action.createdAtMillis() > PENDING_MAX_AGE_MILLIS) {
             return;
         }
+        if (action.echoSession() != null) {
+            completeMinedVein(player, action);
+            return;
+        }
+        if (!canObserve(player) || action.experience() <= 0.0) {
+            return;
+        }
+        debug(String.format(Locale.ROOT,
+                "Mining XP observed for %s: block=%s xpEvents=%d totalXp=%.4f",
+                player.getName(), action.material(), action.experienceEventCount(), action.experience()));
 
-        long now = System.currentTimeMillis();
-        long cooldownUntil = player.getPersistentDataContainer()
-                .getOrDefault(cooldownKey, PersistentDataType.LONG, 0L);
-        if (!EchoVeinMath.canTrigger(
-                cooldownUntil,
-                now,
-                ThreadLocalRandom.current().nextDouble(),
-                config.triggerChance())) {
+        if (!EchoVeinMath.winsChance(
+                ThreadLocalRandom.current().nextDouble(), config.triggerChance())) {
             return;
         }
 
@@ -340,33 +359,51 @@ public final class MiningModule implements NekaraModule, Listener {
         if (target == null) {
             return;
         }
-        ItemStack reward = config.bonusDropEnabled() ? chooseBonusDrop(action.drops()) : null;
-        startSession(player, target, action.experience(), reward, false, true);
+        debug(String.format(Locale.ROOT,
+                "Echo Vein triggered for %s: block=%s xpEvents=%d triggeringBlockXp=%.4f target=%s",
+                player.getName(), action.material(), action.experienceEventCount(),
+                action.experience(), BlockPosition.of(target)));
+        startSession(player, target, false);
     }
 
-    private void startSession(
-            Player player,
-            Block target,
-            double sourceExperience,
-            ItemStack reward,
-            boolean test,
-            boolean applyCooldown
-    ) {
-        long now = System.currentTimeMillis();
-        if (applyCooldown) {
-            player.getPersistentDataContainer().set(
-                    cooldownKey,
-                    PersistentDataType.LONG,
-                    now + (config.cooldownSeconds() * 1_000L));
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void revealOre(BlockDamageEvent event) {
+        Player player = event.getPlayer();
+        EchoVeinSession session = sessions.get(player.getUniqueId());
+        if (!isNaturalTarget(player, event.getBlock(), session) || session.revealRolled()) {
+            return;
         }
+
+        Material revealed = null;
+        if (EchoVeinMath.winsChance(
+                ThreadLocalRandom.current().nextDouble(), config.oreRevealChance())) {
+            revealed = chooseRevealedOre(event.getBlock().getType());
+        }
+        if (revealed != null) {
+            event.getBlock().setType(revealed, false);
+        }
+        EchoVeinSession updated = new EchoVeinSession(
+                session.target(),
+                revealed == null ? session.targetMaterial() : revealed,
+                session.targetLocation(),
+                session.expiresAtMillis(),
+                session.test(),
+                true);
+        sessions.replace(player.getUniqueId(), session, updated);
+        if (revealed != null) {
+            debug("Echo Vein ore revealed for " + player.getName() + ": " + revealed);
+        }
+    }
+
+    private void startSession(Player player, Block target, boolean test) {
+        long now = System.currentTimeMillis();
         EchoVeinSession session = new EchoVeinSession(
                 BlockPosition.of(target),
                 target.getType(),
                 target.getLocation().add(0.5, 0.5, 0.5),
-                sourceExperience,
-                reward == null ? null : reward.clone(),
                 now + (config.durationTicks() * 50L),
-                test);
+                test,
+                false);
         sessions.put(player.getUniqueId(), session);
         if (test) {
             messages.send(player, "echo-vein-test-started");
@@ -447,21 +484,39 @@ public final class MiningModule implements NekaraModule, Listener {
         return blockCenter.clone().add(0.0, 0.0, Math.copySign(0.52, towardPlayer.getZ()));
     }
 
-    private void completeSuccess(Player player, EchoVeinSession session) {
-        if (sessions.remove(player.getUniqueId()) == null) {
+    private void completeTestSuccess(Player player) {
+        EchoVeinSession session = sessions.remove(player.getUniqueId());
+        if (session == null || !session.test()) {
             return;
         }
-        if (session.test()) {
+        sounds.play(player, "echo-vein-success");
+        messages.send(player, "echo-vein-test-success");
+    }
+
+    private void completeMinedVein(Player player, PendingMiningAction action) {
+        double bonus = EchoVeinMath.bonusExperience(
+                action.experience(), config.experienceBonusMultiplier());
+        boolean experienceGranted = valhalla.grantBonusExperience(player, bonus);
+        ItemStack reward = config.bonusDropEnabled() ? chooseBonusDrop(action.drops()) : null;
+        boolean dropGranted = giveReward(player, reward);
+
+        Block chainedTarget = null;
+        if (EchoVeinMath.winsChance(
+                ThreadLocalRandom.current().nextDouble(), config.chainChance())) {
+            chainedTarget = findAdjacentTarget(player, action.origin());
+        }
+        boolean chained = chainedTarget != null;
+        if (chained) {
+            startSession(player, chainedTarget, false);
+        } else {
             sounds.play(player, "echo-vein-success");
-            messages.send(player, "echo-vein-test-success");
-            return;
         }
 
-        double bonus = EchoVeinMath.bonusExperience(
-                session.sourceExperience(), config.experienceBonusMultiplier());
-        valhalla.grantBonusExperience(player, bonus);
-        giveReward(player, session.reward());
-        sounds.play(player, "echo-vein-success");
+        debug(String.format(Locale.ROOT,
+                "Echo Vein completed for %s: block=%s xpEvents=%d markedBlockXp=%.4f bonusXp=%.4f "
+                        + "xpGranted=%s bonusDrop=%s chained=%s",
+                player.getName(), action.material(), action.experienceEventCount(), action.experience(), bonus,
+                experienceGranted, dropGranted, chained));
     }
 
     private boolean giveReward(Player player, ItemStack reward) {
@@ -582,11 +637,51 @@ public final class MiningModule implements NekaraModule, Listener {
         return candidates.get(0);
     }
 
+    private Block findAdjacentTarget(Player player, Location origin) {
+        Block source = origin.getBlock();
+        List<Block> candidates = new ArrayList<>();
+        for (BlockFace face : new BlockFace[]{
+                BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH,
+                BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST}) {
+            Block candidate = source.getRelative(face);
+            if (isCandidate(candidate) && isVisible(player, candidate)) {
+                candidates.add(candidate);
+            }
+        }
+        if (candidates.isEmpty()) {
+            return null;
+        }
+        Collections.shuffle(candidates, ThreadLocalRandom.current());
+        return candidates.get(0);
+    }
+
     private boolean isCandidate(Block block) {
         Material type = block.getType();
-        return !type.isAir() && type.isSolid() && !block.isLiquid()
+        return isHostMaterial(type) && type.isSolid() && !block.isLiquid()
                 && Tag.MINEABLE_PICKAXE.isTagged(type)
                 && !(block.getState() instanceof Container);
+    }
+
+    private Material chooseRevealedOre(Material host) {
+        int roll = ThreadLocalRandom.current().nextInt(100);
+        return switch (host) {
+            case STONE -> roll < 40 ? Material.COAL_ORE
+                    : roll < 70 ? Material.COPPER_ORE
+                    : roll < 92 ? Material.IRON_ORE
+                    : roll < 96 ? Material.GOLD_ORE
+                    : roll < 98 ? Material.REDSTONE_ORE
+                    : roll < 99 ? Material.LAPIS_ORE
+                    : Material.DIAMOND_ORE;
+            case DEEPSLATE -> roll < 2 ? Material.DEEPSLATE_COAL_ORE
+                    : roll < 17 ? Material.DEEPSLATE_COPPER_ORE
+                    : roll < 47 ? Material.DEEPSLATE_IRON_ORE
+                    : roll < 59 ? Material.DEEPSLATE_GOLD_ORE
+                    : roll < 84 ? Material.DEEPSLATE_REDSTONE_ORE
+                    : roll < 92 ? Material.DEEPSLATE_LAPIS_ORE
+                    : Material.DEEPSLATE_DIAMOND_ORE;
+            case NETHERRACK -> roll < 85 ? Material.NETHER_QUARTZ_ORE : Material.NETHER_GOLD_ORE;
+            default -> null;
+        };
     }
 
     private boolean isVisible(Player player, Block block) {
@@ -606,18 +701,45 @@ public final class MiningModule implements NekaraModule, Listener {
         return item != null && item.getType().name().endsWith("_PICKAXE");
     }
 
+    private static boolean isHostMaterial(Material material) {
+        return HOST_MATERIALS.contains(material);
+    }
+
+    private static boolean isNaturalTarget(Player player, Block block, EchoVeinSession session) {
+        return session != null && !session.test()
+                && session.target().equals(BlockPosition.of(block))
+                && isPickaxe(player.getInventory().getItemInMainHand());
+    }
+
+    private void debug(String message) {
+        if (plugin.configuration().get().debug()) {
+            plugin.getLogger().info("[Debug] " + message);
+        }
+    }
+
     private static final class PendingMiningAction {
         private final UUID playerId;
         private final BlockPosition position;
         private final Location origin;
+        private final Material material;
+        private final EchoVeinSession echoSession;
         private final long createdAtMillis = System.currentTimeMillis();
         private final List<ItemStack> drops = new ArrayList<>();
+        private int experienceEventCount;
         private double experience;
 
-        private PendingMiningAction(UUID playerId, BlockPosition position, Location origin) {
+        private PendingMiningAction(
+                UUID playerId,
+                BlockPosition position,
+                Location origin,
+                Material material,
+                EchoVeinSession echoSession
+        ) {
             this.playerId = playerId;
             this.position = position;
             this.origin = origin.clone();
+            this.material = material;
+            this.echoSession = echoSession;
         }
 
         private UUID playerId() {
@@ -632,12 +754,24 @@ public final class MiningModule implements NekaraModule, Listener {
             return origin.clone();
         }
 
+        private EchoVeinSession echoSession() {
+            return echoSession;
+        }
+
+        private Material material() {
+            return material;
+        }
+
         private long createdAtMillis() {
             return createdAtMillis;
         }
 
         private double experience() {
             return experience;
+        }
+
+        private int experienceEventCount() {
+            return experienceEventCount;
         }
 
         private List<ItemStack> drops() {
@@ -647,6 +781,7 @@ public final class MiningModule implements NekaraModule, Listener {
         private void addExperience(double amount) {
             if (Double.isFinite(amount) && amount > 0.0) {
                 experience += amount;
+                experienceEventCount++;
             }
         }
 
@@ -665,10 +800,9 @@ public final class MiningModule implements NekaraModule, Listener {
             BlockPosition target,
             Material targetMaterial,
             Location targetLocation,
-            double sourceExperience,
-            ItemStack reward,
             long expiresAtMillis,
-            boolean test
+            boolean test,
+            boolean revealRolled
     ) {
     }
 }

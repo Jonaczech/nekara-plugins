@@ -36,6 +36,7 @@ class ResourceYamlTest {
             Map<String, Object> updater = (Map<String, Object>) root.get("updater");
             Map<String, Object> modules = (Map<String, Object>) root.get("modules");
             Map<String, Object> echoVein = (Map<String, Object>) root.get("echo-vein");
+            Map<String, Object> oreReveal = (Map<String, Object>) echoVein.get("ore-reveal");
             Map<String, Object> sitting = (Map<String, Object>) root.get("sitting");
             Map<String, Object> campfire = (Map<String, Object>) root.get("campfire");
             Map<String, Object> sounds = (Map<String, Object>) root.get("sounds");
@@ -57,11 +58,13 @@ class ResourceYamlTest {
             assertNotNull(modules.get("mining"));
             assertFalse(modules.containsKey("echo-vein"));
             assertFalse(echoVein.containsKey("minimum-mining-level"));
-            assertEquals(0.04, ((Number) echoVein.get("trigger-chance")).doubleValue(), 0.0001);
-            assertEquals(480, ((Number) echoVein.get("cooldown-seconds")).intValue());
+            assertEquals(0.05, ((Number) echoVein.get("trigger-chance")).doubleValue(), 0.0001);
+            assertEquals(0.50, ((Number) echoVein.get("chain-chance")).doubleValue(), 0.0001);
+            assertFalse(echoVein.containsKey("cooldown-seconds"));
             assertEquals(0.25,
                     ((Number) echoVein.get("experience-bonus-multiplier")).doubleValue(), 0.0001);
             assertTrue((Boolean) echoVein.get("bonus-drop-enabled"));
+            assertEquals(0.25, ((Number) oreReveal.get("chance")).doubleValue(), 0.0001);
             assertTrue((Boolean) updater.get("automatic-checks"));
             assertTrue((Boolean) updater.get("auto-download"));
             assertTrue((Boolean) updater.get("notify-admins"));

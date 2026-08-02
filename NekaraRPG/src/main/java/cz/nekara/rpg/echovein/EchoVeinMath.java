@@ -6,16 +6,19 @@ public final class EchoVeinMath {
     private EchoVeinMath() {
     }
 
-    public static boolean canTrigger(
-            long cooldownUntilMillis,
-            long nowMillis,
-            double randomRoll,
-            double triggerChance
-    ) {
-        return cooldownUntilMillis <= nowMillis
-                && Double.isFinite(randomRoll)
+    public static boolean winsChance(double randomRoll, double chance) {
+        return Double.isFinite(randomRoll)
                 && randomRoll >= 0.0
-                && randomRoll < triggerChance;
+                && Double.isFinite(chance)
+                && chance > 0.0
+                && randomRoll < chance;
+    }
+
+    public static double migratePreviousDefaultTriggerChance(double configuredChance) {
+        return Double.isFinite(configuredChance)
+                && Math.abs(configuredChance - 0.04) < 0.000_001
+                ? 0.05
+                : configuredChance;
     }
 
     public static double bonusExperience(double sourceExperience, double multiplier) {

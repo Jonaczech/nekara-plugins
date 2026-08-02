@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.2.4
+
+- Raised the default Echo Vein trigger chance from 4% to 5% and removed its
+  per-player cooldown. Existing 4% defaults migrate to 5%; legacy
+  `cooldown-seconds` values and stored cooldown timestamps are ignored.
+- Limited automatic triggers and targets to stone, deepslate, netherrack, and
+  end stone so ordinary excavation drives the activity while natural ores stay
+  distinct.
+- Changed natural completion from clicking the marker to actually mining the
+  marked block. Its finalized ValhallaMMO Mining XP now supplies the one-time
+  25% `PLUGIN` bonus and its own finalized drops supply the optional bonus item.
+- Added a 50% chance for a completed target to continue into a visible
+  face-adjacent host block. A chained target replaces the normal success sound
+  with the next discovery sound and cannot also roll the independent 5% start.
+- Added a one-time 25% ore reveal when mining of a marked block begins. Stone
+  and deepslate use weighted Overworld ores, netherrack uses quartz or Nether
+  gold, and end stone remains unchanged because vanilla has no native End ore.
+- Added debug audit lines for triggering XP, marked-block XP, granted bonus XP,
+  bonus drops, ore reveals, and chain results.
+
 ## 1.2.3
 
 - Renamed the gameplay module from `echo-vein` to `mining` (`NekaraMining`),

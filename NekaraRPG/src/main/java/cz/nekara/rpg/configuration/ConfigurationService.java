@@ -1,6 +1,7 @@
 package cz.nekara.rpg.configuration;
 
 import cz.nekara.rpg.campfire.CampFeature;
+import cz.nekara.rpg.echovein.EchoVeinMath;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
@@ -195,11 +196,19 @@ public final class ConfigurationService {
                 campfireVisuals
         );
 
+        double configuredEchoVeinChance = config.getDouble("echo-vein.trigger-chance", 0.05);
+        double migratedEchoVeinChance = EchoVeinMath.migratePreviousDefaultTriggerChance(
+                configuredEchoVeinChance);
+        boolean migratePreviousEchoVeinChance = Double.compare(
+                configuredEchoVeinChance, migratedEchoVeinChance) != 0;
+        if (migratePreviousEchoVeinChance) {
+            warning.accept("Migrating the previous Echo Vein trigger default from 4% to 5%.");
+        }
         EchoVeinConfig echoVein = new EchoVeinConfig(
-                validateDouble(config.getDouble("echo-vein.trigger-chance", 0.04),
-                        0.0, 1.0, 0.04, "echo-vein.trigger-chance", warning),
-                validateInt(config.getInt("echo-vein.cooldown-seconds", 480),
-                        0, 86_400, 480, "echo-vein.cooldown-seconds", warning),
+                validateDouble(migratedEchoVeinChance,
+                        0.0, 1.0, 0.05, "echo-vein.trigger-chance", warning),
+                validateDouble(config.getDouble("echo-vein.chain-chance", 0.50),
+                        0.0, 1.0, 0.50, "echo-vein.chain-chance", warning),
                 validateInt(config.getInt("echo-vein.duration-ticks", 120),
                         20, 600, 120, "echo-vein.duration-ticks", warning),
                 validateInt(config.getInt("echo-vein.search-radius", 4),
@@ -209,6 +218,8 @@ public final class ConfigurationService {
                 validateDouble(config.getDouble("echo-vein.experience-bonus-multiplier", 0.25),
                         0.0, 5.0, 0.25, "echo-vein.experience-bonus-multiplier", warning),
                 config.getBoolean("echo-vein.bonus-drop-enabled", true),
+                validateDouble(config.getDouble("echo-vein.ore-reveal.chance", 0.25),
+                        0.0, 1.0, 0.25, "echo-vein.ore-reveal.chance", warning),
                 parseDataFreeParticle(config.getString("echo-vein.particles.particle", "END_ROD"),
                         "END_ROD", "echo-vein.particles.particle", warning),
                 validateInt(config.getInt("echo-vein.particles.count", 8),

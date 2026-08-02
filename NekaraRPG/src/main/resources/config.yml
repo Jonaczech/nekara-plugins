@@ -27,21 +27,28 @@ modules:
     enabled: true
 
 # Rare activity available at every ValhallaMMO Mining level. A valid natural
-# Mining XP action may reveal one nearby pickaxe-mineable block.
+# Mining XP action may reveal one nearby pickaxe-mineable block. There is no
+# cooldown between eligible actions.
 echo-vein:
-  # 0.04 means a 4% chance after an eligible mining action.
-  trigger-chance: 0.04
-  cooldown-seconds: 480
+  # 0.05 means a 5% chance after every eligible mining action.
+  trigger-chance: 0.05
+  # A completed target can continue into one visible face-adjacent block.
+  chain-chance: 0.50
   # 120 ticks is a six-second response window.
   duration-ticks: 120
   search-radius: 4
   pulse-interval-ticks: 10
-  # Success grants 25% of the final triggering Mining XP. PLUGIN XP is used so
+  # Success grants 25% of the marked block's final Mining XP. PLUGIN XP is used so
   # Rested and Valhalla global multipliers are not applied a second time.
   experience-bonus-multiplier: 0.25
-  # One item is selected from the action's actual finalized natural and
+  # One item is selected from the marked block's actual finalized natural and
   # Valhalla-prepared drops. Stack size and Fortune are never rerolled.
   bonus-drop-enabled: true
+  ore-reveal:
+    # Rolled once when natural mining of a marked block begins. Stone and
+    # deepslate reveal weighted Overworld ores, netherrack reveals quartz or
+    # Nether gold, and end stone remains unchanged.
+    chance: 0.25
   particles:
     # A subtle nearby hint is combined with a denser pulse on the visible face.
     particle: END_ROD

@@ -62,25 +62,32 @@ ValhallaMMO or its Mining skill is unavailable. A Bukkit block break alone is
 not eligibility evidence: the module correlates the break with a non-cancelled
 ValhallaMMO Mining `SKILL_ACTION` XP event.
 
-The source XP amount is observed after other XP modifiers. A delayed success
-uses Valhalla's `PLUGIN` reason so global and Rested multipliers are not applied
-again. Bonus loot is selected from cloned final natural drops and Valhalla's
-prepared block drops for the same action. Selection is weighted by actual stack
-amount, then capped to one item; never recalculate Fortune or generate a
-separate loot table.
+The marked block's XP amount is observed after other XP modifiers. Delayed
+success uses Valhalla's `PLUGIN` reason so Mining, global, and Rested multipliers
+are not applied again. Bonus loot is selected from cloned final natural drops
+and Valhalla's prepared block drops for the marked block. Selection is weighted
+by actual stack amount, then capped to one item; never recalculate Fortune or
+generate a separate loot table.
 
-Echo Vein is available at every Mining level. Target blocks must belong to
-Paper's `MINEABLE_PICKAXE` tag. Other block interactions do not cancel the
-activity. Natural attempts have no chat output: discovery and success each use
-one sound, the action bar carries the timer, and natural timeout is silent.
+Echo Vein is available at every Mining level. Automatic triggers and targets
+are restricted to stone, deepslate, netherrack, and end stone in Paper's
+`MINEABLE_PICKAXE` tag. The activity has no cooldown. Each completed target may
+chain once to a visible face-adjacent host and must not also roll the independent
+base trigger.
+
+The first natural `BlockDamageEvent` rolls ore reveal exactly once. A transformed
+target updates the session material before the ticker validates it. Other block
+interactions do not cancel the activity. Natural attempts have no chat output:
+discovery and final success each use one sound, the action bar carries the
+timer, and natural timeout is silent.
 
 The module ID is `mining`. When that key is absent, upgrades must preserve the
 legacy `modules.echo-vein.enabled` value. Activity-specific `echo-vein` settings
 and permissions remain stable.
 
-Challenge cooldown timestamps use the player's persistent data container.
-Transient pending breaks and active challenges stay in memory and must be
-cleared on disable, reload, disconnect, or invalid state.
+Legacy cooldown settings and player timestamps are ignored. Transient pending
+breaks and active challenges stay in memory and must be cleared on disable,
+reload, disconnect, or invalid state.
 
 ## Updater Contract
 
