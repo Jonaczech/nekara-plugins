@@ -6,44 +6,33 @@ Repozitář je publikovaný jako
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 Výchozí větev je `main`.
 
-Nejnovější vydaná verze je **NekaraRPG 1.3.0**:
+Nejnovější vydaná verze je **NekaraRPG 1.4.0**:
 
-- tag: `v1.3.0`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.3.0>
+- tag: `v1.4.0`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.4.0>
 - nasazovaný soubor: `NekaraRPG.jar`
-- zdrojové PR: <https://github.com/Jonaczech/nekara-plugins/pull/18>
-- release merge commit: `d16386f16a73ed08c87ffb543c67b56f84ac56eb`
+- zdrojové PR: <https://github.com/Jonaczech/nekara-plugins/pull/20>
+- release merge commit: `58a636151a53e8dedf89adf37462a6b130019c6a`
 - SHA-256 vydaného JARu:
-  `8B60373F4839C48A5523017117A3EF6F41F1BBA641BBE3CFB90B95A4A776541D`
-- velikost release assetu: `230454` bajtů
-- automatické ověření: 49 úspěšných testů
+  `5F87F3BE595B737F9A38E52DBD37170C626049E9E83DB0752760F19AAC276619`
+- velikost release assetu: `243819` bajtů
+- automatické ověření: 53 úspěšných testů
 
-Verze 1.3.0 přidává modul `auth` (NekaraAuth): GUI registraci a přihlášení přes
-virtuální kovadlinu, ochranu nicku pro offline-mode, PBKDF2-HMAC-SHA256,
-per-nick lockout a fail-closed souborové repository
-`plugins/NekaraRPG/auth/accounts.yml`. Pokud je při startu aktivní AuthMe,
-NekaraAuth zůstane vypnutý a převezme autentizaci až po odstranění AuthMe a
-následujícím plném restartu.
-
-## Rozpracovaný kandidát 1.4.0
-
-Lokální pracovní strom obsahuje kandidáta 1.4.0, který ještě není vydaný. Přidává
+Verze 1.4.0 rozšiřuje NekaraAuth o
 desetiminutovou paměťovou relog session svázanou s nickem a IP adresou, viditelný
 odpočet dvouminutového login timeoutu, hráčskou hlavu se skinem v auth GUI a
 výchozí vypnutí `/login` a `/register`. Nouzové příkazy vyžadují současně
-`auth.commands.fallback-enabled: true` a `nekararpg.auth.fallback-commands`.
+`commands.fallback-enabled: true` v `auth/config.yml` a
+`nekararpg.auth.fallback-commands`.
 Session se ruší při logoutu, kicku, unregisteru, reloadu a restartu a na proxy
 bez správného předávání skutečné IP se má vypnout.
-Kandidát prošel 53 testy a release buildem. Lokální artefakt je
-`NekaraRPG/dist/NekaraRPG.jar` (243819 bajtů, SHA-256
-`5F87F3BE595B737F9A38E52DBD37170C626049E9E83DB0752760F19AAC276619`).
 
-Kandidát dále rozděluje konfiguraci: kořenový `config.yml` drží jen jádro,
+Verze dále rozděluje konfiguraci: kořenový `config.yml` drží jen jádro,
 updater a zapnutí modulů; podrobnosti jsou v `auth/config.yml`,
 `fishing/config.yml`, `sitting/config.yml`, `campfire/config.yml` a
 `mining/config.yml`. První start bezpečně migruje vlastní hodnoty ze starého
 monolitického souboru. Všech šest zabalených configů bylo ověřeno uvnitř
-kandidátního JARu.
+vydaného JARu.
 
 Metadata GitHub release, hash zpětně staženého JARu, stabilní stav, jediný asset
 i cíl tagu byly ověřeny. Zbývá živě ověřit zvuky, pořadí událostí a vyvážení na
