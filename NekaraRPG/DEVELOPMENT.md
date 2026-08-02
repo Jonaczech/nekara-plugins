@@ -18,7 +18,7 @@ Modules are not built as separate plugins. A release is complete only when:
    one `NekaraRPG.jar`, and exposes its SHA-256 digest through release metadata.
 
 Use a patch version for fixes and a minor version for a new module or meaningful
-gameplay behavior. Keep fishing, sitting, and campfire independently toggleable
+gameplay behavior. Keep fishing, sitting, campfire, and mining independently toggleable
 under `modules` in `config.yml`.
 
 ## Standard Workflow
@@ -48,16 +48,16 @@ certificate or truststore.
 
 Each module implements `NekaraModule`, owns its listeners and scheduler tasks,
 and must clean all player state and entities in `disable()`. Register modules in
-dependency order in `NekaraRPGPlugin`: `fishing`, `sitting`, then `campfire`.
+dependency order in `NekaraRPGPlugin`: `fishing`, `sitting`, `campfire`, then `mining`.
 
 Configuration belongs in a typed record under `configuration`, defaults belong
 in `config.yml`, and player-facing text belongs in `messages.yml`. Add pure unit
 tests for timing, scaling, or state calculations whenever Bukkit itself is not
 required.
 
-## Echo Vein Contract
+## NekaraMining and Echo Vein Contract
 
-Echo Vein is a separate optional module and must remain fail-soft when
+Echo Vein is the first activity in the optional `mining` module and must remain fail-soft when
 ValhallaMMO or its Mining skill is unavailable. A Bukkit block break alone is
 not eligibility evidence: the module correlates the break with a non-cancelled
 ValhallaMMO Mining `SKILL_ACTION` XP event.
@@ -70,8 +70,13 @@ amount, then capped to one item; never recalculate Fortune or generate a
 separate loot table.
 
 Echo Vein is available at every Mining level. Target blocks must belong to
-Paper's `MINEABLE_PICKAXE` tag. Natural attempts send only their initial timed
-discovery message; completion feedback remains visual and audible without chat.
+Paper's `MINEABLE_PICKAXE` tag. Other block interactions do not cancel the
+activity. Natural attempts have no chat output: discovery and success each use
+one sound, the action bar carries the timer, and natural timeout is silent.
+
+The module ID is `mining`. When that key is absent, upgrades must preserve the
+legacy `modules.echo-vein.enabled` value. Activity-specific `echo-vein` settings
+and permissions remain stable.
 
 Challenge cooldown timestamps use the player's persistent data container.
 Transient pending breaks and active challenges stay in memory and must be

@@ -1,4 +1,4 @@
-package cz.nekara.rpg.modules.echovein;
+package cz.nekara.rpg.modules.mining;
 
 import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.compatibility.ValhallaMiningBridge;
@@ -49,8 +49,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
-public final class EchoVeinModule implements NekaraModule, Listener {
-    public static final String ID = "echo-vein";
+public final class MiningModule implements NekaraModule, Listener {
+    public static final String ID = "mining";
     private static final long PENDING_MAX_AGE_MILLIS = 3_000L;
 
     private final NekaraRPGPlugin plugin;
@@ -67,7 +67,7 @@ public final class EchoVeinModule implements NekaraModule, Listener {
     private BukkitTask ticker;
     private boolean enabled;
 
-    public EchoVeinModule(
+    public MiningModule(
             NekaraRPGPlugin plugin,
             MessageService messages,
             SoundService sounds,
@@ -196,8 +196,6 @@ public final class EchoVeinModule implements NekaraModule, Listener {
         }
         if (session.target().equals(BlockPosition.of(event.getClickedBlock()))) {
             completeSuccess(event.getPlayer(), session);
-        } else {
-            completeFailure(event.getPlayer(), true);
         }
     }
 
@@ -372,11 +370,9 @@ public final class EchoVeinModule implements NekaraModule, Listener {
         sessions.put(player.getUniqueId(), session);
         if (test) {
             messages.send(player, "echo-vein-test-started");
-        } else {
-            int seconds = (int) Math.ceil(config.durationTicks() / 20.0);
-            messages.send(player, "echo-vein-found", Map.of("seconds", seconds));
         }
         pulse(player, session);
+        sounds.playAt(player, "echo-vein-pulse", session.targetLocation());
     }
 
     private void tick() {
@@ -432,7 +428,6 @@ public final class EchoVeinModule implements NekaraModule, Listener {
                 targetSpread,
                 targetSpread,
                 0.01);
-        sounds.playAt(player, "echo-vein-pulse", session.targetLocation());
     }
 
     private Location visibleSurface(Player player, Location blockCenter) {
@@ -485,9 +480,11 @@ public final class EchoVeinModule implements NekaraModule, Listener {
         if (removed == null) {
             return;
         }
-        sounds.play(player, "echo-vein-failure");
-        if (notify && removed.test()) {
-            messages.send(player, "echo-vein-test-failure");
+        if (removed.test()) {
+            sounds.play(player, "echo-vein-failure");
+            if (notify) {
+                messages.send(player, "echo-vein-test-failure");
+            }
         }
     }
 

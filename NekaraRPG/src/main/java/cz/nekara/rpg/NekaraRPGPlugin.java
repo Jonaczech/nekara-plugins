@@ -6,8 +6,8 @@ import cz.nekara.rpg.configuration.PluginConfig;
 import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.modules.ModuleRegistry;
 import cz.nekara.rpg.modules.campfire.CampfireModule;
-import cz.nekara.rpg.modules.echovein.EchoVeinModule;
 import cz.nekara.rpg.modules.fishing.FishingModule;
+import cz.nekara.rpg.modules.mining.MiningModule;
 import cz.nekara.rpg.modules.sitting.SittingModule;
 import cz.nekara.rpg.sounds.SoundService;
 import cz.nekara.rpg.updater.UpdaterService;
@@ -22,7 +22,7 @@ public final class NekaraRPGPlugin extends JavaPlugin {
     private FishingModule fishingModule;
     private SittingModule sittingModule;
     private CampfireModule campfireModule;
-    private EchoVeinModule echoVeinModule;
+    private MiningModule miningModule;
 
     @Override
     public void onEnable() {
@@ -38,13 +38,13 @@ public final class NekaraRPGPlugin extends JavaPlugin {
         fishingModule = new FishingModule(this, messages, sounds);
         sittingModule = new SittingModule(this, messages);
         campfireModule = new CampfireModule(this, messages, sounds, sittingModule);
-        echoVeinModule = new EchoVeinModule(this, messages, sounds, fishingModule);
+        miningModule = new MiningModule(this, messages, sounds, fishingModule);
         modules.register(fishingModule);
         modules.register(sittingModule);
         modules.register(campfireModule);
-        modules.register(echoVeinModule);
+        modules.register(miningModule);
         fishingModule.registerCommand(new NekaraRPGCommand(
-                this, fishingModule, sittingModule, campfireModule, echoVeinModule,
+                this, fishingModule, sittingModule, campfireModule, miningModule,
                 modules, messages, updater));
 
         reloadPlugin();
@@ -87,8 +87,8 @@ public final class NekaraRPGPlugin extends JavaPlugin {
         return campfireModule;
     }
 
-    public EchoVeinModule echoVeinModule() {
-        return echoVeinModule;
+    public MiningModule miningModule() {
+        return miningModule;
     }
 
     public UpdaterService updater() {

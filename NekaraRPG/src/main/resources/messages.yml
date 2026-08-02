@@ -62,7 +62,6 @@ campfire-rested-granted: "<green>Jsi odpočatý.</green> <gray>Rested bonus: %du
 campfire-rested-active: "<green>Rested je aktivní.</green> <gray>Zbývá %remaining% s · skupina %group% · %multiplier%x</gray>"
 campfire-rest-complete: "<gold>U ohně ses plně zotavil.</gold>"
 campfire-rest-left: "<gray>Vzdálil ses od tepla ohně.</gray>"
-echo-vein-found: "%prefix%&bNašel jsi puklinu v žíle! &7Máš &f%seconds% sekund&7, než zmizí."
 echo-vein-active: "<aqua>Ozvěna žíly</aqua> <dark_gray>|</dark_gray> <white>%seconds% s</white>"
 echo-vein-test-started: "%prefix%&bTestovací Ozvěna žíly spuštěna. &7Tento pokus nedává odměnu."
 echo-vein-test-success: "%prefix%&aTestovací puklinu jsi našel."

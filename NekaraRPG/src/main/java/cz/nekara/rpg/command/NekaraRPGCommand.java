@@ -5,8 +5,8 @@ import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.minigame.FishingMinigameManager;
 import cz.nekara.rpg.modules.ModuleRegistry;
 import cz.nekara.rpg.modules.campfire.CampfireModule;
-import cz.nekara.rpg.modules.echovein.EchoVeinModule;
 import cz.nekara.rpg.modules.fishing.FishingModule;
+import cz.nekara.rpg.modules.mining.MiningModule;
 import cz.nekara.rpg.modules.sitting.SittingModule;
 import cz.nekara.rpg.sitting.SitResult;
 import cz.nekara.rpg.updater.UpdaterService;
@@ -27,7 +27,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
     private final FishingModule fishingModule;
     private final SittingModule sittingModule;
     private final CampfireModule campfireModule;
-    private final EchoVeinModule echoVeinModule;
+    private final MiningModule miningModule;
     private final ModuleRegistry modules;
     private final MessageService messages;
     private final UpdaterService updater;
@@ -37,7 +37,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
             FishingModule fishingModule,
             SittingModule sittingModule,
             CampfireModule campfireModule,
-            EchoVeinModule echoVeinModule,
+            MiningModule miningModule,
             ModuleRegistry modules,
             MessageService messages,
             UpdaterService updater
@@ -46,7 +46,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
         this.fishingModule = fishingModule;
         this.sittingModule = sittingModule;
         this.campfireModule = campfireModule;
-        this.echoVeinModule = echoVeinModule;
+        this.miningModule = miningModule;
         this.modules = modules;
         this.messages = messages;
         this.updater = updater;
@@ -78,7 +78,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                         "seated", sittingModule.seatedCount(),
                         "resting", campfireModule.restingCount(),
                         "rested", campfireModule.restedCount(),
-                        "echo_active", echoVeinModule.activeCount(),
+                        "echo_active", miningModule.activeCount(),
                         "modules", modules.enabledModuleIds().isEmpty()
                                 ? "none"
                                 : String.join(", ", modules.enabledModuleIds())
@@ -136,9 +136,9 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                 }
                 String testType = args.length >= 2 ? args[1].toLowerCase(Locale.ROOT) : "fishing";
                 if ("vein".equals(testType) || "echo".equals(testType)) {
-                    if (!modules.isEnabled(EchoVeinModule.ID)) {
-                        messages.send(sender, "module-disabled", Map.of("module", EchoVeinModule.ID));
-                    } else if (!echoVeinModule.startTest(player)) {
+                    if (!modules.isEnabled(MiningModule.ID)) {
+                        messages.send(sender, "module-disabled", Map.of("module", MiningModule.ID));
+                    } else if (!miningModule.startTest(player)) {
                         messages.send(sender, "echo-vein-test-unavailable");
                     }
                     yield true;
@@ -177,7 +177,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                 }
                 boolean cancelledFishing = manager.cancelByCommand(
                         target.getUniqueId(), sender, target.getName());
-                boolean cancelledEcho = !cancelledFishing && echoVeinModule.cancelByCommand(
+                boolean cancelledEcho = !cancelledFishing && miningModule.cancelByCommand(
                         target.getUniqueId(), sender, target.getName());
                 if (!cancelledFishing && !cancelledEcho) {
                     messages.send(sender, "no-active-game");

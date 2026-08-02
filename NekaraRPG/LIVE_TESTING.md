@@ -102,12 +102,15 @@ group key and add nearby camp structures without changing the sitting contract.
 1. Use `/nekararpg test vein` in several cave shapes and verify the selected block is visible, reachable, pickaxe-mineable, and shown only to the test player.
 2. Confirm the immediate one-block area has a subtle pulse while the visible target face is markedly denser. Dirt, gravel, and wood must never be selected.
 3. Set trigger chance to `1.0`, mine a natural Valhalla Mining block with both a new and experienced profile, and verify the echo starts at either level only after the original mining rewards finish.
-4. Verify natural chat contains one discovery message with the time limit and no later success or failure message.
-5. Complete it and compare the Valhalla XP log: the bonus must equal 25% of the final source amount and use reason `PLUGIN`.
-6. Inspect the bonus item. It must be one exact item from the finalized natural or Valhalla-prepared output, including metadata, never a rerolled Fortune stack. `/nekararpg test vein` must grant none.
-7. Test Rested, vein mining, Silk Touch, full inventory overflow, wrong-block input, timeout, disconnect, death, teleport, and fishing priority.
-8. Restore defaults (`0.04` chance and `480` second cooldown), reconnect, and verify the cooldown remains active.
-9. Disable ValhallaMMO or its Mining skill and verify NekaraRPG starts fail-soft while automatic Echo Vein triggers remain unavailable.
+4. Verify natural chat remains empty, the discovery sound plays once, and the action-bar timer appears.
+5. Mine several non-target blocks and verify the active target and timer remain. Complete the target and verify one success sound.
+6. Compare the Valhalla XP log: the bonus must equal 25% of the final source amount and use reason `PLUGIN`.
+7. Inspect the bonus item. It must be one exact item from the finalized natural or Valhalla-prepared output, including metadata, never a rerolled Fortune stack. `/nekararpg test vein` must grant none.
+8. Let a natural attempt expire and verify it produces no chat or failure sound.
+9. Test Rested, vein mining, Silk Touch, full inventory overflow, disconnect, death, teleport, and fishing priority.
+10. Verify both the new `modules.mining.enabled` toggle and fallback from the legacy `modules.echo-vein.enabled` value.
+11. Restore defaults (`0.04` chance and `480` second cooldown), reconnect, and verify the cooldown remains active.
+12. Disable ValhallaMMO or its Mining skill and verify NekaraRPG starts fail-soft while automatic Echo Vein triggers remain unavailable.
 
 ## Updater Acceptance
 

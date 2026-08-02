@@ -23,7 +23,7 @@ modules:
     enabled: true
   campfire:
     enabled: true
-  echo-vein:
+  mining:
     enabled: true
 
 # Rare activity available at every ValhallaMMO Mining level. A valid natural
