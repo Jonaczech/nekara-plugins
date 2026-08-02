@@ -15,7 +15,7 @@ Tento repozitář obsahuje serverové Minecraft pluginy pro ekosystém Nekara.
 
 | Plugin | Stav | Popis |
 | --- | --- | --- |
-| `NekaraRPG` | aktivní | Centrální modulární RPG plugin s rybařením, sezením, odpočinkem u ohně a NekaraMining. |
+| `NekaraRPG` | aktivní | Centrální modulární plugin s NekaraAuth, rybařením, sezením, odpočinkem u ohně a NekaraMining. |
 
 ## Aktuální směr
 

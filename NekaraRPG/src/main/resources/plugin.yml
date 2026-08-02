@@ -4,7 +4,7 @@ main: cz.nekara.rpg.NekaraRPGPlugin
 api-version: '26.1'
 authors:
   - Nekara
-description: Modular RPG and immersion systems for Nekara, including fishing, camping, and skill trials.
+description: Modular RPG, authentication, and immersion systems for Nekara.
 softdepend:
   - ValhallaMMO
   - MythicMobs
@@ -13,6 +13,21 @@ commands:
     description: Manage NekaraRPG.
     usage: /nekararpg <help|reload|status|update|sit|stand|test [fishing|vein]|cancel [player]>
     aliases: [nrpg, nekarafishing, nfishing]
+  nekaraauth:
+    description: Opens and administers NekaraAuth.
+    usage: /nekaraauth [menu|status|unregister <player>]
+    aliases: [nauth]
+  login:
+    description: Fallback NekaraAuth login command; the GUI is recommended.
+    usage: /login <password>
+    aliases: [l]
+  register:
+    description: Fallback NekaraAuth registration command; the GUI is recommended.
+    usage: /register <password> <password>
+    aliases: [reg]
+  logout:
+    description: Logs the current player out of NekaraAuth.
+    usage: /logout
 permissions:
   nekararpg.use:
     description: Allows the fishing minigame to start.
@@ -50,6 +65,9 @@ permissions:
   nekararpg.echo-vein.use:
     description: Allows ValhallaMMO Mining actions to trigger Echo Vein.
     default: true
+  nekararpg.auth.admin:
+    description: Allows authenticated players and console to administer NekaraAuth accounts.
+    default: op
   nekarafishing.use:
     description: Legacy permission for the fishing minigame.
     default: true

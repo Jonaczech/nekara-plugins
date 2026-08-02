@@ -18,7 +18,7 @@ Moduly se nesestavují jako samostatné pluginy. Release je úplný pouze tehdy,
    jeden `NekaraRPG.jar` a zpřístupňuje jeho SHA-256 v release metadatech.
 
 Pro opravy používej patch verzi, pro nový modul nebo významnou herní změnu minor
-verzi. Fishing, sitting, campfire a mining musí zůstat samostatně zapínatelné
+verzi. Auth, fishing, sitting, campfire a mining musí zůstat samostatně zapínatelné
 pod `modules` v `config.yml`.
 
 ## Standardní postup
@@ -48,11 +48,30 @@ truststore konkrétního zařízení.
 
 Každý modul implementuje `NekaraModule`, vlastní své listenery a scheduler tasky
 a v `disable()` musí uklidit všechny hráčské stavy a entity. Moduly registruj v
-`NekaraRPGPlugin` v pořadí závislostí: `fishing`, `sitting`, `campfire`, `mining`.
+`NekaraRPGPlugin` v pořadí závislostí: `auth`, `fishing`, `sitting`, `campfire`,
+`mining`. Auth se registruje první, aby nepřihlášení hráči nevstoupili do
+herních listenerů ostatních modulů.
 
 Konfigurace patří do typovaného recordu pod `configuration`, výchozí hodnoty do
 `config.yml` a hráčské texty do `messages.yml`. Pro výpočty času, škálování nebo
 stavů přidávej čisté unit testy, pokud nepotřebují samotný Bukkit.
+
+## Bezpečnostní smlouva NekaraAuth
+
+NekaraAuth musí při nedostupném nebo poškozeném úložišti selhat uzavřeně a login
+odmítnout. Heslo se nikdy nezapisuje ani neloguje v plaintextu. Výchozí hash je
+PBKDF2-HMAC-SHA256 s náhodnou solí a work factorem uloženým přímo v hash formátu.
+Hashování běží mimo hlavní serverový thread v omezeném worker poolu.
+
+Účet se hledá podle nicku normalizovaného přes `Locale.ROOT`, ale uložený přesný
+zápis chrání offline UUID před změnou velikosti písmen. Lockout se váže na
+normalizovaný nick a chybný pokus se započítá i při odpojení během ověřování.
+Nepřihlášený hráč, včetně operátora, nesmí spustit administrativní auth příkaz.
+
+`AccountRepository` je hranice storage. Současný YAML backend zapisuje přes
+dočasný soubor a atomický replace; databázová implementace nesmí přesunout
+síťové nebo diskové čekání na Bukkit main thread. Pro web použij společnou
+identitu nebo jednorázové propojení, nikdy veřejné předávání Minecraft hesla.
 
 ## Smlouva NekaraMining a Echo Vein
 

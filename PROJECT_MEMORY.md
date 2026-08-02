@@ -78,6 +78,23 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
 - Sedlo, brnění, jméno, zdraví, cooldown po smrti a vlastnictví musí být trvalé.
   Přivolání a odvolání nesmí sloužit jako únik nebo léčení v PvP.
 
+## Pravidla NekaraAuth
+
+- NekaraAuth je modul `auth` uvnitř `NekaraRPG.jar`, ale jeho bezpečnostní
+  listenery se registrují před herními moduly.
+- Cílí na offline-mode server. Registrovaný nick se hledá bez ohledu na velikost
+  písmen, uložený přesný zápis se však výchozím stavem vynucuje kvůli offline UUID.
+- Hesla se nikdy neukládají ani nelogují v plaintextu. Výchozí formát je
+  PBKDF2-HMAC-SHA256 s unikátní solí, 600 000 iteracemi a work factorem v hashi.
+- Nedostupné úložiště musí selhat uzavřeně a odmítnout přihlášení. Hashování je
+  mimo Bukkit main thread a neomezený paralelní výpočet hesel není povolen.
+- První backend je `auth/accounts.yml` za `AccountRepository`. Databáze a webové
+  propojení tuto hranici zachovají; Minecraft heslo se nemá veřejně předávat webu.
+- První registrace si nick nárokuje. Počáteční nasazení proto používá whitelist,
+  dokud nejsou vytvořené účty administrátorů a rezervovaných nicků.
+- AuthMe se nesmí odstranit před řízenou migrací existujících účtů a živou
+  akceptací NekaraAuth na offline-mode staging serveru.
+
 ## Konfigurace a upgrady
 
 - Zabalené výchozí hodnoty musí pokrýt chybějící klíče ve stávajících

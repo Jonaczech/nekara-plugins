@@ -1,8 +1,8 @@
 # NekaraRPG
 
 NekaraRPG je modulární plugin pro Purpur/Paper, který zajišťuje RPG a imerzivní
-systémy Nekary. V jednom JARu aktuálně obsahuje NekaraFishing, volné sezení,
-odpočinek u ohně a NekaraMining s první ValhallaMMO aktivitou Echo Vein.
+systémy Nekary. V jednom JARu aktuálně obsahuje NekaraAuth, NekaraFishing, volné
+sezení, odpočinek u ohně a NekaraMining s první ValhallaMMO aktivitou Echo Vein.
 
 Plugin je záměrně konzervativní: nenahrazuje vanilla loot tabulky, nevytváří
 syntetické fishing eventy a nevyžaduje ValhallaMMO ani jiný plugin.
@@ -13,6 +13,8 @@ Moduly jsou výchozím stavem zapnuté a ovládají se v `config.yml`:
 
 ```yml
 modules:
+  auth:
+    enabled: true
   fishing:
     enabled: true
   sitting:
@@ -27,6 +29,7 @@ Aktuální moduly:
 
 | Modul | Stav | Popis |
 | --- | --- | --- |
+| `auth` | testovací | Registrace, přihlášení a ochrana nicku pro offline-mode server. |
 | `fishing` | produkční | Nenásilná časovací rybářská minihra kompatibilní s vanilla a ValhallaMMO. |
 | `sitting` | produkční | Sezení řízené příkazem a nastavitelná detekce externích sedadel. |
 | `campfire` | produkční | Léčení, ochrana hladu, Rested bonus, skupinové škálování a roleplay v action baru u zapáleného ohně. |
@@ -37,6 +40,25 @@ Interní Sitting proto může být vypnutý, pokud sezení poskytuje jiný plugi
 Budoucí moduly lze přidávat bez rozdělení projektu do nesouvisejících JARů.
 Vhodnými kandidáty jsou lockpicking, wounds, world events, rumors, territory,
 reputation a mounts.
+
+## NekaraAuth
+
+NekaraAuth je technický modul pro offline-mode server. Každé připojení uzamkne
+hráče do dokončení registrace nebo přihlášení. Před ověřením blokuje pohyb,
+teleport, chat, běžné příkazy, inventář, interakce, souboj, stavění, těžení,
+hlad, drop i pickup itemů. Registrovaný nick je porovnáván bez ohledu na
+velikost písmen a výchozím stavem vyžaduje také jeho přesný zápis.
+
+Hlavní ovládání je herní GUI `/nekaraauth`. Registrace a login používají
+virtuální kovadlinu, takže heslo nejde běžným chatem; registrace vyžaduje druhé
+zadání stejného hesla. Kompatibilní `/login` a `/register` jsou jen fallback,
+protože příkaz může vidět jiný serverový plugin pracující s command eventy.
+
+Účty se v první verzi ukládají do `plugins/NekaraRPG/auth/accounts.yml`.
+Hesla v něm nejsou čitelná: používá se PBKDF2-HMAC-SHA256 s unikátní solí a
+výchozími 600 000 iteracemi. Storage je oddělená rozhraním `AccountRepository`,
+aby pozdější databáze propojila herní identitu s webem bez přepsání login flow.
+Webový obchod ani databázový backend nejsou součástí 1.3.0.
 
 ## Sezení
 
@@ -189,6 +211,8 @@ valhalla:
 
 - Purpur 26.1.2 nebo kompatibilní implementace Paper API
 - Java 25
+- Pro plánované nasazení NekaraAuth server s `online-mode=false`; při
+  `online-mode=true` modul funguje, ale zaloguje varování o dvojím ověření
 - Žádné povinné pluginové závislosti; MythicMobs a ValhallaMMO jsou volitelné
 
 Purpur API je použité jako `compileOnly`, takže výstup není fat JAR a neobsahuje
@@ -225,6 +249,7 @@ Zkopíruj JAR z `dist/` do serverového `plugins/`, spusť Purpur a uprav:
 
 - `plugins/NekaraRPG/config.yml`
 - `plugins/NekaraRPG/messages.yml`
+- `plugins/NekaraRPG/auth/accounts.yml` (vznikne po prvním spuštění NekaraAuth)
 
 Při upgradu není nutné mazat stávající `plugins/NekaraRPG`. Chybějící nové klíče
 použijí runtime defaults. Zabalenou sekci přidávej do existující konfigurace
@@ -265,6 +290,12 @@ upozornění při přípravě releasu a znovu při připojení před restartem.
 | `/nekararpg stand` | žádné; hráč se musí vždy moci postavit |
 | `/nekararpg test [fishing|vein]` | `nekararpg.command.test` |
 | `/nekararpg cancel [player]` | `nekararpg.command.cancel` |
+| `/nekaraauth` | žádné; otevře účetní GUI |
+| `/login <heslo>` | žádné; fallback přihlášení |
+| `/register <heslo> <heslo>` | žádné; fallback registrace |
+| `/logout` | žádné |
+| `/nekaraauth status` | `nekararpg.auth.admin` |
+| `/nekaraauth unregister <hráč>` | `nekararpg.auth.admin` |
 
 Aliasy: `/nrpg`, `/nekarafishing`, `/nfishing`.
 
@@ -289,6 +320,10 @@ přítomné. Action bar se sestavuje interně bez závislosti na PlaceholderAPI.
 
 ## Omezení
 
+- První registrace si nick nárokuje. Při prvotním nasazení ponech whitelist,
+  dokud si administrátoři a vlastníci rezervovaných nicků nevytvoří účty.
+- Verze 1.3.0 automaticky neimportuje existující AuthMe účty a neobsahuje
+  databázový ani webový backend; před odstraněním AuthMe je proto nutná řízená migrace.
 - Fishing je záměrně časovací brána v action baru a nenahrazuje Minecraft rybaření.
 - Sitting používá serverové passenger sedadlo a nepřidává klientský keybind.
   Výchozí Y posun je nastavitelný a starší předprodukční hodnoty se migrují na `0.20`.

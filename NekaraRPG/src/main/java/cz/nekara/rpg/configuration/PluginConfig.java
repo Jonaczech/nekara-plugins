@@ -14,6 +14,7 @@ public record PluginConfig(
         FishingConfig fishing,
         SittingConfig sitting,
         CampfireConfig campfire,
+        AuthConfig auth,
         EchoVeinConfig echoVein,
         UpdaterConfig updater,
         WorldConfig worlds,

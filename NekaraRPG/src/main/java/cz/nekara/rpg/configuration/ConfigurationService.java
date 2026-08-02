@@ -252,6 +252,36 @@ public final class ConfigurationService {
                         1, 256, 16, "updater.maximum-jar-size-megabytes", warning)
         );
 
+        String authStorageFile = config.getString("auth.storage.file", "auth/accounts.yml");
+        if (authStorageFile == null || authStorageFile.isBlank()
+                || authStorageFile.contains("..") || authStorageFile.startsWith("/")
+                || authStorageFile.startsWith("\\") || authStorageFile.matches("^[A-Za-z]:.*")) {
+            warning.accept("Invalid auth.storage.file; using auth/accounts.yml.");
+            authStorageFile = "auth/accounts.yml";
+        }
+        int authPasswordMinimumLength = validateInt(
+                config.getInt("auth.password.minimum-length", 8),
+                6, 64, 8, "auth.password.minimum-length", warning);
+        int authPasswordMaximumLength = validateInt(
+                config.getInt("auth.password.maximum-length", 64),
+                authPasswordMinimumLength, 128, Math.max(64, authPasswordMinimumLength),
+                "auth.password.maximum-length", warning);
+        AuthConfig auth = new AuthConfig(
+                authStorageFile.replace('\\', '/'),
+                authPasswordMinimumLength,
+                authPasswordMaximumLength,
+                validateInt(config.getInt("auth.password.pbkdf2-iterations", 600_000),
+                        100_000, 5_000_000, 600_000, "auth.password.pbkdf2-iterations", warning),
+                validateInt(config.getInt("auth.login.maximum-attempts", 5),
+                        1, 20, 5, "auth.login.maximum-attempts", warning),
+                validateInt(config.getInt("auth.login.lockout-seconds", 60),
+                        5, 3_600, 60, "auth.login.lockout-seconds", warning),
+                validateInt(config.getInt("auth.login.timeout-seconds", 120),
+                        15, 3_600, 120, "auth.login.timeout-seconds", warning),
+                config.getBoolean("auth.nickname.exact-case", true),
+                config.getBoolean("auth.gui.open-on-join", true)
+        );
+
         Map<String, SoundSettings> sounds = new HashMap<>();
         for (String key : new String[]{"bite", "hit", "miss", "timeout", "escape", "minigame-success",
                 "catch-success", "campfire-rested", "echo-vein-pulse", "echo-vein-ore-reveal",
@@ -291,6 +321,7 @@ public final class ConfigurationService {
                         "fishing", config.getBoolean("modules.fishing.enabled", true),
                         "sitting", config.getBoolean("modules.sitting.enabled", true),
                         "campfire", config.getBoolean("modules.campfire.enabled", true),
+                        "auth", config.getBoolean("modules.auth.enabled", true),
                         "mining", miningModuleEnabled
                 ),
                 minigame,
@@ -301,6 +332,7 @@ public final class ConfigurationService {
                 fishing,
                 sitting,
                 campfire,
+                auth,
                 echoVein,
                 updater,
                 worldConfig,

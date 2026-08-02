@@ -30,6 +30,7 @@ help: |-
   &f/nekararpg help &7- zobrazí tuto nápovědu
   &f/nekararpg reload &7- znovu načte konfiguraci
   &f/nekararpg status &7- zobrazí stav pluginu
+  &f/nekaraauth &7- otevře registraci a správu účtu
   &f/nekararpg sit &7- posadí tě na aktuálním místě
   &f/nekararpg stand &7- ukončí sezení
   &f/nekararpg test <fishing|vein> &7- spustí vybranou testovací minihru
@@ -62,6 +63,36 @@ campfire-rested-granted: "<green>Jsi odpočatý.</green> <gray>Rested bonus: %du
 campfire-rested-active: "<green>Rested je aktivní.</green> <gray>Zbývá %remaining% s · skupina %group% · %multiplier%x</gray>"
 campfire-rest-complete: "<gold>U ohně ses plně zotavil.</gold>"
 campfire-rest-left: "<gray>Vzdálil ses od tepla ohně.</gray>"
+
+# NekaraAuth
+auth-disabled: "%prefix%&cModul NekaraAuth je vypnutý."
+auth-required: "%prefix%&eNejdřív se musíš přihlásit nebo zaregistrovat. Otevři &f/nekaraauth&e."
+auth-login-required: "%prefix%&eTento nick je chráněný. Přihlas se přes otevřené menu."
+auth-register-required: "%prefix%&eVytvoř si účet a ochraň svůj nick přes otevřené menu."
+auth-login-success: "%prefix%&aPřihlášení proběhlo úspěšně. Vítej zpět!"
+auth-register-success: "%prefix%&aÚčet byl vytvořen a tento nick je teď chráněný."
+auth-logout-success: "%prefix%&7Byl jsi odhlášen."
+auth-login-failed: "%prefix%&cNesprávné heslo. Zbývající pokusy: &f%remaining%&c."
+auth-locked: "%prefix%&cPřihlašování je dočasně uzamčené na &f%seconds% s&c."
+auth-too-many-attempts: "Příliš mnoho chybných pokusů o přihlášení. Zkus to později."
+auth-timeout: "Čas pro přihlášení vypršel. Připoj se znovu."
+auth-processing: "%prefix%&7Bezpečně ověřuji heslo…"
+auth-busy: "%prefix%&cPřihlašování je právě vytížené. Zkus to za chvíli znovu."
+auth-confirm-password: "%prefix%&eZadej stejné heslo ještě jednou pro potvrzení."
+auth-password-mismatch: "%prefix%&cZadaná hesla se neshodují. Registraci spusť znovu."
+auth-password-too-short: "%prefix%&cHeslo musí mít alespoň &f%min% &cznaků."
+auth-password-too-long: "%prefix%&cHeslo může mít nejvýše &f%max% &cznaků."
+auth-not-registered: "%prefix%&cTento nick ještě není zaregistrovaný."
+auth-already-registered: "%prefix%&cTento nick už je zaregistrovaný."
+auth-already-logged-in: "%prefix%&7Už jsi přihlášený."
+auth-not-logged-in: "%prefix%&7Nejsi přihlášený."
+auth-error: "%prefix%&cPřihlašování teď není dostupné. Kontaktuj administrátora."
+auth-login-usage: "%prefix%&ePoužití: &f/login <heslo>&e. Bezpečnější je GUI přes &f/nekaraauth&e."
+auth-register-usage: "%prefix%&ePoužití: &f/register <heslo> <heslo>&e. Bezpečnější je GUI přes &f/nekaraauth&e."
+auth-status: "%prefix%&7NekaraAuth účty: &f%accounts% &7| Přihlášení hráči: &f%authenticated%"
+auth-admin-usage: "%prefix%&ePoužití: &f/nekaraauth <menu|status|unregister hráč>"
+auth-admin-unregistered: "%prefix%&aÚčet hráče &f%player% &abyl odstraněn."
+auth-admin-not-found: "%prefix%&cÚčet hráče &f%player% &cneexistuje."
 echo-vein-active: "<aqua>Ozvěna žíly</aqua> <dark_gray>|</dark_gray> <white>%seconds% s</white>"
 echo-vein-test-started: "%prefix%&bTestovací Ozvěna žíly spuštěna. &7Tento pokus nedává odměnu."
 echo-vein-test-success: "%prefix%&aTestovací puklinu jsi našel."
