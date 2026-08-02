@@ -14,6 +14,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
+import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
@@ -327,12 +328,9 @@ public final class EchoVeinModule implements NekaraModule, Listener {
         }
 
         long now = System.currentTimeMillis();
-        int level = valhalla.miningLevel(player);
         long cooldownUntil = player.getPersistentDataContainer()
                 .getOrDefault(cooldownKey, PersistentDataType.LONG, 0L);
         if (!EchoVeinMath.canTrigger(
-                level,
-                config.minimumMiningLevel(),
                 cooldownUntil,
                 now,
                 ThreadLocalRandom.current().nextDouble(),
@@ -372,7 +370,12 @@ public final class EchoVeinModule implements NekaraModule, Listener {
                 now + (config.durationTicks() * 50L),
                 test);
         sessions.put(player.getUniqueId(), session);
-        messages.send(player, test ? "echo-vein-test-started" : "echo-vein-start");
+        if (test) {
+            messages.send(player, "echo-vein-test-started");
+        } else {
+            int seconds = (int) Math.ceil(config.durationTicks() / 20.0);
+            messages.send(player, "echo-vein-found", Map.of("seconds", seconds));
+        }
         pulse(player, session);
     }
 
@@ -408,16 +411,45 @@ public final class EchoVeinModule implements NekaraModule, Listener {
     private void pulse(Player player, EchoVeinSession session) {
         EchoVeinConfig current = config;
         Particle particle = current.particle();
-        double spread = current.particleSpread();
+        Location surface = visibleSurface(player, session.targetLocation());
+        int nearbyCount = Math.max(2, current.particleCount() / 2);
+        int targetCount = Math.min(96, Math.max(
+                current.particleCount() + 4, current.particleCount() * 2));
         player.spawnParticle(
                 particle,
-                session.targetLocation(),
-                current.particleCount(),
-                spread,
-                spread,
-                spread,
+                surface,
+                nearbyCount,
+                0.85,
+                0.85,
+                0.85,
+                0.002);
+        double targetSpread = Math.max(0.08, current.particleSpread() * 0.45);
+        player.spawnParticle(
+                particle,
+                surface,
+                targetCount,
+                targetSpread,
+                targetSpread,
+                targetSpread,
                 0.01);
         sounds.playAt(player, "echo-vein-pulse", session.targetLocation());
+    }
+
+    private Location visibleSurface(Player player, Location blockCenter) {
+        Vector towardPlayer = player.getEyeLocation().toVector().subtract(blockCenter.toVector());
+        if (towardPlayer.lengthSquared() == 0.0) {
+            return blockCenter.clone();
+        }
+        double x = Math.abs(towardPlayer.getX());
+        double y = Math.abs(towardPlayer.getY());
+        double z = Math.abs(towardPlayer.getZ());
+        if (x >= y && x >= z) {
+            return blockCenter.clone().add(Math.copySign(0.52, towardPlayer.getX()), 0.0, 0.0);
+        }
+        if (y >= z) {
+            return blockCenter.clone().add(0.0, Math.copySign(0.52, towardPlayer.getY()), 0.0);
+        }
+        return blockCenter.clone().add(0.0, 0.0, Math.copySign(0.52, towardPlayer.getZ()));
     }
 
     private void completeSuccess(Player player, EchoVeinSession session) {
@@ -432,12 +464,9 @@ public final class EchoVeinModule implements NekaraModule, Listener {
 
         double bonus = EchoVeinMath.bonusExperience(
                 session.sourceExperience(), config.experienceBonusMultiplier());
-        boolean experienceGranted = valhalla.grantBonusExperience(player, bonus);
-        boolean dropGranted = giveReward(player, session.reward());
+        valhalla.grantBonusExperience(player, bonus);
+        giveReward(player, session.reward());
         sounds.play(player, "echo-vein-success");
-        messages.send(player, "echo-vein-success", Map.of(
-                "xp", experienceGranted ? String.format(Locale.ROOT, "%.2f", bonus) : "0",
-                "drop", dropGranted ? " &7+ &f1 bonusový drop" : ""));
     }
 
     private boolean giveReward(Player player, ItemStack reward) {
@@ -457,8 +486,8 @@ public final class EchoVeinModule implements NekaraModule, Listener {
             return;
         }
         sounds.play(player, "echo-vein-failure");
-        if (notify) {
-            messages.send(player, removed.test() ? "echo-vein-test-failure" : "echo-vein-failure");
+        if (notify && removed.test()) {
+            messages.send(player, "echo-vein-test-failure");
         }
     }
 
@@ -559,6 +588,7 @@ public final class EchoVeinModule implements NekaraModule, Listener {
     private boolean isCandidate(Block block) {
         Material type = block.getType();
         return !type.isAir() && type.isSolid() && !block.isLiquid()
+                && Tag.MINEABLE_PICKAXE.isTagged(type)
                 && !(block.getState() instanceof Container);
     }
 

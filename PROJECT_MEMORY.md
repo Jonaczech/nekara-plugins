@@ -48,8 +48,10 @@ release deliberately changes one of these decisions.
 
 ## Echo Vein Rules
 
-- Echo Vein is an optional ValhallaMMO Mining module unlocked at Mining 50 by
-  default. A real non-cancelled Mining `SKILL_ACTION` XP event is required.
+- Echo Vein is an optional ValhallaMMO Mining module available at every skill
+  level. A real non-cancelled Mining `SKILL_ACTION` XP event is required.
+- Targets must belong to Paper's `MINEABLE_PICKAXE` block tag. Natural attempts
+  use one timed discovery message and no success or failure chat messages.
 - The original mining action always completes before the challenge starts;
   failure never removes or changes its XP or drops.
 - Success grants a configurable fraction of the final source Mining XP with

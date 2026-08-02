@@ -196,8 +196,6 @@ public final class ConfigurationService {
         );
 
         EchoVeinConfig echoVein = new EchoVeinConfig(
-                validateInt(config.getInt("echo-vein.minimum-mining-level", 50),
-                        0, 100_000, 50, "echo-vein.minimum-mining-level", warning),
                 validateDouble(config.getDouble("echo-vein.trigger-chance", 0.04),
                         0.0, 1.0, 0.04, "echo-vein.trigger-chance", warning),
                 validateInt(config.getInt("echo-vein.cooldown-seconds", 480),

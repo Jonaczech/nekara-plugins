@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.2
+
+- Made Echo Vein available at every ValhallaMMO Mining level; the legacy
+  `minimum-mining-level` setting is no longer used.
+- Limited target selection to blocks in Paper's `MINEABLE_PICKAXE` tag so dirt,
+  gravel, wood, and other non-pickaxe cave blocks cannot become the fissure.
+- Added a layered pulse with a subtle one-block-area hint and a denser effect on
+  the visible face of the target block.
+- Reduced natural Echo Vein chat to one discovery message with the remaining
+  time. Successes and failures now use only their sounds and visual feedback.
+- Kept `/nekararpg test vein` reward-free; bonus XP and the one-item finalized
+  drop reward remain exclusive to naturally triggered Echo Veins.
+
 ## 1.2.1
 
 - Published the complete Echo Vein Mining activity in the first patch release

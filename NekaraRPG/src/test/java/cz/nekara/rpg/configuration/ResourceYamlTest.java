@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -54,7 +55,7 @@ class ResourceYamlTest {
             assertEquals(0.20, ((Number) sitting.get("seat-y-offset")).doubleValue(), 0.0001);
             assertTrue((Boolean) updater.get("enabled"));
             assertNotNull(modules.get("echo-vein"));
-            assertEquals(50, ((Number) echoVein.get("minimum-mining-level")).intValue());
+            assertFalse(echoVein.containsKey("minimum-mining-level"));
             assertEquals(0.04, ((Number) echoVein.get("trigger-chance")).doubleValue(), 0.0001);
             assertEquals(480, ((Number) echoVein.get("cooldown-seconds")).intValue());
             assertEquals(0.25,
@@ -102,8 +103,7 @@ class ResourceYamlTest {
             assertNotNull(messages.get("update-current"));
             assertNotNull(messages.get("update-staged"));
             assertNotNull(messages.get("update-failed"));
-            assertNotNull(messages.get("echo-vein-start"));
-            assertNotNull(messages.get("echo-vein-success"));
+            assertNotNull(messages.get("echo-vein-found"));
             assertNotNull(messages.get("echo-vein-test-unavailable"));
             assertEquals(
                     "<green>Odpočatý</green> <dark_gray>|</dark_gray> <white>%remaining_text%</white>",

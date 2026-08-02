@@ -7,15 +7,12 @@ public final class EchoVeinMath {
     }
 
     public static boolean canTrigger(
-            int miningLevel,
-            int minimumLevel,
             long cooldownUntilMillis,
             long nowMillis,
             double randomRoll,
             double triggerChance
     ) {
-        return miningLevel >= minimumLevel
-                && cooldownUntilMillis <= nowMillis
+        return cooldownUntilMillis <= nowMillis
                 && Double.isFinite(randomRoll)
                 && randomRoll >= 0.0
                 && randomRoll < triggerChance;

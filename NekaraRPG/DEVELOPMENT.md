@@ -69,6 +69,10 @@ prepared block drops for the same action. Selection is weighted by actual stack
 amount, then capped to one item; never recalculate Fortune or generate a
 separate loot table.
 
+Echo Vein is available at every Mining level. Target blocks must belong to
+Paper's `MINEABLE_PICKAXE` tag. Natural attempts send only their initial timed
+discovery message; completion feedback remains visual and audible without chat.
+
 Challenge cooldown timestamps use the player's persistent data container.
 Transient pending breaks and active challenges stay in memory and must be
 cleared on disable, reload, disconnect, or invalid state.

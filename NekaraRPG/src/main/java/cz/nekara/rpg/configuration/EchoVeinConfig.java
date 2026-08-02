@@ -3,7 +3,6 @@ package cz.nekara.rpg.configuration;
 import org.bukkit.Particle;
 
 public record EchoVeinConfig(
-        int minimumMiningLevel,
         double triggerChance,
         int cooldownSeconds,
         int durationTicks,
