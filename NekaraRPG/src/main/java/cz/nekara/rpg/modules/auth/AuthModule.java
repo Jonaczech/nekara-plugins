@@ -108,6 +108,11 @@ public final class AuthModule implements NekaraModule, Listener {
         if (enabled) {
             return;
         }
+        if (plugin.getServer().getPluginManager().isPluginEnabled("AuthMe")) {
+            plugin.getLogger().warning("NekaraAuth remains disabled because AuthMe is active. "
+                    + "Remove AuthMe and perform a full restart to hand authentication to NekaraAuth.");
+            return;
+        }
         AuthConfig config = config();
         passwordHasher = new PasswordHasher(config.passwordIterations());
         throttle = new LoginThrottle(config.maximumAttempts(), Duration.ofSeconds(config.lockoutSeconds()));

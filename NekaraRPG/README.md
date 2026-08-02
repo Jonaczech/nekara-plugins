@@ -60,6 +60,10 @@ výchozími 600 000 iteracemi. Storage je oddělená rozhraním `AccountReposito
 aby pozdější databáze propojila herní identitu s webem bez přepsání login flow.
 Webový obchod ani databázový backend nejsou součástí 1.3.0.
 
+Při upgradu může updater nový JAR bezpečně připravit ještě s nainstalovaným
+AuthMe. Pokud je AuthMe při startu aktivní, NekaraAuth se záměrně nezapne. Pro
+převzetí autentizace zastav server, odstraň AuthMe a proveď plný restart.
+
 ## Sezení
 
 Příkaz `/nekararpg sit` posadí hráče na aktuální uzemněné pozici a

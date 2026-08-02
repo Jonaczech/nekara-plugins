@@ -208,6 +208,9 @@ chycenou entitu, již zrušený fishing event a vypnutí serveru.
    nesmí hráče pustit bez ověření a v logu musí být jasná storage chyba.
 10. Spusť `/nekararpg reload` během přihlášené relace a ověř zachování loginu,
     jedinou sadu listenerů a aplikaci nových limitů na další pokusy.
+11. Nainstaluj aktivní AuthMe a restartuj. NekaraAuth musí zůstat vypnutý a
+    zalogovat důvod. Po zastavení serveru, odstranění AuthMe a dalším restartu
+    musí NekaraAuth převzít registraci a přihlášení.
 
 Zrychlený profil časovačů, CMI průchod, ValhallaMMO kompatibilitu a staging
 nasazení popisuje `LIVE_TESTING.md`.

@@ -8,6 +8,7 @@ description: Modular RPG, authentication, and immersion systems for Nekara.
 softdepend:
   - ValhallaMMO
   - MythicMobs
+  - AuthMe
 commands:
   nekararpg:
     description: Manage NekaraRPG.

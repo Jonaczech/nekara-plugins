@@ -16,6 +16,8 @@
   lockout, dvouminutový timeout a fail-closed odmítnutí loginu při chybě storage.
 - Přidány administrativní příkazy `/nekaraauth status` a
   `/nekaraauth unregister <hráč>`; nepřihlášený operátor je nemůže použít.
+- Přidána přechodová pojistka: pokud je při startu aktivní AuthMe, NekaraAuth se
+  nezapne. Po odstranění AuthMe převezme autentizaci při následujícím plném restartu.
 - Přidány jednotkové testy hashování, neplatných hashů, normalizace lockoutu a
   výchozích auth hodnot v YAML resources.
 
