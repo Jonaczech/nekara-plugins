@@ -15,14 +15,15 @@ This repository contains Minecraft server plugins for the Nekara ecosystem.
 
 | Plugin | Status | Description |
 | --- | --- | --- |
-| `NekaraRPG` | active | Central modular RPG and immersion plugin with fishing, sitting, and campfire rest. |
+| `NekaraRPG` | active | Central modular RPG plugin with fishing, sitting, campfire rest, and Echo Vein. |
 
 ## Current Direction
 
 `NekaraRPG` is intended to become the central plugin for Nekara RPG systems.
 Each gameplay area is implemented as a module that can be enabled or disabled
-in configuration. The current release includes `fishing`, `sitting`, and
-`campfire`; campfire uses sitting as its player-state foundation.
+in configuration. The current release includes `fishing`, `sitting`,
+`campfire`, and `echo-vein`; campfire uses sitting as its player-state
+foundation.
 
 Possible future modules:
 
