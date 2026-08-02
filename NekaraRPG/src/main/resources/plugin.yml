@@ -4,14 +4,14 @@ main: cz.nekara.rpg.NekaraRPGPlugin
 api-version: '26.1'
 authors:
   - Nekara
-description: Modular RPG and immersion systems for Nekara, including fishing, sitting, and campfire rest.
+description: Modular RPG and immersion systems for Nekara, including fishing, camping, and skill trials.
 softdepend:
   - ValhallaMMO
   - MythicMobs
 commands:
   nekararpg:
     description: Manage NekaraRPG.
-    usage: /nekararpg <help|reload|status|sit|stand|test|cancel [player]>
+    usage: /nekararpg <help|reload|status|update|sit|stand|test [fishing|vein]|cancel [player]>
     aliases: [nrpg, nekarafishing, nfishing]
 permissions:
   nekararpg.use:
@@ -25,6 +25,12 @@ permissions:
     default: op
   nekararpg.command.status:
     description: Shows NekaraRPG status.
+    default: op
+  nekararpg.command.update:
+    description: Checks and reports NekaraRPG updates.
+    default: op
+  nekararpg.update.notify:
+    description: Receives update notices after joining the server.
     default: op
   nekararpg.command.test:
     description: Starts a test minigame.
@@ -40,6 +46,9 @@ permissions:
     default: true
   nekararpg.campfire.use:
     description: Allows campfire rest effects while sitting.
+    default: true
+  nekararpg.echo-vein.use:
+    description: Allows ValhallaMMO Mining actions to trigger Echo Vein.
     default: true
   nekarafishing.use:
     description: Legacy permission for the fishing minigame.

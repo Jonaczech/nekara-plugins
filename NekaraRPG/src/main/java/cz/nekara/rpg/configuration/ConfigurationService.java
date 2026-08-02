@@ -139,6 +139,13 @@ public final class ConfigurationService {
                 config.getBoolean("campfire.rested.haste.particles", true),
                 config.getBoolean("campfire.rested.haste.icon", true)
         );
+        RestedValhallaConfig restedValhalla = new RestedValhallaConfig(
+                config.getBoolean("campfire.rested.valhalla-experience.enabled", true),
+                validateDouble(config.getDouble(
+                                "campfire.rested.valhalla-experience.multiplier", 1.10),
+                        1.0, 10.0, 1.10,
+                        "campfire.rested.valhalla-experience.multiplier", warning)
+        );
 
         String mythicHostileFaction = config.getString(
                 "campfire.camping.spawn-protection.mythic-hostile-faction", "NekaraHostile");
@@ -178,6 +185,7 @@ public final class ConfigurationService {
                         1, 3_600, 300, "campfire.rested.duration-seconds", warning),
                 validateDouble(config.getDouble("campfire.rested.hunger-loss-multiplier", 0.5),
                         0.0, 1.0, 0.5, "campfire.rested.hunger-loss-multiplier", warning),
+                restedValhalla,
                 restedEffect,
                 camping,
                 validateDouble(config.getDouble("campfire.group.multiplier-per-extra-player", 0.15),
@@ -187,14 +195,58 @@ public final class ConfigurationService {
                 campfireVisuals
         );
 
+        EchoVeinConfig echoVein = new EchoVeinConfig(
+                validateInt(config.getInt("echo-vein.minimum-mining-level", 50),
+                        0, 100_000, 50, "echo-vein.minimum-mining-level", warning),
+                validateDouble(config.getDouble("echo-vein.trigger-chance", 0.04),
+                        0.0, 1.0, 0.04, "echo-vein.trigger-chance", warning),
+                validateInt(config.getInt("echo-vein.cooldown-seconds", 480),
+                        0, 86_400, 480, "echo-vein.cooldown-seconds", warning),
+                validateInt(config.getInt("echo-vein.duration-ticks", 120),
+                        20, 600, 120, "echo-vein.duration-ticks", warning),
+                validateInt(config.getInt("echo-vein.search-radius", 4),
+                        1, 8, 4, "echo-vein.search-radius", warning),
+                validateInt(config.getInt("echo-vein.pulse-interval-ticks", 10),
+                        1, 40, 10, "echo-vein.pulse-interval-ticks", warning),
+                validateDouble(config.getDouble("echo-vein.experience-bonus-multiplier", 0.25),
+                        0.0, 5.0, 0.25, "echo-vein.experience-bonus-multiplier", warning),
+                config.getBoolean("echo-vein.bonus-drop-enabled", true),
+                parseDataFreeParticle(config.getString("echo-vein.particles.particle", "END_ROD"),
+                        "END_ROD", "echo-vein.particles.particle", warning),
+                validateInt(config.getInt("echo-vein.particles.count", 8),
+                        1, 64, 8, "echo-vein.particles.count", warning),
+                validateDouble(config.getDouble("echo-vein.particles.spread", 0.35),
+                        0.0, 2.0, 0.35, "echo-vein.particles.spread", warning)
+        );
+
         WorldMode worldMode = ConfigurationValidator.parseWorldMode(
                 config.getString("worlds.mode", "ALL"), warning);
         Set<String> worlds = new HashSet<>(config.getStringList("worlds.list"));
         WorldConfig worldConfig = new WorldConfig(worldMode, Set.copyOf(worlds));
 
+        if (config.contains("plugin.check-for-updates") && !config.contains("updater.enabled")) {
+            warning.accept("plugin.check-for-updates is obsolete; the new verified updater defaults to enabled. "
+                    + "Use updater.enabled to control it.");
+        }
+        UpdaterConfig updater = new UpdaterConfig(
+                config.getBoolean("updater.enabled", true),
+                config.getBoolean("updater.automatic-checks", true),
+                config.getBoolean("updater.auto-download", true),
+                config.getBoolean("updater.notify-admins", true),
+                validateInt(config.getInt("updater.startup-delay-seconds", 30),
+                        0, 3_600, 30, "updater.startup-delay-seconds", warning),
+                validateInt(config.getInt("updater.check-interval-hours", 6),
+                        1, 168, 6, "updater.check-interval-hours", warning),
+                validateInt(config.getInt("updater.request-timeout-seconds", 20),
+                        5, 120, 20, "updater.request-timeout-seconds", warning),
+                validateInt(config.getInt("updater.maximum-jar-size-megabytes", 16),
+                        1, 256, 16, "updater.maximum-jar-size-megabytes", warning)
+        );
+
         Map<String, SoundSettings> sounds = new HashMap<>();
         for (String key : new String[]{"bite", "hit", "miss", "timeout", "escape", "minigame-success",
-                "catch-success", "campfire-rested"}) {
+                "catch-success", "campfire-rested", "echo-vein-pulse",
+                "echo-vein-success", "echo-vein-failure"}) {
             ConfigurationSection section = config.getConfigurationSection("sounds." + key);
             if (section == null) {
                 if ("campfire-rested".equals(key)) {
@@ -220,7 +272,8 @@ public final class ConfigurationService {
                 Map.of(
                         "fishing", config.getBoolean("modules.fishing.enabled", true),
                         "sitting", config.getBoolean("modules.sitting.enabled", true),
-                        "campfire", config.getBoolean("modules.campfire.enabled", true)
+                        "campfire", config.getBoolean("modules.campfire.enabled", true),
+                        "echo-vein", config.getBoolean("modules.echo-vein.enabled", true)
                 ),
                 minigame,
                 hookParticles,
@@ -230,6 +283,8 @@ public final class ConfigurationService {
                 fishing,
                 sitting,
                 campfire,
+                echoVein,
+                updater,
                 worldConfig,
                 Map.copyOf(sounds)
         );
@@ -322,6 +377,20 @@ public final class ConfigurationService {
             warning.accept("Invalid particle name; using " + fallback + ".");
             return org.bukkit.Particle.valueOf(fallback);
         }
+    }
+
+    private org.bukkit.Particle parseDataFreeParticle(
+            String value,
+            String fallback,
+            String path,
+            Consumer<String> warning
+    ) {
+        org.bukkit.Particle particle = parseParticle(value, fallback, warning);
+        if (particle.getDataType() == Void.class) {
+            return particle;
+        }
+        warning.accept(path + " requires a particle without extra data; using " + fallback + ".");
+        return org.bukkit.Particle.valueOf(fallback);
     }
 
     private double parseSeatYOffset(FileConfiguration config, Consumer<String> warning) {

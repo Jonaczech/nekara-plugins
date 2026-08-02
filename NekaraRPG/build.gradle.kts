@@ -16,6 +16,7 @@ dependencies {
         isTransitive = false
     }
     testImplementation("org.junit.jupiter:junit-jupiter:5.13.4")
+    testImplementation("com.google.code.gson:gson:2.13.2")
     testImplementation("org.yaml:snakeyaml:2.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
@@ -37,6 +38,12 @@ tasks.processResources {
 
 tasks.jar {
     archiveFileName.set("NekaraRPG.jar")
+    manifest {
+        attributes(
+            "Implementation-Title" to "NekaraRPG",
+            "Implementation-Version" to project.version
+        )
+    }
 }
 
 val cleanReleaseArtifacts by tasks.registering(Delete::class) {

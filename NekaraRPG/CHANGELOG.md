@@ -1,5 +1,38 @@
 # Changelog
 
+## 1.2.0
+
+- Added the optional `echo-vein` module: Mining level 50 players can rarely
+  reveal a nearby pulsing block and strike it with a pickaxe within six seconds.
+- Added a configurable eight-minute persistent cooldown, 4% trigger chance,
+  search radius, pulse timing, particles, and `/nekararpg test vein`.
+- Added a 25% success bonus based on the final ValhallaMMO Mining XP amount,
+  awarded with the `PLUGIN` reason so Rested and global multipliers do not stack
+  a second time.
+- Added one quantity-weighted bonus item from the triggering action's actual
+  finalized natural and Valhalla-prepared Mining drops, capped to one item with
+  its metadata preserved. No Digging treasure table or synthetic loot is used.
+- Added a GitHub-backed updater for the latest stable `Jonaczech/nekara-plugins`
+  release, with automatic checks and `/nekararpg update check|status`.
+- Added strict release validation for the stable `NekaraRPG.jar` asset: trusted
+  GitHub URL, size limit, SHA-256 digest, JAR descriptor, product identity, and
+  semantic version must all match before staging.
+- Staged verified updates in Paper's configured update folder for installation
+  on the next full server restart; the active JAR is never replaced at runtime.
+- Added a hash-verified backup of the running JAR before staging so operators
+  retain a manual rollback artifact.
+- Added configurable update intervals, automatic download, administrator join
+  notices, timeouts, permissions, and fail-safe status reporting.
+- Added a configurable 10% Rested XP bonus for every ValhallaMMO skill.
+- Limited the XP bonus to normal skill actions and shared XP so commands,
+  resets, redemptions, and migration refunds keep their exact values.
+- Kept deferred ValhallaMMO fishing XP compatible with Rested without applying
+  the bonus a second time during successful catch delivery.
+- Made reduced Rested hunger loss depend on a smoker in the charged camp.
+  Bare Rested no longer slows hunger depletion.
+- Preserved fail-soft startup and normal skill XP when ValhallaMMO is absent or
+  exposes an incompatible event API.
+
 ## 1.1.0
 
 - Added the `sitting` module with `/nekararpg sit` and `/nekararpg stand`.

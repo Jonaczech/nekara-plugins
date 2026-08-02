@@ -1,7 +1,8 @@
 # NekaraRPG
 
 NekaraRPG is a modular Purpur/Paper plugin for Nekara RPG and immersion systems.
-It currently ships fishing, free-position sitting, and campfire rest in one JAR.
+It currently ships fishing, free-position sitting, campfire rest, and the
+ValhallaMMO Mining activity Echo Vein in one JAR.
 
 The plugin is intentionally conservative: it does not replace vanilla loot
 tables, does not generate synthetic fishing events, and does not require
@@ -19,6 +20,8 @@ modules:
     enabled: true
   campfire:
     enabled: true
+  echo-vein:
+    enabled: true
 ```
 
 Current modules:
@@ -28,6 +31,7 @@ Current modules:
 | `fishing` | production | Non-invasive fishing timing minigame with vanilla/ValhallaMMO compatibility. |
 | `sitting` | production | Command-driven sitting plus configurable detection of external seats. |
 | `campfire` | production | Healing, hunger protection, visual Rested bonus, group scaling, and action-bar roleplay near lit campfires. |
+| `echo-vein` | testing | Rare Mining 50 activity with a short spatial reaction challenge and Valhalla-native rewards. |
 
 Campfire accepts both NekaraRPG seats and configured external vehicle-based
 seats. The internal sitting module may therefore be disabled when another
@@ -62,9 +66,10 @@ three-dimensional distance from the player to the fire. Active rest:
 - emits low-count particles to confirm that the rest mechanic is active.
 
 After 20 real-time seconds by default, the player receives a five-minute base
-Rested bonus. After leaving the fire, Rested reduces average hunger loss to the
-configured multiplier, `0.5` by default. The timer uses wall-clock time, so
-server lag does not make a twenty-second rest take longer.
+Rested bonus. Bare Rested does not change hunger loss. A smoker in the charged
+camp reduces average hunger loss to the configured multiplier, `0.5` by
+default. The timer uses wall-clock time, so server lag does not make a
+twenty-second rest take longer.
 Once charged, Rested stays refreshed while the player remains at the fire, then
 counts down after the player leaves active rest.
 
@@ -78,6 +83,10 @@ table, and grindstone, giving a possible duration from five to twelve minutes.
 A crafting table also grants Haste I for that Rested bonus. Haste supplies
 Minecraft's standard potion icon and countdown in the top-right status area.
 Existing Haste from another source is not replaced by NekaraRPG.
+
+A smoker makes hunger drain at half speed by default for the resulting Rested
+bonus. Removing or adding the smoker while the player remains at the fire
+updates the refreshed bonus in the same way as crafting-table Haste.
 
 A bed near the lit campfire creates a configurable 24-block safe-camp radius.
 Natural hostile spawns are cancelled while the camp is loaded, so protection
@@ -94,8 +103,29 @@ timer yields to the fishing minigame and to campfire charging messages. Set
 remain opt-in. A soft configurable amethyst chime confirms the moment the
 20-second charge completes.
 
-The campfire key and public Rested state methods are ready for a later optional
-ValhallaMMO XP bridge. XP behavior is not changed in version 1.1.0.
+With ValhallaMMO installed, Rested also grants 10% more normal skill-action and
+shared XP across every ValhallaMMO skill by default. Administrative commands,
+resets, redemptions, and migration refunds are not multiplied.
+
+## Echo Vein
+
+Echo Vein is an optional ValhallaMMO Mining activity. At Mining level 50 or
+higher, an eligible natural Mining XP action has a 4% chance by default to
+reveal a nearby pulsing block. The player has six seconds to find and left-click
+that block with a pickaxe. The original mining action always completes first;
+missing the echo never removes its drops or XP.
+
+A successful echo grants 25% of the final triggering Mining XP with Valhalla's
+`PLUGIN` reason, preventing Rested and global XP multipliers from being applied
+again. One bonus item is selected by actual stack quantity from the finalized
+natural and Valhalla-prepared drops of that same mining action. The selected
+item keeps its metadata, but its amount is capped at one; Fortune and the whole
+drop stack are never rerolled or duplicated.
+
+The default cooldown is eight minutes and is stored on the player, so reconnects
+and server restarts do not reset it. Fishing has interaction priority and an
+active echo yields when fishing begins. `/nekararpg test vein` starts a
+reward-free visual test without requiring Mining 50 or consuming the cooldown.
 
 ## Fishing Compatibility Mode
 
@@ -122,10 +152,23 @@ ValhallaMMO is a soft dependency. When installed, NekaraRPG can:
 
 - scale fishing minigame difficulty from the player's ValhallaMMO FishingSkill level,
 - defer ValhallaMMO fishing profession XP so it is awarded alongside the final catch,
-- preserve prepared ValhallaMMO extra drops such as double-loot output.
+- preserve prepared ValhallaMMO extra drops such as double-loot output,
+- grant Rested players configurable bonus XP across every ValhallaMMO skill,
+- drive Echo Vein from real Mining XP and finalized Mining drops.
 
-Loot, ValhallaMMO XP, and skill progression are not replaced or recalculated by
-NekaraRPG. Disable difficulty scaling with:
+Loot and ValhallaMMO skill progression are not replaced or recalculated by
+NekaraRPG. The public XP event amount is multiplied only while Rested is active.
+Disable or tune the Rested bonus with:
+
+```yml
+campfire:
+  rested:
+    valhalla-experience:
+      enabled: true
+      multiplier: 1.10
+```
+
+Disable fishing difficulty scaling with:
 
 ```yml
 valhalla:
@@ -162,9 +205,9 @@ The release produces:
 - `dist/NekaraRPG.jar`
 - repository-level `../../dist/NekaraRPG.jar`
 
-The semantic version remains embedded in `plugin.yml`, documented in the
-changelog, and represented by the Git tag; it is deliberately omitted from the
-deployable filename.
+The semantic version remains embedded in `plugin.yml` and the JAR manifest,
+documented in the changelog, and represented by the Git tag; it is deliberately
+omitted from the deployable filename.
 
 See `DEVELOPMENT.md` for the release contract and `LIVE_TESTING.md` for the
 staging-server workflow.
@@ -185,6 +228,26 @@ need to be customized or documented on the server.
 Use `/nekararpg reload` after configuration changes. A reload safely ends active
 fishing sessions and does not register duplicate listeners or ticker tasks.
 
+## Automatic Updates
+
+Version 1.2.0 introduces the updater and therefore still requires one manual
+installation. After that, NekaraRPG checks the latest stable release in
+`Jonaczech/nekara-plugins` after startup and every six hours by default.
+
+When a newer semantic version is available, the updater accepts only the exact
+`NekaraRPG.jar` release asset. It validates the trusted GitHub download URL,
+declared size, SHA-256 digest, JAR identity, embedded version, and presence of
+`plugin.yml`. A verified JAR is moved to Paper's configured update folder and
+installed by Paper on the next full server restart. NekaraRPG never replaces or
+reloads its active JAR. Before staging, the running JAR is copied and hash-checked
+under `plugins/NekaraRPG/backups` as a manual rollback artifact.
+
+Automatic checks and downloads are configured under `updater` in `config.yml`.
+Operators can run `/nekararpg update check` at any time and inspect the latest
+result with `/nekararpg update status`. Online players with
+`nekararpg.update.notify` are notified when a release is staged, and receive the
+same reminder when joining before the restart.
+
 ## Commands and Permissions
 
 | Command | Permission |
@@ -192,9 +255,11 @@ fishing sessions and does not register duplicate listeners or ticker tasks.
 | `/nekararpg help` | `nekararpg.command.help` |
 | `/nekararpg reload` | `nekararpg.command.reload` |
 | `/nekararpg status` | `nekararpg.command.status` |
+| `/nekararpg update check` | `nekararpg.command.update` |
+| `/nekararpg update status` | `nekararpg.command.update` |
 | `/nekararpg sit` | `nekararpg.sitting.use` |
 | `/nekararpg stand` | none; a player must always be able to stand |
-| `/nekararpg test` | `nekararpg.command.test` |
+| `/nekararpg test [fishing|vein]` | `nekararpg.command.test` |
 | `/nekararpg cancel [player]` | `nekararpg.command.cancel` |
 
 Aliases: `/nrpg`, `/nekarafishing`, `/nfishing`.
@@ -202,6 +267,9 @@ Aliases: `/nrpg`, `/nekarafishing`, `/nfishing`.
 Fishing requires `nekararpg.use`, which defaults to true for every player.
 `nekararpg.bypass` skips the fishing minigame and defaults to false.
 Campfire effects require `nekararpg.campfire.use`, which defaults to true.
+Echo Vein requires `nekararpg.echo-vein.use`, which defaults to true.
+Update notices require `nekararpg.update.notify`, which defaults to server
+operators.
 
 Legacy `nekarafishing.*` permissions are still declared and accepted so existing
 server permission setups can migrate gradually.
@@ -223,11 +291,14 @@ dependency.
 - Sitting uses a server-side passenger seat; it does not add a client keybind. Its default vertical offset is configurable and existing pre-release offsets are migrated to `0.20` at runtime.
 - External seat detection is vehicle-type based. `ARMOR_STAND` is the safe default; plugins using another seat entity must add that type to configuration.
 - Campfire and Rested action-bar feedback can temporarily replace other non-priority action-bar text. NekaraRPG's fishing minigame always takes priority over the Rested timer.
+- Echo Vein needs ValhallaMMO Mining for automatic triggers. Its test command still verifies target visibility without awarding rewards.
+- Echo Vein derives one bonus item from the triggering action's finalized drops. It does not call the Digging treasure table or invent a separate loot table.
 - Rested uses a text-only action-bar timer; crafting-table camps additionally use the vanilla Haste icon. A uniquely branded status icon would require a client resource-pack or mod solution.
-- Rested currently affects hunger; crafting-table camps also grant configurable Haste. ValhallaMMO XP scaling is reserved for a later compatibility bridge.
+- Smoker camps reduce Rested hunger loss, crafting-table camps grant configurable Haste, and ValhallaMMO skill XP receives the configured Rested multiplier.
 - The minigame starts on the rod click after a bite and defers the original `CAUGHT_FISH` Item until the final hit.
 - A client-side resource-pack sound cannot be verified from the server; only its namespaced syntax can be validated.
 - Full acceptance still requires a live Purpur 26.1.2 server because Bukkit event ordering and other plugin interactions cannot be completely simulated by pure unit tests.
+- The updater stages releases but never restarts the server. An operator or hosting scheduler must perform the full restart and inspect startup logs.
 
 ## License
 

@@ -1,7 +1,18 @@
 plugin:
   language: cs
   debug: false
-  check-for-updates: false
+
+updater:
+  # Checks the latest stable release in Jonaczech/nekara-plugins. A verified
+  # NekaraRPG.jar is staged in Paper's update folder and applied on restart.
+  enabled: true
+  automatic-checks: true
+  auto-download: true
+  notify-admins: true
+  startup-delay-seconds: 30
+  check-interval-hours: 6
+  request-timeout-seconds: 20
+  maximum-jar-size-megabytes: 16
 
 modules:
   # Every gameplay area is shipped in the same NekaraRPG JAR and can be toggled
@@ -12,6 +23,30 @@ modules:
     enabled: true
   campfire:
     enabled: true
+  echo-vein:
+    enabled: true
+
+# Rare Mining activity unlocked through ValhallaMMO. A valid natural Mining XP
+# action may reveal one nearby block; hit it with a pickaxe before the pulse ends.
+echo-vein:
+  minimum-mining-level: 50
+  # 0.04 means a 4% chance after an eligible mining action.
+  trigger-chance: 0.04
+  cooldown-seconds: 480
+  # 120 ticks is a six-second response window.
+  duration-ticks: 120
+  search-radius: 4
+  pulse-interval-ticks: 10
+  # Success grants 25% of the final triggering Mining XP. PLUGIN XP is used so
+  # Rested and Valhalla global multipliers are not applied a second time.
+  experience-bonus-multiplier: 0.25
+  # One item is selected from the action's actual finalized natural and
+  # Valhalla-prepared drops. Stack size and Fortune are never rerolled.
+  bonus-drop-enabled: true
+  particles:
+    particle: END_ROD
+    count: 8
+    spread: 0.35
 
 sitting:
   # Sitting works on any grounded position and does not register /sit, avoiding
@@ -46,8 +81,14 @@ campfire:
     # Charge and duration use real wall-clock seconds, even when the server lags.
     charge-seconds: 20
     duration-seconds: 300
-    # 0.5 means the hunger bar drains at half speed after leaving the campfire.
+    # A smoker makes the hunger bar drain more slowly after leaving the camp.
+    # 0.5 means half speed. Bare Rested does not reduce hunger loss.
     hunger-loss-multiplier: 0.5
+    # Rested grants 10% more natural and shared XP for every ValhallaMMO skill.
+    # Administrative, reset, redemption, and refund XP are not multiplied.
+    valhalla-experience:
+      enabled: true
+      multiplier: 1.10
     # Haste I is granted only when the camp contains a crafting table. It also
     # provides Minecraft's standard status icon. Amplifier 0 means level I.
     haste:
@@ -198,6 +239,21 @@ sounds:
     sound: minecraft:block.amethyst_block.chime
     volume: 0.65
     pitch: 1.15
+  echo-vein-pulse:
+    enabled: true
+    sound: minecraft:block.amethyst_block.chime
+    volume: 0.8
+    pitch: 0.65
+  echo-vein-success:
+    enabled: true
+    sound: minecraft:block.amethyst_cluster.hit
+    volume: 0.9
+    pitch: 1.35
+  echo-vein-failure:
+    enabled: true
+    sound: minecraft:block.deepslate.break
+    volume: 0.7
+    pitch: 0.65
 
 # Visual feedback is deliberately particle-only. It never creates or changes
 # an ItemStack and is shown only to the fishing player.
@@ -219,8 +275,8 @@ effects:
     radius: 0.9
     y-offset: 0.05
 
-# Optional ValhallaMMO integration. When available, fishing skill level makes
-# the minigame easier without changing ValhallaMMO loot or XP calculations.
+# Optional ValhallaMMO fishing integration. Rested XP settings are configured
+# under campfire.rested.valhalla-experience.
 valhalla:
   fishing-difficulty:
     enabled: true

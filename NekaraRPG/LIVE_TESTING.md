@@ -66,11 +66,12 @@ five seconds, and one food point every ten seconds.
 4. Repeat with a lit soul campfire and verify the same behavior.
 5. Sit outside the configured radius and verify no campfire effects start.
 6. Wait for the full real-time charge at a bare fire and verify the one-time Rested message, soft amethyst chime, and text-only `Odpočatý | m:ss` action-bar timer, but no Haste. It must never display a raw message key or create a bossbar.
-7. Leave the fire and create hunger loss; over several changes, the bar should fall at the configured average multiplier.
-8. Add a crafting table within five blocks, recharge Rested, and verify one extra minute plus Haste I and its top-right potion icon.
-9. Add each remaining feature type one at a time and verify each unique type adds one minute while duplicates add nothing.
-10. For a quick expiry test, temporarily shorten the durations; verify the timer disappears, normal hunger loss returns, and managed Haste disappears.
-11. Give the player a stronger Haste effect before resting and verify NekaraRPG does not replace or remove it.
+7. Leave the bare fire and create hunger loss; the bar should fall at its normal rate even though Rested remains active.
+8. Add a smoker within five blocks, recharge Rested, and verify hunger falls at the configured average multiplier after leaving.
+9. Add a crafting table within five blocks, recharge Rested, and verify one extra minute plus Haste I and its top-right potion icon.
+10. Add each remaining feature type one at a time and verify each unique type adds one minute while duplicates add nothing.
+11. For a quick expiry test, temporarily shorten the durations; verify the timer disappears, normal hunger loss returns, and managed Haste disappears.
+12. Give the player a stronger Haste effect before resting and verify NekaraRPG does not replace or remove it.
 
 ## Safe Camp Acceptance
 
@@ -87,11 +88,36 @@ five seconds, and one food point every ten seconds.
 2. Compare healing over the same interval with one and two players.
 3. Move one player to a different campfire and verify both groups return to `1.00x`.
 4. Run `/nekararpg status` and verify seated, resting, and Rested counts.
-5. Fish before and after campfire testing with ValhallaMMO installed; verify original loot and XP behavior remains unchanged.
-6. Disable each module independently and reload. With Sitting disabled, Campfire should still accept a configured external seat but not `/nrpg sit`.
-7. Start the fishing minigame while Rested is active and verify its timing UI replaces the Rested timer until the minigame ends.
+5. With ValhallaMMO installed, compare normal and Rested XP for several skills; Rested should grant exactly `1.10x` normal skill-action and shared XP.
+6. Complete a Rested fishing minigame and verify the original loot is unchanged and deferred fishing XP receives the 10% bonus exactly once.
+7. Grant ValhallaMMO XP through an administrator command and verify it is not multiplied.
+8. Disable each module independently and reload. With Sitting disabled, Campfire should still accept a configured external seat but not `/nrpg sit`.
+9. Start the fishing minigame while Rested is active and verify its timing UI replaces the Rested timer until the minigame ends.
 
-Future ValhallaMMO XP integration should consume the campfire module's Rested
-state rather than duplicating its timer. Future camp-quality calculation can be
-anchored to the existing per-campfire group key and add nearby camp structures
-without changing the sitting contract.
+Future camp-quality calculation can be anchored to the existing per-campfire
+group key and add nearby camp structures without changing the sitting contract.
+
+## Echo Vein Acceptance
+
+1. Use `/nekararpg test vein` in several cave shapes and verify the selected block is visible, reachable, and shown only to the test player.
+2. Set trigger chance to `1.0`, mine a natural Valhalla Mining block at level 50, and verify the echo starts only after the original mining rewards finish.
+3. Complete it and compare the Valhalla XP log: the bonus must equal 25% of the final source amount and use reason `PLUGIN`.
+4. Inspect the bonus item. It must be one exact item from the finalized natural or Valhalla-prepared output, including metadata, never a rerolled Fortune stack.
+5. Test Rested, vein mining, Silk Touch, full inventory overflow, wrong-block input, timeout, disconnect, death, teleport, and fishing priority.
+6. Restore defaults (`0.04` chance and `480` second cooldown), reconnect, and verify the cooldown remains active.
+7. Disable ValhallaMMO or its Mining skill and verify NekaraRPG starts fail-soft while automatic Echo Vein triggers remain unavailable.
+
+## Updater Acceptance
+
+Use a disposable staging release newer than the installed plugin. Its only
+asset must be the stable `NekaraRPG.jar` produced by `build-release.cmd`.
+
+1. Run `/nekararpg update check` and verify the command responds immediately while the download continues asynchronously.
+2. Verify the console reports the staged version and an operator with `nekararpg.update.notify` receives the Czech restart notice.
+3. Confirm the downloaded file is in Paper's configured update folder, not beside the active plugin JAR.
+4. Run `/nekararpg update status`, reconnect the operator, and verify both report that the same version is waiting for restart.
+5. Stop and start the server normally. Verify the staged file is consumed, exactly one active `NekaraRPG.jar` remains, and `/nekararpg status` reports the new version.
+6. Inspect startup logs and rerun the fishing, Sitting, Campfire, Echo Vein, ValhallaMMO, and MythicMobs smoke checks before production rollout.
+
+Never test updater failure modes against production. Use a staging release or a
+temporary repository fixture for wrong digests, identities, sizes, and versions.

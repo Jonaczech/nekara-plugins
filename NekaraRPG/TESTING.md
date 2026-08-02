@@ -11,7 +11,11 @@ scripts\build-release.cmd
 The unit tests cover indicator movement and edge reflection, target boundaries,
 hits, misses, timeout, target bounds, state transitions, double completion
 prevention, configuration fallback validation, campfire group scaling, and
-fractional Rested hunger reduction.
+fractional Rested hunger reduction. Rested ValhallaMMO XP eligibility and
+scaling have focused pure-logic coverage as well. Echo Vein tests cover level,
+cooldown, chance, XP bonus, and quantity-weighted drop selection. Updater tests cover strict
+semantic versions, GitHub release parsing, trusted asset selection, SHA-256,
+JAR identity, and embedded release version validation.
 
 ## Purpur 26.1.2 Manual Acceptance
 
@@ -23,8 +27,8 @@ enabled world.
 
 1. Install the single release artifact `NekaraRPG.jar`.
 2. Start the server and verify the plugin creates `plugins/NekaraRPG/config.yml`.
-3. Verify `modules.fishing.enabled`, `modules.sitting.enabled`, and `modules.campfire.enabled` are true by default.
-4. Run `/nekararpg status` and verify all three modules are listed.
+3. Verify `modules.fishing.enabled`, `modules.sitting.enabled`, `modules.campfire.enabled`, and `modules.echo-vein.enabled` are true by default.
+4. Run `/nekararpg status` and verify all four modules are listed.
 5. Set `modules.fishing.enabled: false`, run `/nekararpg reload`, and verify fishing minigames no longer start.
 6. Re-enable the module and reload again.
 
@@ -47,6 +51,29 @@ enabled world.
 3. Compare players in levels 1-30, 31-60, and 61+. They should receive the configured tier values: 3-5/1 miss, 3-4/2 misses, and 2-3/3 misses respectively.
 4. Verify the actual ValhallaMMO max-level player receives the exact override of 2 pulls and 3 misses.
 5. Verify the original vanilla/ValhallaMMO loot and fishing XP are unchanged.
+
+### 3a. ValhallaMMO Rested XP Bonus
+
+1. Confirm ValhallaMMO is installed and `campfire.rested.valhalla-experience.enabled` is `true`.
+2. Gain the same amount of skill-action XP without Rested and with Rested; the Rested amount should be exactly `1.10x` by default.
+3. Repeat with several skills, including Fishing and one combat or gathering skill. The bonus must not filter by skill type.
+4. Gain shared party XP and verify it receives the same bonus.
+5. Grant XP by an administrator command and verify the amount is not multiplied.
+6. Complete a Rested fishing minigame and verify its deferred XP receives one 10% bonus, not two.
+7. Disable the camping module or the Rested XP setting and verify normal ValhallaMMO XP resumes.
+
+### 3b. Echo Vein
+
+1. Confirm ValhallaMMO Mining is enabled and give the player Mining level 50.
+2. Run `/nekararpg test vein` in a cave with a visible solid wall. Verify one nearby block pulses for six seconds and the command states that no reward will be granted.
+3. Hit the pulsing block with a pickaxe and verify the reward-free test succeeds. Repeat and hit another block, then let a test time out; both should fail cleanly.
+4. Temporarily set `echo-vein.trigger-chance` to `1.0` and `cooldown-seconds` to `0`, reload, then mine a natural XP-granting Mining block.
+5. Verify the original block and all normal Valhalla drops arrive before the echo starts.
+6. Complete the echo and verify the player receives exactly 25% of the final triggering Mining XP plus at most one item selected from that action's finalized drops.
+7. Repeat while Rested and verify the source XP contains the Rested bonus, but the 25% echo reward is not multiplied by Rested again.
+8. Restore the eight-minute cooldown, trigger an echo, reconnect, and verify another echo cannot trigger until the stored cooldown expires.
+9. Verify placed blocks or blocks that grant no Valhalla Mining XP do not trigger Echo Vein.
+10. Begin fishing during an echo and verify the echo yields without affecting fishing.
 
 ### 4. Failed Minigame
 
@@ -117,13 +144,14 @@ server shutdown.
 3. Extinguish or break the fire and verify active rest ends within one update period.
 4. Repeat with a lit soul campfire and outside the configured radius.
 5. Wait 20 real-time seconds at a bare fire and verify one soft amethyst chime plays, the text-only action bar reads `Odpočatý | 5:00`, no Rested bossbar appears, and no Haste is granted. An older server `messages.yml` must not cause the raw `campfire-rested-timer` key to appear.
-6. Leave the fire and verify hunger falls at half the normal average rate until Rested expires.
-7. Add a crafting table and verify the next Rested bonus lasts six minutes and grants Haste I with its top-right potion icon.
-8. Add the other configured camping features and verify each unique type adds one minute, while duplicate blocks do not stack.
-9. Add a bed and verify natural hostile spawns are blocked within 24 blocks of the lit fire, including after leaving and returning to the camp.
-10. Verify existing mobs can enter, Mythic `NekaraFauna` still spawns, and command, summon, quest, and boss spawns are unaffected.
-11. Shorten the duration for testing and verify the Rested timer disappears on expiry, reload, and plugin shutdown; managed Haste must disappear with it.
-12. Apply a stronger external Haste effect before resting and verify it is preserved.
+6. Leave the bare fire and verify hunger falls at its normal rate while Rested remains active.
+7. Add a smoker, recharge Rested, leave the fire, and verify hunger falls at half the normal average rate until Rested expires.
+8. Add a crafting table and verify the next Rested bonus gains one minute and Haste I with its top-right potion icon.
+9. Add the other configured camping features and verify each unique type adds one minute, while duplicate blocks do not stack.
+10. Add a bed and verify natural hostile spawns are blocked within 24 blocks of the lit fire, including after leaving and returning to the camp.
+11. Verify existing mobs can enter, Mythic `NekaraFauna` still spawns, and command, summon, quest, and boss spawns are unaffected.
+12. Shorten the duration for testing and verify the Rested timer disappears on expiry, reload, and plugin shutdown; managed Haste must disappear with it.
+13. Apply a stronger external Haste effect before resting and verify it is preserved.
 
 ### 13. Group Rest
 
@@ -137,6 +165,18 @@ server shutdown.
 1. Disable `modules.campfire.enabled`, reload, and verify sitting remains available without campfire effects.
 2. Re-enable campfire, disable sitting, reload, and verify Campfire still works through a configured CMI seat.
 3. Re-enable both modules and verify no duplicate listeners, action-bar streams, or scheduler effects appear.
+
+### 15. GitHub Updater
+
+1. Install 1.2.0 manually; versions before it cannot update themselves.
+2. Run `/nekararpg update status` and verify it reports an idle or completed state without blocking the server tick.
+3. Run `/nekararpg update check` while the published release is the same or older and verify it reports the installed version as current.
+4. Publish a newer staging release with the exact `NekaraRPG.jar` asset and verify the plugin first creates a hash-matching rollback JAR under `plugins/NekaraRPG/backups`, then creates `plugins/update/NekaraRPG.jar` only after release digest and identity validation.
+5. Verify an online operator receives the staged-update message and receives it again after reconnecting before restart.
+6. Run the check twice and verify only one network operation runs at a time and the already verified staged JAR is reused.
+7. Restart the server fully and verify Paper replaces the active JAR, removes the staged copy, loads the new embedded version, and preserves `plugins/NekaraRPG/config.yml`.
+8. Repeat with an invalid digest, wrong asset name, mismatched manifest version, oversized JAR, unavailable GitHub API, and timeout; every case must fail without touching the active JAR.
+9. Disable `updater.automatic-checks`, reload, and verify manual checks still work. Disable `updater.enabled` and verify both automatic and manual checks stop.
 
 For the staged deployment workflow, accelerated timer profile, CMI pass, and
 ValhallaMMO compatibility pass, see `LIVE_TESTING.md`.
