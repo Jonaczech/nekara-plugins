@@ -6,24 +6,26 @@ The repository is published at
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 The default branch is `main`.
 
-The latest shipped plugin is **NekaraRPG 1.2.1**:
+The latest shipped plugin is **NekaraRPG 1.2.2**:
 
-- tag: `v1.2.1`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.2.1>
+- tag: `v1.2.2`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.2.2>
 - deployable asset: `NekaraRPG.jar`
-- source PR: <https://github.com/Jonaczech/nekara-plugins/pull/7>
-- release merge commit: `0b925d9f6bf4f8e5c955c293fc742f82bdbc4de7`
+- source PR: <https://github.com/Jonaczech/nekara-plugins/pull/9>
+- release merge commit: `9336f6528d4e90ba1cbe0010d6394ccaffe8f205`
 - release JAR SHA-256:
-  `ECA56FA1BDB9B4DD7BC257E8A6B189B3434A5D4E503D80FD0AF1C80E8D899A55`
-- release asset size: `181563` bytes
+  `CDEAA8A55D69B4CCC41CEAC24A69071621FF3AD4E637A7923A1D3A730DDD6E78`
+- release asset size: `181349` bytes
 - automated validation: 35 passing tests
 
-Release 1.2.1 is the first patch intended for end-to-end updater acceptance
-from a manually installed 1.2.0. It ships the complete Echo Vein Mining module
-and otherwise keeps 1.2.0 gameplay and configuration defaults unchanged.
-GitHub's latest-release endpoint, asset name, size, SHA-256 digest, downloaded
-JAR contents, stable status, and tag target were verified after publication.
-Live Purpur/ValhallaMMO gameplay and updater restart consumption remain pending.
+Release 1.2.2 incorporates the first live Echo Vein feedback. It removes the
+Mining level gate, restricts targets to Paper's pickaxe-mineable tag, layers a
+subtle nearby pulse with a denser visible-face marker, and limits natural chat
+to one timed discovery message. Command tests remain reward-free; natural
+successes retain the 25% Mining XP and finalized-drop rewards. GitHub's latest
+release metadata, downloaded JAR hash and contents, stable status, and tag
+target were verified after publication. Live acceptance of the revised visual
+balance and natural rewards remains pending.
 
 Version numbers belong in plugin metadata, changelogs, and Git tags. The JAR
 filename intentionally stays stable so server deployment never creates a
@@ -64,11 +66,14 @@ second versioned copy beside the active plugin.
 
 ### Echo Vein
 
-- Requires a real ValhallaMMO Mining XP action and Mining level 50 by default.
+- Requires a real ValhallaMMO Mining XP action but has no level gate.
+- Selects only blocks in Paper's `MINEABLE_PICKAXE` tag and marks the visible
+  target face more strongly than the surrounding one-block-area hint.
 - Uses a rare six-second spatial pulse with an eight-minute persistent cooldown.
 - Success grants 25% of the final source Mining XP with reason `PLUGIN`.
 - The optional bonus is one item from that action's finalized Mining drops; no
   Digging table, custom loot table, or Fortune reroll is used.
+- Natural chat contains only the timed discovery message; outcomes use sounds.
 - `/nekararpg test vein` exercises the visuals without XP, drops, or cooldown.
 
 ## Build and Deployment
@@ -104,13 +109,13 @@ startup logs. Version 1.2.0 itself still needs one manual deployment because
 
 ## Next Session
 
-After live acceptance of 1.2.1, the next approved design direction is a
+After live acceptance of 1.2.2, the next approved design direction is a
 `mounts` module. Its first version should use a vanilla horse, one persistent
 mount per player, no cargo inventory, and no hoglin model. Preserve saddle,
 armor, name, health, ownership, and death cooldown while preventing summon,
 dismiss, logout, and healing abuse in PvP.
 
-Potential later Campfire extensions after the 1.2.1 acceptance pass:
+Potential later Campfire extensions after the 1.2.2 acceptance pass:
 
 - unique gameplay bonuses for smoker, barrel, cauldron, cartography table, and
   grindstone,
