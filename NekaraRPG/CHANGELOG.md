@@ -1,5 +1,13 @@
 # Přehled změn
 
+## 1.5.1
+
+- Navazující stabilní patch release pro instance, které už před publikací na
+  GitHubu používaly interní sestavení `1.5.0`; vestavěný updater tak může bezpečně
+  rozpoznat vyšší verzi a připravit ověřený JAR.
+- Obsahuje migraci chybějícího jména mounta, minutový návrat po smrti a úplnou
+  soulbound ochranu píšťalky včetně hopperů a dispenserů.
+
 ## 1.5.0
 
 - Opraven pád `/nekararpg mount` při načtení staršího záznamu bez `custom-name`.
