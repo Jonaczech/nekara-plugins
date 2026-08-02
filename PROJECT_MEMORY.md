@@ -73,6 +73,8 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
 
 ## Směr modulu Mounts
 
+- NekaraMounts je schválená nejbližší implementační priorita. Konkrétní rozsah,
+  bezpečnostní pravidla, otevřená rozhodnutí a akceptace jsou v `ROADMAP.md`.
 - Budoucí modul `mounts` má začít vanilla koněm, jedním mountem na hráče, bez
   nákladního inventáře a bez modelu hoglina.
 - Sedlo, brnění, jméno, zdraví, cooldown po smrti a vlastnictví musí být trvalé.

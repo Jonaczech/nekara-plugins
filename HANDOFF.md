@@ -136,7 +136,7 @@ provést úplný restart a zkontrolovat startovací logy.
 
 ## Další práce
 
-Nejdřív živě otestuj verzi 1.3.0 podle `NekaraRPG/TESTING.md` a
+Nejdřív živě otestuj verzi 1.4.0 podle `NekaraRPG/TESTING.md` a
 `NekaraRPG/LIVE_TESTING.md`, zejména:
 
 - registraci, login, lockout, přesný zápis nicku a blokaci akcí NekaraAuth,
@@ -146,11 +146,10 @@ Nejdřív živě otestuj verzi 1.3.0 podle `NekaraRPG/TESTING.md` a
 - že +25 % XP vzniká právě jednou z označeného bloku,
 - že 50% řetězení a bonusový drop nejsou příliš štědré.
 
-Po akceptaci je schváleným dalším návrhovým směrem modul `mounts`. První verze
-má použít vanilla koně, jednoho trvalého mounta na hráče, bez nákladního
-inventáře a bez modelu hoglina. Musí uchovávat sedlo, brnění, jméno, zdraví,
-vlastnictví a cooldown po smrti a zabránit zneužití přivolání, odvolání,
-odhlášení a léčení v PvP.
+Schválenou další implementační prioritou je modul `mounts`. Začni přečtením
+`ROADMAP.md`, zejména rozsahem MVP, bezpečnostními pravidly, akceptačním minimem a
+pěti otevřenými herními rozhodnutími. První verze používá jednoho trvalého
+vanilla koně na hráče, bez nákladního inventáře a bez modelu hoglina.
 
 Možná pozdější rozšíření Campfire:
 
