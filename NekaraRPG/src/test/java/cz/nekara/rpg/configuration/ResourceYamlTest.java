@@ -54,7 +54,8 @@ class ResourceYamlTest {
 
             assertEquals(0.20, ((Number) sitting.get("seat-y-offset")).doubleValue(), 0.0001);
             assertTrue((Boolean) updater.get("enabled"));
-            assertNotNull(modules.get("echo-vein"));
+            assertNotNull(modules.get("mining"));
+            assertFalse(modules.containsKey("echo-vein"));
             assertFalse(echoVein.containsKey("minimum-mining-level"));
             assertEquals(0.04, ((Number) echoVein.get("trigger-chance")).doubleValue(), 0.0001);
             assertEquals(480, ((Number) echoVein.get("cooldown-seconds")).intValue());
@@ -103,7 +104,7 @@ class ResourceYamlTest {
             assertNotNull(messages.get("update-current"));
             assertNotNull(messages.get("update-staged"));
             assertNotNull(messages.get("update-failed"));
-            assertNotNull(messages.get("echo-vein-found"));
+            assertFalse(messages.containsKey("echo-vein-found"));
             assertNotNull(messages.get("echo-vein-test-unavailable"));
             assertEquals(
                     "<green>Odpočatý</green> <dark_gray>|</dark_gray> <white>%remaining_text%</white>",

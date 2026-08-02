@@ -46,12 +46,14 @@ release deliberately changes one of these decisions.
 - Rested uses action-bar text rather than a bossbar so MythicMobs boss health UI
   remains unmistakable. Fishing and charging feedback have higher priority.
 
-## Echo Vein Rules
+## NekaraMining and Echo Vein Rules
 
-- Echo Vein is an optional ValhallaMMO Mining module available at every skill
-  level. A real non-cancelled Mining `SKILL_ACTION` XP event is required.
-- Targets must belong to Paper's `MINEABLE_PICKAXE` block tag. Natural attempts
-  use one timed discovery message and no success or failure chat messages.
+- NekaraMining uses the module ID `mining`; Echo Vein is its first optional
+  ValhallaMMO activity and is available at every skill level. A real
+  non-cancelled Mining `SKILL_ACTION` XP event is required.
+- Targets must belong to Paper's `MINEABLE_PICKAXE` block tag. Mining another
+  block does not cancel the activity. Natural attempts use no chat, play one
+  discovery sound and one success sound, and keep natural timeout silent.
 - The original mining action always completes before the challenge starts;
   failure never removes or changes its XP or drops.
 - Success grants a configurable fraction of the final source Mining XP with
@@ -61,6 +63,8 @@ release deliberately changes one of these decisions.
   Vein does not use the Digging treasure table or maintain custom loot.
 - Cooldown persists on the player across reconnects and restarts. Fishing has
   interaction priority over an active echo.
+- If `modules.mining.enabled` is absent, preserve the legacy
+  `modules.echo-vein.enabled` value. Keep activity settings under `echo-vein`.
 
 ## Mounts Direction
 

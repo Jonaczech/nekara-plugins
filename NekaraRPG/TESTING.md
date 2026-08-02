@@ -12,7 +12,7 @@ The unit tests cover indicator movement and edge reflection, target boundaries,
 hits, misses, timeout, target bounds, state transitions, double completion
 prevention, configuration fallback validation, campfire group scaling, and
 fractional Rested hunger reduction. Rested ValhallaMMO XP eligibility and
-scaling have focused pure-logic coverage as well. Echo Vein tests cover level,
+scaling have focused pure-logic coverage as well. Echo Vein tests cover
 cooldown, chance, XP bonus, and quantity-weighted drop selection. Updater tests cover strict
 semantic versions, GitHub release parsing, trusted asset selection, SHA-256,
 JAR identity, and embedded release version validation.
@@ -27,7 +27,7 @@ enabled world.
 
 1. Install the single release artifact `NekaraRPG.jar`.
 2. Start the server and verify the plugin creates `plugins/NekaraRPG/config.yml`.
-3. Verify `modules.fishing.enabled`, `modules.sitting.enabled`, `modules.campfire.enabled`, and `modules.echo-vein.enabled` are true by default.
+3. Verify `modules.fishing.enabled`, `modules.sitting.enabled`, `modules.campfire.enabled`, and `modules.mining.enabled` are true by default.
 4. Run `/nekararpg status` and verify all four modules are listed.
 5. Set `modules.fishing.enabled: false`, run `/nekararpg reload`, and verify fishing minigames no longer start.
 6. Re-enable the module and reload again.
@@ -69,13 +69,15 @@ enabled world.
 3. Hit the pulsing block with a pickaxe and verify the reward-free test succeeds. Repeat and hit another block, then let a test time out; both should fail cleanly.
 4. Repeat the test around stone, ores, dirt, gravel, and wood. Only blocks in Paper's pickaxe-mineable tag may become the target.
 5. Temporarily set `echo-vein.trigger-chance` to `1.0` and `cooldown-seconds` to `0`, reload, then mine a natural XP-granting Mining block.
-6. Verify the original block and all normal Valhalla drops arrive before the echo starts. Chat should contain only the timed discovery message.
-7. Complete the echo and verify the player receives exactly 25% of the final triggering Mining XP plus at most one item selected from that action's finalized drops, with no success chat message.
-8. Let a natural echo expire and verify there is no failure chat message.
-9. Repeat while Rested and verify the source XP contains the Rested bonus, but the 25% echo reward is not multiplied by Rested again.
-10. Restore the eight-minute cooldown, trigger an echo, reconnect, and verify another echo cannot trigger until the stored cooldown expires.
-11. Verify placed blocks or blocks that grant no Valhalla Mining XP do not trigger Echo Vein.
-12. Begin fishing during an echo and verify the echo yields without affecting fishing.
+6. Verify the original block and all normal Valhalla drops arrive before the echo starts. Chat should contain no natural Echo Vein message and the discovery sound should play exactly once.
+7. Mine or strike several non-target blocks while the echo is active. Verify the timer and target persist, then complete the marked target normally.
+8. Verify the player receives exactly 25% of the final triggering Mining XP plus at most one item selected from that action's finalized drops, with one success sound and no chat message.
+9. Let a natural echo expire and verify there is no failure chat message or failure sound.
+10. Repeat while Rested and verify the source XP contains the Rested bonus, but the 25% echo reward is not multiplied by Rested again.
+11. Restore the eight-minute cooldown, trigger an echo, reconnect, and verify another echo cannot trigger until the stored cooldown expires.
+12. Verify placed blocks or blocks that grant no Valhalla Mining XP do not trigger Echo Vein.
+13. Begin fishing during an echo and verify the echo yields without affecting fishing.
+14. Remove `modules.mining.enabled`, set legacy `modules.echo-vein.enabled: false`, reload, and verify NekaraMining stays disabled. Then configure the new key explicitly and verify it takes precedence.
 
 ### 4. Failed Minigame
 

@@ -264,6 +264,10 @@ public final class ConfigurationService {
             ));
         }
 
+        boolean miningModuleEnabled = config.contains("modules.mining.enabled", true)
+                ? config.getBoolean("modules.mining.enabled", true)
+                : config.getBoolean("modules.echo-vein.enabled", true);
+
         current = new PluginConfig(
                 plugin.getDescription().getVersion(),
                 config.getBoolean("plugin.debug", false),
@@ -271,7 +275,7 @@ public final class ConfigurationService {
                         "fishing", config.getBoolean("modules.fishing.enabled", true),
                         "sitting", config.getBoolean("modules.sitting.enabled", true),
                         "campfire", config.getBoolean("modules.campfire.enabled", true),
-                        "echo-vein", config.getBoolean("modules.echo-vein.enabled", true)
+                        "mining", miningModuleEnabled
                 ),
                 minigame,
                 hookParticles,

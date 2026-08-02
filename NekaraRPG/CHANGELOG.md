@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.3
+
+- Renamed the gameplay module from `echo-vein` to `mining` (`NekaraMining`),
+  keeping Echo Vein as its first activity and migrating the previous module
+  toggle when `modules.mining.enabled` is not yet present.
+- Kept an active Echo Vein running when the player hits or mines another block;
+  only striking the marked target completes it, while timeout and existing
+  lifecycle cleanup rules still apply.
+- Removed all natural Echo Vein chat messages. The action-bar timer remains,
+  while command tests retain their explicit administrative feedback.
+- Limited the discovery sound to one playback when the vein appears instead of
+  repeating it with every particle pulse. Natural success plays one completion
+  sound, and natural timeout is silent.
+
 ## 1.2.2
 
 - Made Echo Vein available at every ValhallaMMO Mining level; the legacy

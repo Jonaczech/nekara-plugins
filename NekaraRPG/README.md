@@ -1,8 +1,8 @@
 # NekaraRPG
 
 NekaraRPG is a modular Purpur/Paper plugin for Nekara RPG and immersion systems.
-It currently ships fishing, free-position sitting, campfire rest, and the
-ValhallaMMO Mining activity Echo Vein in one JAR.
+It currently ships NekaraFishing, free-position sitting, campfire rest, and
+NekaraMining with its first ValhallaMMO activity, Echo Vein, in one JAR.
 
 The plugin is intentionally conservative: it does not replace vanilla loot
 tables, does not generate synthetic fishing events, and does not require
@@ -20,7 +20,7 @@ modules:
     enabled: true
   campfire:
     enabled: true
-  echo-vein:
+  mining:
     enabled: true
 ```
 
@@ -31,7 +31,7 @@ Current modules:
 | `fishing` | production | Non-invasive fishing timing minigame with vanilla/ValhallaMMO compatibility. |
 | `sitting` | production | Command-driven sitting plus configurable detection of external seats. |
 | `campfire` | production | Healing, hunger protection, visual Rested bonus, group scaling, and action-bar roleplay near lit campfires. |
-| `echo-vein` | testing | Rare Mining activity with a short spatial reaction challenge and Valhalla-native rewards. |
+| `mining` | testing | NekaraMining activities, currently the spatial Echo Vein challenge with Valhalla-native rewards. |
 
 Campfire accepts both NekaraRPG seats and configured external vehicle-based
 seats. The internal sitting module may therefore be disabled when another
@@ -109,7 +109,7 @@ resets, redemptions, and migration refunds are not multiplied.
 
 ## Echo Vein
 
-Echo Vein is an optional ValhallaMMO Mining activity available at every Mining
+Echo Vein is the first optional NekaraMining activity and is available at every Mining
 level. An eligible natural Mining XP action has a 4% chance by default to reveal
 a nearby block from Paper's pickaxe-mineable tag. Dirt, gravel, wood, and other
 non-pickaxe blocks cannot become the fissure. The player has six seconds to find
@@ -126,11 +126,14 @@ item keeps its metadata, but its amount is capped at one; Fortune and the whole
 drop stack are never rerolled or duplicated.
 
 The default cooldown is eight minutes and is stored on the player, so reconnects
-and server restarts do not reset it. Fishing has interaction priority and an
-active echo yields when fishing begins. `/nekararpg test vein` starts a
-reward-free visual test without consuming the cooldown. Natural attempts send
-one discovery message with the time limit; their outcome does not add another
-chat message.
+and server restarts do not reset it. Mining or striking another block does not
+cancel the active echo; the selected block is visible when the activity starts
+and remains active until success, timeout, or normal lifecycle cleanup. Fishing
+has interaction priority and an active echo yields when fishing begins.
+`/nekararpg test vein` starts a reward-free visual test without consuming the
+cooldown. Natural attempts use no chat messages: one discovery sound announces
+the activity, the action bar shows its timer, success plays one completion
+sound, and natural timeout is silent.
 
 ## Fishing Compatibility Mode
 
@@ -298,6 +301,7 @@ dependency.
 - Campfire and Rested action-bar feedback can temporarily replace other non-priority action-bar text. NekaraRPG's fishing minigame always takes priority over the Rested timer.
 - Echo Vein needs ValhallaMMO Mining for automatic triggers. Its test command still verifies target visibility without awarding rewards.
 - Existing `minimum-mining-level` values from 1.2.1 and older are ignored.
+- Existing `modules.echo-vein.enabled` is used when the new `modules.mining.enabled` toggle is absent.
 - Echo Vein derives one bonus item from the triggering action's finalized drops. It does not call the Digging treasure table or invent a separate loot table.
 - Rested uses a text-only action-bar timer; crafting-table camps additionally use the vanilla Haste icon. A uniquely branded status icon would require a client resource-pack or mod solution.
 - Smoker camps reduce Rested hunger loss, crafting-table camps grant configurable Haste, and ValhallaMMO skill XP receives the configured Rested multiplier.
