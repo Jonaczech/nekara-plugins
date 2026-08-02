@@ -1,16 +1,15 @@
 # NekaraRPG
 
-NekaraRPG is a modular Purpur/Paper plugin for Nekara RPG and immersion systems.
-It currently ships NekaraFishing, free-position sitting, campfire rest, and
-NekaraMining with its first ValhallaMMO activity, Echo Vein, in one JAR.
+NekaraRPG je modulární plugin pro Purpur/Paper, který zajišťuje RPG a imerzivní
+systémy Nekary. V jednom JARu aktuálně obsahuje NekaraFishing, volné sezení,
+odpočinek u ohně a NekaraMining s první ValhallaMMO aktivitou Echo Vein.
 
-The plugin is intentionally conservative: it does not replace vanilla loot
-tables, does not generate synthetic fishing events, and does not require
-ValhallaMMO or any other plugin.
+Plugin je záměrně konzervativní: nenahrazuje vanilla loot tabulky, nevytváří
+syntetické fishing eventy a nevyžaduje ValhallaMMO ani jiný plugin.
 
-## Modules
+## Moduly
 
-Modules are enabled by default and can be controlled in `config.yml`:
+Moduly jsou výchozím stavem zapnuté a ovládají se v `config.yml`:
 
 ```yml
 modules:
@@ -24,157 +23,151 @@ modules:
     enabled: true
 ```
 
-Current modules:
+Aktuální moduly:
 
-| Module | Status | Description |
+| Modul | Stav | Popis |
 | --- | --- | --- |
-| `fishing` | production | Non-invasive fishing timing minigame with vanilla/ValhallaMMO compatibility. |
-| `sitting` | production | Command-driven sitting plus configurable detection of external seats. |
-| `campfire` | production | Healing, hunger protection, visual Rested bonus, group scaling, and action-bar roleplay near lit campfires. |
-| `mining` | testing | NekaraMining activities, currently the spatial Echo Vein challenge with Valhalla-native rewards. |
+| `fishing` | produkční | Nenásilná časovací rybářská minihra kompatibilní s vanilla a ValhallaMMO. |
+| `sitting` | produkční | Sezení řízené příkazem a nastavitelná detekce externích sedadel. |
+| `campfire` | produkční | Léčení, ochrana hladu, Rested bonus, skupinové škálování a roleplay v action baru u zapáleného ohně. |
+| `mining` | testovací | Aktivity NekaraMining, aktuálně prostorová výzva Echo Vein s nativními ValhallaMMO odměnami. |
 
-Campfire accepts both NekaraRPG seats and configured external vehicle-based
-seats. The internal sitting module may therefore be disabled when another
-plugin provides the seat. Future modules can be added without turning the
-plugin into separate unrelated JARs. Good candidates are lockpicking, wounds,
-world events, rumors, territory ambience, and reputation.
+Campfire přijímá sedadla NekaraRPG i nakonfigurovaná externí vehicle sedadla.
+Interní Sitting proto může být vypnutý, pokud sezení poskytuje jiný plugin.
+Budoucí moduly lze přidávat bez rozdělení projektu do nesouvisejících JARů.
+Vhodnými kandidáty jsou lockpicking, wounds, world events, rumors, territory,
+reputation a mounts.
 
-## Sitting
+## Sezení
 
-Use `/nekararpg sit` to sit at the current grounded position and
-`/nekararpg stand` to stand up. The seat is an invisible, non-persistent entity
-that is removed on dismount, teleport, death, disconnect, configured damage,
-module disable, reload cleanup, and shutdown.
+Příkaz `/nekararpg sit` posadí hráče na aktuální uzemněné pozici a
+`/nekararpg stand` ho postaví. Sedadlo je neviditelná netrvalá entita, která se
+odstraní při sesednutí, teleportu, smrti, odpojení, nakonfigurovaném poškození,
+vypnutí modulu, čištění při reloadu a ukončení serveru.
 
-NekaraRPG deliberately does not register the top-level `/sit` command. This
-keeps CMI and other existing sitting plugins in control of their own command.
-Campfire detects external `ARMOR_STAND` seats by default, so `/cmi sit` can
-participate without a compile-time CMI dependency. Additional seat vehicle
-types can be added under `sitting.external-seat-entity-types`.
+NekaraRPG záměrně neregistruje hlavní příkaz `/sit`. CMI a jiné sitting pluginy
+tak zůstávají vlastníky svých příkazů. Campfire výchozím stavem detekuje externí
+sedadla `ARMOR_STAND`, takže `/cmi sit` funguje bez compile-time závislosti na
+CMI. Další vehicle typy lze přidat pod `sitting.external-seat-entity-types`.
 
-## Campfire Rest
+## Odpočinek u ohně
 
-A player actively rests while seated within the configured radius of a lit
-campfire or soul campfire. The default radius is `5.0` blocks and uses a true
-three-dimensional distance from the player to the fire. Active rest:
+Hráč aktivně odpočívá, když sedí v nastaveném radiusu od zapáleného campfire
+nebo soul campfire. Výchozí radius je `5.0` bloků a používá skutečnou
+trojrozměrnou vzdálenost od hráče k ohni. Aktivní odpočinek:
 
-- slowly restores health,
-- prevents the hunger bar from falling,
-- restores a small amount of hunger at a configurable interval,
-- scales healing and hunger restoration when players share the same fire,
-- shows configurable progress and roleplay messages in the action bar,
-- emits low-count particles to confirm that the rest mechanic is active.
+- pomalu obnovuje zdraví,
+- brání poklesu hladu,
+- v nastaveném intervalu doplňuje malé množství hladu,
+- škáluje léčení a hlad, pokud jeden oheň sdílí více hráčů,
+- zobrazuje nastavitelné progress a roleplay zprávy v action baru,
+- používá malé množství částic jako potvrzení aktivní mechaniky.
 
-After 20 real-time seconds by default, the player receives a five-minute base
-Rested bonus. Bare Rested does not change hunger loss. A smoker in the charged
-camp reduces average hunger loss to the configured multiplier, `0.5` by
-default. The timer uses wall-clock time, so server lag does not make a
-twenty-second rest take longer.
-Once charged, Rested stays refreshed while the player remains at the fire, then
-counts down after the player leaves active rest.
+Po výchozích 20 skutečných sekundách hráč získá základní pětiminutový Rested.
+Samotný Rested ztrátu hladu nemění. Smoker v nabitém táboře sníží průměrnou
+ztrátu hladu na nastavený násobitel, výchozím stavem `0.5`. Časovač používá
+skutečný čas, takže lag serveru dvacetisekundový odpočinek neprodlouží.
 
-### Camping Equipment
+Po nabití se Rested obnovuje, dokud hráč zůstává u ohně. Odpočítávání začne až
+po opuštění aktivního odpočinku.
 
-Every unique enabled camping block type within five blocks of the lit campfire
-adds one minute to Rested. Duplicate blocks of one type do not stack. The
-default set is crafting table, bed, smoker, barrel, water cauldron, cartography
-table, and grindstone, giving a possible duration from five to twelve minutes.
+### Vybavení tábora
 
-A crafting table also grants Haste I for that Rested bonus. Haste supplies
-Minecraft's standard potion icon and countdown in the top-right status area.
-Existing Haste from another source is not replaced by NekaraRPG.
+Každý unikátní zapnutý typ táborového bloku do pěti bloků od ohně přidá jednu
+minutu Rested. Duplicitní bloky stejného typu se nesčítají. Výchozí sada je
+crafting table, bed, smoker, barrel, water cauldron, cartography table a
+grindstone, tedy možná délka pět až dvanáct minut.
 
-A smoker makes hunger drain at half speed by default for the resulting Rested
-bonus. Removing or adding the smoker while the player remains at the fire
-updates the refreshed bonus in the same way as crafting-table Haste.
+Crafting table přidává pro daný Rested Haste I. Haste používá standardní potion
+ikonu a odpočet Minecraftu. NekaraRPG nepřepisuje silnější Haste z jiného zdroje.
 
-A bed near the lit campfire creates a configurable 24-block safe-camp radius.
-Natural hostile spawns are cancelled while the camp is loaded, so protection
-becomes useful again when a player returns. Existing mobs can still walk into
-the camp. Command, summon, quest, boss, and other scripted spawns remain
-untouched by default. With MythicMobs installed, only natural random spawns in
-the configured `NekaraHostile` faction are cancelled; `NekaraFauna` is left
-alone. MythicMobs remains a soft dependency and NekaraRPG works without it.
+Smoker pro výsledný Rested výchozím stavem zpomaluje ztrátu hladu na polovinu.
+Přidání nebo odstranění smokeru během odpočinku aktualizuje obnovovaný bonus
+stejně jako Haste z crafting table.
 
-The charging roleplay remains in the action bar. Once charged, Rested shows the
-compact action-bar text `Odpočatý | m:ss`, independent of whether Haste is active. The
-timer yields to the fishing minigame and to campfire charging messages. Set
-`campfire.visuals.rested.indicator` to `NONE` to disable it. Extra particles
-remain opt-in. A soft configurable amethyst chime confirms the moment the
-20-second charge completes.
+Bed u zapáleného ohně vytváří nastavitelný bezpečný radius 24 bloků. Přirozené
+spawny nepřátel se při načteném táboře ruší, existující mobové ale mohou do
+tábora vejít. Command, summon, quest, boss a jiné skriptované spawny zůstávají
+výchozím stavem nedotčené. S MythicMobs se ruší pouze přirozené náhodné spawny
+nastavené frakce `NekaraHostile`; `NekaraFauna` zůstává. MythicMobs je měkká
+závislost a NekaraRPG funguje i bez něj.
 
-With ValhallaMMO installed, Rested also grants 10% more normal skill-action and
-shared XP across every ValhallaMMO skill by default. Administrative commands,
-resets, redemptions, and migration refunds are not multiplied.
+Roleplay nabíjení zůstává v action baru. Nabitý Rested zobrazuje stručný text
+`Odpočatý | m:ss` nezávisle na Haste. Časovač ustupuje rybářské minihře a
+zprávám nabíjení. Lze ho vypnout hodnotou
+`campfire.visuals.rested.indicator: NONE`. Další částice jsou volitelné. Dokončení
+20sekundového nabíjení potvrzuje jemný nastavitelný ametystový zvuk.
+
+S ValhallaMMO přidává Rested výchozím stavem 10 % k běžným skill-action a
+sdíleným XP všech skillů. Administrativní příkazy, resety, redemption a migrační
+refundace se nenásobí.
 
 ## Echo Vein
 
-Echo Vein is the first optional NekaraMining activity and is available at every
-Mining level. Mining stone, deepslate, netherrack, or end stone with real
-ValhallaMMO Mining XP has a 5% chance by default to reveal a nearby visible
-block of the same four host types. Ores, dirt, gravel, wood, and other blocks do
-not trigger the activity and cannot become its target. There is no cooldown.
+Echo Vein je první volitelná aktivita NekaraMining a je dostupná na každém
+Mining levelu. Těžba stone, deepslate, netherrack nebo end stone se skutečnými
+ValhallaMMO Mining XP má výchozí 5% šanci odhalit blízký viditelný blok stejné
+čtveřice. Ores, dirt, gravel, wood ani jiné bloky aktivitu nespouštějí a nemohou
+být cílem. Cooldown neexistuje.
 
-The player has six seconds to find and mine the target with a pickaxe. A subtle
-pulse covers its immediate one-block area while a denser effect marks its
-visible face. On the first mining damage, the block has one 25% chance to reveal
-a weighted vanilla-compatible ore for that Y level. Stone and deepslate use
-their matching Overworld variants, netherrack uses quartz or Nether gold only
-from Y 10 through 117, and end stone remains unchanged.
+Hráč má šest sekund na nalezení a vytěžení cíle krumpáčem. Jemný pulz pokrývá
+okolí jednoho bloku a hustší efekt označuje jeho viditelnou stěnu. Při prvním
+poškození těžbou má blok jedinou 25% šanci odhalit váženou vanilla-kompatibilní
+rudu pro danou Y úroveň. Stone a deepslate používají odpovídající Overworld
+varianty, netherrack quartz nebo Nether gold pouze od Y 10 do 117 a end stone
+zůstává beze změny.
 
-The distribution mirrors vanilla height bands and biases: coal above Y 0,
-copper from Y 0 through 96 with a peak around 48, iron below 72 or above 80,
-gold below 32 with extra high Badlands gold, lapis below 64 with a peak around
-0, and redstone/diamond below 16 with increasing weight toward the world floor.
-It intentionally does not reproduce seed noise, biome density modifiers beyond
-Badlands gold, or vanilla air-exposure suppression.
+Distribuce napodobuje vanilla rozsahy a váhy: coal nad Y 0, copper Y 0-96 s
+vrcholem kolem 48, iron pod 72 nebo nad 80, gold pod 32 s vyšším Badlands
+zlatem, lapis pod 64 s vrcholem kolem 0 a redstone/diamond pod 16 s rostoucí
+vahou směrem ke dnu světa. Záměrně nereprodukuje seedový noise, biome density
+mimo Badlands zlato ani vanilla omezení rud vystavených vzduchu.
 
-Mining the marked block grants 25% of that block's finalized Mining XP with
-Valhalla's `PLUGIN` reason, preventing Rested, Mining, and global XP multipliers
-from being applied again. One bonus item is selected by actual stack quantity
-from that marked block's finalized natural and Valhalla-prepared drops. Its
-metadata is preserved, its amount is capped at one, and Fortune is not rerolled.
+Vytěžení označeného bloku přidá 25 % jeho finálních Mining XP s Valhalla důvodem
+`PLUGIN`, takže se Rested, Mining ani globální násobitel neaplikuje znovu. Jeden
+bonusový item se vybírá podle skutečného množství z finálních přirozených a
+Valhalla-prepared dropů označeného bloku. Metadata zůstávají, množství je nejvýše
+jeden a Fortune se nehází znovu.
 
-Every completed target has a 50% chance to continue into one visible
-face-adjacent host block. Chained targets use the same timer and rewards, but
-the completed target cannot also roll the independent 5% trigger. Mining other
-blocks does not cancel an active echo. Natural attempts use no chat: a low
-amethyst chime announces the vein, a brighter related sound confirms an ore
-reveal, final success has its own sound, and the action bar shows the timer.
-Timeout is silent. `/nekararpg test vein` remains a reward-free visual test.
+Každý dokončený cíl má 50% šanci pokračovat na viditelný blok sousedící stěnou.
+Řetězené cíle používají stejný časovač a odměny, ale dokončený blok zároveň
+nehází nezávislou 5% šanci. Těžba jiných bloků aktivitu neruší. Přirozené pokusy
+nepíšou do chatu: hlubší amethyst chime oznamuje žílu, jasnější příbuzný zvuk
+potvrzuje rudu a finální úspěch má vlastní zvuk. Timeout je tichý.
+`/nekararpg test vein` zůstává bezodměnovým vizuálním testem.
 
-## Fishing Compatibility Mode
+## Kompatibilní režim rybaření
 
-The fishing module uses `DEFERRED_CATCH`, matching the intended LiteFish-like
-player flow while preserving the original server-generated catch:
+Fishing modul používá `DEFERRED_CATCH`. Zachovává zamýšlený tok minihry i
+původní serverem vytvořený úlovek:
 
-1. Vanilla/Paper emits `PlayerFishEvent.State.BITE` and NekaraRPG creates a pending UUID-owned fishing session.
-2. The player's next rod right-click proceeds through normal Minecraft fishing and produces the real `PlayerFishEvent.State.CAUGHT_FISH`.
-3. NekaraRPG cancels that event after other normal listeners had a chance to observe it, stores the exact original caught ItemStack and vanilla XP value, removes the temporary item entity, and starts the action-bar minigame.
-4. On success, the stored original ItemStack is delivered to the player and the stored vanilla XP is restored; no synthetic fishing event, loot table, or custom item is created.
-5. On failure, timeout, disconnect, teleport, or invalid session state, the temporary catch is discarded and no loot is delivered.
+1. Vanilla/Paper vyšle `PlayerFishEvent.State.BITE` a NekaraRPG vytvoří čekající relaci vlastněnou UUID.
+2. Další pravé kliknutí prutem projde běžným Minecraft rybařením a vytvoří skutečný `PlayerFishEvent.State.CAUGHT_FISH`.
+3. NekaraRPG event zruší až poté, co ho mohly pozorovat ostatní listenery, uloží přesný původní ItemStack a vanilla XP, odstraní dočasnou item entitu a spustí minihru v action baru.
+4. Při úspěchu doručí uložený původní ItemStack a obnoví vanilla XP; nevytváří syntetický fishing event, loot tabulku ani vlastní item.
+5. Při neúspěchu, timeoutu, odpojení, teleportu nebo neplatné relaci se dočasný úlovek zahodí bez odměny.
 
-The first click after the bite creates the deferred catch and starts the
-minigame; it is not counted as a successful timing hit. Each later successful
-hit adds `minigame.time-bonus-ticks` to the timer.
+První kliknutí po záběru vytvoří odložený úlovek a spustí minihru; nepočítá se
+jako úspěšný timing hit. Každý další úspěšný zásah přidá
+`minigame.time-bonus-ticks` k časovači.
 
-During gameplay, chat is intentionally quiet: by default only the bite and final
-escape messages are sent. Hits and progress are represented through the action
-bar, boss bar, particles, and sounds.
+Chat zůstává během hry záměrně tichý: výchozím stavem se posílá jen zpráva o
+záběru a finálním úniku. Zásahy a postup ukazuje action bar, bossbar, částice a
+zvuky.
 
 ## ValhallaMMO
 
-ValhallaMMO is a soft dependency. When installed, NekaraRPG can:
+ValhallaMMO je měkká závislost. Pokud je nainstalované, NekaraRPG může:
 
-- scale fishing minigame difficulty from the player's ValhallaMMO FishingSkill level,
-- defer ValhallaMMO fishing profession XP so it is awarded alongside the final catch,
-- preserve prepared ValhallaMMO extra drops such as double-loot output,
-- grant Rested players configurable bonus XP across every ValhallaMMO skill,
-- drive Echo Vein from real Mining XP and finalized Mining drops.
+- škálovat obtížnost rybářské minihry podle ValhallaMMO FishingSkill levelu,
+- odložit profesní fishing XP a udělit je spolu s finálním úlovkem,
+- zachovat připravené extra dropy, například double-loot,
+- přidat Rested hráčům nastavitelná bonusová XP ke všem skillům,
+- řídit Echo Vein skutečnými Mining XP a finálními Mining dropy.
 
-Loot and ValhallaMMO skill progression are not replaced or recalculated by
-NekaraRPG. The public XP event amount is multiplied only while Rested is active.
-Disable or tune the Rested bonus with:
+NekaraRPG ValhallaMMO loot ani postup skillu nenahrazuje a nepřepočítává. Veřejná
+hodnota XP eventu se násobí jen při aktivním Rested. Bonus lze upravit nebo
+vypnout:
 
 ```yml
 campfire:
@@ -184,7 +177,7 @@ campfire:
       multiplier: 1.10
 ```
 
-Disable fishing difficulty scaling with:
+Škálování obtížnosti rybaření se vypíná:
 
 ```yml
 valhalla:
@@ -192,81 +185,76 @@ valhalla:
     enabled: false
 ```
 
-## Requirements
+## Požadavky
 
-- Purpur 26.1.2 or compatible Paper API implementation
+- Purpur 26.1.2 nebo kompatibilní implementace Paper API
 - Java 25
-- No required plugin dependencies; MythicMobs and ValhallaMMO integrations are optional
+- Žádné povinné pluginové závislosti; MythicMobs a ValhallaMMO jsou volitelné
 
-The plugin uses the Purpur API as `compileOnly`, so the output is not a fat JAR
-and does not bundle Paper/Purpur classes.
+Purpur API je použité jako `compileOnly`, takže výstup není fat JAR a neobsahuje
+třídy Paper/Purpur.
 
-## Build
+## Sestavení
 
-For normal checks:
+Běžné kontroly:
 
 ```text
 gradlew.bat clean test build
 ```
 
-For a verified release:
+Ověřený release:
 
 ```text
 scripts\build-release.cmd
 ```
 
-The release produces:
+Výstupy releasu:
 
 - `build/libs/NekaraRPG.jar`
 - `dist/NekaraRPG.jar`
-- repository-level `../../dist/NekaraRPG.jar`
+- `../../dist/NekaraRPG.jar` v kořeni repozitáře
 
-The semantic version remains embedded in `plugin.yml` and the JAR manifest,
-documented in the changelog, and represented by the Git tag; it is deliberately
-omitted from the deployable filename.
+Sémantická verze zůstává v `plugin.yml`, manifestu JARu, changelogu a Git tagu;
+v názvu nasazovaného souboru záměrně není.
 
-See `DEVELOPMENT.md` for the release contract and `LIVE_TESTING.md` for the
-staging-server workflow.
+Release smlouva je v `DEVELOPMENT.md`, staging postup v `LIVE_TESTING.md`.
 
-## Installation
+## Instalace
 
-Copy the JAR from `dist/` to the server's `plugins/` directory, start Purpur,
-then configure:
+Zkopíruj JAR z `dist/` do serverového `plugins/`, spusť Purpur a uprav:
 
 - `plugins/NekaraRPG/config.yml`
 - `plugins/NekaraRPG/messages.yml`
 
-An existing `plugins/NekaraRPG` folder does not need to be deleted during this
-upgrade. Missing camping keys use the new runtime defaults. Merge the bundled
-`campfire.camping` section into an existing `config.yml` only when those values
-need to be customized or documented on the server.
+Při upgradu není nutné mazat stávající `plugins/NekaraRPG`. Chybějící nové klíče
+použijí runtime defaults. Zabalenou sekci přidávej do existující konfigurace
+jen tehdy, když ji potřebuješ na serveru měnit nebo dokumentovat.
 
-Use `/nekararpg reload` after configuration changes. A reload safely ends active
-fishing sessions and does not register duplicate listeners or ticker tasks.
+Po změně konfigurace použij `/nekararpg reload`. Reload bezpečně ukončí aktivní
+relace a neregistruje duplicitní listenery ani ticker tasky. JAR se reloadem
+nenasazuje.
 
-## Automatic Updates
+## Automatické aktualizace
 
-Version 1.2.0 introduces the updater and therefore still requires one manual
-installation. After that, NekaraRPG checks the latest stable release in
-`Jonaczech/nekara-plugins` after startup and every six hours by default.
+Updater byl přidán ve verzi 1.2.0, která proto vyžadovala první ruční instalaci.
+Poté NekaraRPG výchozím stavem kontroluje nejnovější stabilní release
+`Jonaczech/nekara-plugins` po startu a každých šest hodin.
 
-When a newer semantic version is available, the updater accepts only the exact
-`NekaraRPG.jar` release asset. It validates the trusted GitHub download URL,
-declared size, SHA-256 digest, JAR identity, embedded version, and presence of
-`plugin.yml`. A verified JAR is moved to Paper's configured update folder and
-installed by Paper on the next full server restart. NekaraRPG never replaces or
-reloads its active JAR. Before staging, the running JAR is copied and hash-checked
-under `plugins/NekaraRPG/backups` as a manual rollback artifact.
+Při dostupné novější sémantické verzi přijme pouze přesný asset
+`NekaraRPG.jar`. Ověří důvěryhodnou GitHub URL, deklarovanou velikost, SHA-256,
+identitu JARu, vloženou verzi a přítomnost `plugin.yml`. Ověřený JAR přesune do
+update složky Paperu a Paper ho nainstaluje při dalším úplném restartu.
+NekaraRPG nikdy nenahrazuje ani nereloaduje svůj aktivní JAR. Před přípravou
+aktualizace vytvoří hashově ověřenou zálohu v `plugins/NekaraRPG/backups`.
 
-Automatic checks and downloads are configured under `updater` in `config.yml`.
-Operators can run `/nekararpg update check` at any time and inspect the latest
-result with `/nekararpg update status`. Online players with
-`nekararpg.update.notify` are notified when a release is staged, and receive the
-same reminder when joining before the restart.
+Automatické kontroly a stahování se nastavují pod `updater` v `config.yml`.
+Administrátor může kdykoliv spustit `/nekararpg update check` a stav ověřit přes
+`/nekararpg update status`. Online hráči s `nekararpg.update.notify` dostanou
+upozornění při přípravě releasu a znovu při připojení před restartem.
 
-## Commands and Permissions
+## Příkazy a oprávnění
 
-| Command | Permission |
+| Příkaz | Oprávnění |
 | --- | --- |
 | `/nekararpg help` | `nekararpg.command.help` |
 | `/nekararpg reload` | `nekararpg.command.reload` |
@@ -274,50 +262,58 @@ same reminder when joining before the restart.
 | `/nekararpg update check` | `nekararpg.command.update` |
 | `/nekararpg update status` | `nekararpg.command.update` |
 | `/nekararpg sit` | `nekararpg.sitting.use` |
-| `/nekararpg stand` | none; a player must always be able to stand |
+| `/nekararpg stand` | žádné; hráč se musí vždy moci postavit |
 | `/nekararpg test [fishing|vein]` | `nekararpg.command.test` |
 | `/nekararpg cancel [player]` | `nekararpg.command.cancel` |
 
-Aliases: `/nrpg`, `/nekarafishing`, `/nfishing`.
+Aliasy: `/nrpg`, `/nekarafishing`, `/nfishing`.
 
-Fishing requires `nekararpg.use`, which defaults to true for every player.
-`nekararpg.bypass` skips the fishing minigame and defaults to false.
-Campfire effects require `nekararpg.campfire.use`, which defaults to true.
-Echo Vein requires `nekararpg.echo-vein.use`, which defaults to true.
-Update notices require `nekararpg.update.notify`, which defaults to server
-operators.
+Fishing vyžaduje `nekararpg.use`, výchozím stavem pro každého hráče.
+`nekararpg.bypass` přeskakuje minihru a výchozím stavem je false. Campfire
+vyžaduje `nekararpg.campfire.use`, Echo Vein `nekararpg.echo-vein.use`; obě jsou
+výchozím stavem povolené. Upozornění updateru vyžadují
+`nekararpg.update.notify`, výchozím stavem pro operátory.
 
-Legacy `nekarafishing.*` permissions are still declared and accepted so existing
-server permission setups can migrate gradually.
+Starší oprávnění `nekarafishing.*` jsou stále deklarovaná a přijímaná, aby šlo
+existující nastavení postupně migrovat.
 
-## Sounds and Messages
+## Zvuky a zprávy
 
-Sounds support vanilla namespaced IDs and custom resource-pack IDs such as
-`nekara:fishing.hit`. Vanilla IDs are checked against the API registry; custom
-IDs are syntax-validated and left to the client resource pack. Invalid IDs are
-logged and skipped.
+Zvuky podporují vanilla namespaced ID i vlastní resource-pack ID, například
+`nekara:fishing.hit`. Vanilla ID se kontrolují proti API registru; vlastní ID se
+kontrolují syntakticky a jejich dostupnost závisí na klientském resource packu.
+Neplatná ID se zalogují a přeskočí.
 
-Messages use `messages.yml`, legacy `&` colors, and MiniMessage tags when tags
-are present. The action bar is built internally and has no PlaceholderAPI
-dependency.
+Zprávy používají `messages.yml`, staré `&` barvy a MiniMessage tagy, pokud jsou
+přítomné. Action bar se sestavuje interně bez závislosti na PlaceholderAPI.
 
-## Limitations
+## Omezení
 
-- The fishing module is intentionally an action-bar timing gate; it does not replace Minecraft's fishing mechanics.
-- Sitting uses a server-side passenger seat; it does not add a client keybind. Its default vertical offset is configurable and existing pre-release offsets are migrated to `0.20` at runtime.
-- External seat detection is vehicle-type based. `ARMOR_STAND` is the safe default; plugins using another seat entity must add that type to configuration.
-- Campfire and Rested action-bar feedback can temporarily replace other non-priority action-bar text. NekaraRPG's fishing minigame always takes priority over the Rested timer.
-- Echo Vein needs ValhallaMMO Mining for automatic triggers. Its test command still verifies target visibility without awarding rewards.
-- Existing `minimum-mining-level` values from 1.2.1 and older are ignored.
-- Existing `modules.echo-vein.enabled` is used when the new `modules.mining.enabled` toggle is absent.
-- Echo Vein derives one bonus item from the marked block's finalized drops. It does not call the Digging treasure table or invent a separate loot table.
-- Rested uses a text-only action-bar timer; crafting-table camps additionally use the vanilla Haste icon. A uniquely branded status icon would require a client resource-pack or mod solution.
-- Smoker camps reduce Rested hunger loss, crafting-table camps grant configurable Haste, and ValhallaMMO skill XP receives the configured Rested multiplier.
-- The minigame starts on the rod click after a bite and defers the original `CAUGHT_FISH` Item until the final hit.
-- A client-side resource-pack sound cannot be verified from the server; only its namespaced syntax can be validated.
-- Full acceptance still requires a live Purpur 26.1.2 server because Bukkit event ordering and other plugin interactions cannot be completely simulated by pure unit tests.
-- The updater stages releases but never restarts the server. An operator or hosting scheduler must perform the full restart and inspect startup logs.
+- Fishing je záměrně časovací brána v action baru a nenahrazuje Minecraft rybaření.
+- Sitting používá serverové passenger sedadlo a nepřidává klientský keybind.
+  Výchozí Y posun je nastavitelný a starší předprodukční hodnoty se migrují na `0.20`.
+- Externí sedadla se detekují podle vehicle typu. Bezpečný default je
+  `ARMOR_STAND`; pluginy s jinou entitou ji musí přidat do konfigurace.
+- Campfire a Rested mohou dočasně nahradit jiný méně prioritní text v action
+  baru. Fishing minihra má vždy před časovačem Rested přednost.
+- Automatické Echo Vein vyžaduje ValhallaMMO Mining. Testovací příkaz ověřuje
+  viditelnost cíle bez odměn.
+- Staré `minimum-mining-level` z 1.2.1 a starších se ignoruje.
+- Pokud chybí `modules.mining.enabled`, použije se staré `modules.echo-vein.enabled`.
+- Bonusový item Echo Vein pochází z finálních dropů cílového bloku. Digging
+  treasure tabulka ani samostatný loot se nepoužívá.
+- Rested má jen textový časovač; tábor s crafting table navíc používá vanilla
+  ikonu Haste. Vlastní stavová ikona by vyžadovala resource pack nebo mod.
+- Smoker zpomaluje Rested ztrátu hladu, crafting table přidává Haste a
+  ValhallaMMO skill XP dostávají nakonfigurovaný Rested násobitel.
+- Minihra začíná kliknutím prutem po záběru a odkládá původní `CAUGHT_FISH`
+  item do finálního zásahu.
+- Server nemůže ověřit klientský resource-pack zvuk, pouze jeho namespaced syntaxi.
+- Úplná akceptace vyžaduje živý Purpur 26.1.2, protože pořadí Bukkit eventů a
+  interakce pluginů nelze plně simulovat unit testy.
+- Updater pouze připraví release a nikdy nerestartuje server. Úplný restart a
+  kontrolu logů musí provést administrátor nebo hosting scheduler.
 
-## License
+## Licence
 
-MIT-style project license; see `LICENSE`.
+Licence ve stylu MIT; viz `LICENSE`.

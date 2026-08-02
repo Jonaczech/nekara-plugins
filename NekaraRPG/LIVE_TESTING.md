@@ -1,29 +1,29 @@
-# NekaraRPG Live Testing
+# Živé testování NekaraRPG
 
-## Recommended Setup
+## Doporučené prostředí
 
-Use a separate Purpur 26.1.2 staging server with Java 25. Keep its world and port
-separate from production. Test in two passes:
+Použij samostatný staging server Purpur 26.1.2 s Javou 25. Svět i port odděl od
+produkce. Testuj ve dvou průchodech:
 
-1. Purpur plus NekaraRPG only, to isolate plugin behavior.
-2. The same server with CMI and ValhallaMMO, to verify compatibility.
+1. Pouze Purpur a NekaraRPG, aby se izolovalo chování pluginu.
+2. Stejný server s CMI a ValhallaMMO pro ověření kompatibility.
 
-Build and deploy from the `NekaraRPG` directory:
+Sestavení a nasazení z adresáře `NekaraRPG`:
 
 ```powershell
 scripts\build-release.cmd
 scripts\deploy-test.cmd -ServerPath D:\path\to\test-server
 ```
 
-Stop the server before replacement and restart it afterwards. Do not use Bukkit
-`/reload` to replace a JAR. `/nekararpg reload` is supported only for reloading
-NekaraRPG configuration and messages. The deploy script refuses to continue if
-another `NekaraRPG*.jar` or legacy `NekaraFishing*.jar` is present beside the
-stable `NekaraRPG.jar`; move the reported file outside `plugins` first.
+Před výměnou server zastav a potom ho znovu spusť. Bukkit `/reload` nepoužívej k
+nahrazení JARu. `/nekararpg reload` slouží pouze k načtení konfigurace a zpráv.
+Deploy skript odmítne pokračovat, pokud vedle stabilního `NekaraRPG.jar` najde
+další `NekaraRPG*.jar` nebo starý `NekaraFishing*.jar`; nahlášený soubor nejdřív
+přesuň mimo `plugins`.
 
-## Fast Iteration Profile
+## Profil pro rychlé testování
 
-For a short development cycle, temporarily use these values on the staging server:
+Pro krátký vývojový cyklus dočasně použij na staging serveru:
 
 ```yml
 campfire:
@@ -43,90 +43,89 @@ campfire:
       radius: 10.0
 ```
 
-Run `/nekararpg reload` after changing these values. Restore production defaults
-before acceptance: 20-second charge, five-minute base duration, one minute per
-unique camping feature, a 24-block safe-camp radius, one health point every
-five seconds, and one food point every ten seconds.
+Po změně spusť `/nekararpg reload`. Před akceptací vrať produkční defaults:
+20sekundové nabíjení, základ pět minut, jednu minutu za unikátní prvek, bezpečný
+radius 24 bloků, jeden bod zdraví za pět sekund a jeden bod jídla za deset sekund.
 
-## Sitting Acceptance
+## Akceptace sezení
 
-1. Run `/nekararpg sit` on full blocks, slabs, stairs, and uneven terrain.
-2. Verify the seated pose rests directly on the surface with the migrated `0.20` offset, without intersecting or visibly floating above the block, and `/nekararpg stand` removes the seat.
-3. Sit again and use the normal dismount key; verify the invisible seat disappears.
-4. Verify teleport, death, disconnect, damage, plugin reload, and shutdown leave no armor stands behind.
-5. With CMI installed, verify its top-level `/sit` behavior is unchanged. NekaraRPG deliberately registers only `/nekararpg sit` and `/nrpg sit`.
-6. Use `/cmi sit` (or the configured CMI `/sit` alias) near a fire and verify Campfire starts without first using a NekaraRPG command.
-7. Disable `modules.sitting.enabled`, reload, and repeat the CMI test. External seating must continue to power Campfire.
+1. Spusť `/nekararpg sit` na plných blocích, slabech, schodech a nerovném terénu.
+2. Ověř dosednutí modelu na povrch s offsetem `0.20` bez průniku či levitování a odstranění sedadla přes `/nekararpg stand`.
+3. Sedni znovu a použij běžnou klávesu sesednutí; neviditelné sedadlo musí zmizet.
+4. Teleport, smrt, odpojení, poškození, reload a shutdown nesmí zanechat armor stand.
+5. S CMI ověř nezměněný hlavní `/sit`. NekaraRPG registruje jen `/nekararpg sit` a `/nrpg sit`.
+6. Použij `/cmi sit` nebo jeho alias u ohně a ověř spuštění Campfire bez příkazu NekaraRPG.
+7. Vypni `modules.sitting.enabled`, reloaduj a opakuj CMI test. Externí sezení musí Campfire dál pohánět.
 
-## Campfire Acceptance
+## Akceptace Campfire
 
-1. Damage the player and lower the hunger bar, then sit within the spherical five-block default radius of a lit campfire.
-2. Verify health rises at the configured interval, hunger does not fall, hunger slowly restores, and the active-rest particles appear.
-3. Extinguish or break the campfire and verify active resting ends on the next update.
-4. Repeat with a lit soul campfire and verify the same behavior.
-5. Sit outside the configured radius and verify no campfire effects start.
-6. Wait for the full real-time charge at a bare fire and verify the one-time Rested message, soft amethyst chime, and text-only `Odpočatý | m:ss` action-bar timer, but no Haste. It must never display a raw message key or create a bossbar.
-7. Leave the bare fire and create hunger loss; the bar should fall at its normal rate even though Rested remains active.
-8. Add a smoker within five blocks, recharge Rested, and verify hunger falls at the configured average multiplier after leaving.
-9. Add a crafting table within five blocks, recharge Rested, and verify one extra minute plus Haste I and its top-right potion icon.
-10. Add each remaining feature type one at a time and verify each unique type adds one minute while duplicates add nothing.
-11. For a quick expiry test, temporarily shorten the durations; verify the timer disappears, normal hunger loss returns, and managed Haste disappears.
-12. Give the player a stronger Haste effect before resting and verify NekaraRPG does not replace or remove it.
+1. Zraň hráče, sniž hlad a sedni do výchozího kulového radiusu pěti bloků od zapáleného ohně.
+2. Ověř léčení v intervalu, neklesající hlad, pomalé doplňování a částice aktivního odpočinku.
+3. Uhas nebo rozbij oheň a ověř konec odpočinku při další aktualizaci.
+4. Opakuj se zapáleným soul campfire a ověř stejné chování.
+5. Sedni mimo radius a ověř, že se efekty nespustí.
+6. U holého ohně dokonči skutečné nabíjení. Ověř jednorázovou Rested zprávu, jemný chime a text `Odpočatý | m:ss`, ale žádný Haste ani bossbar. Nesmí se zobrazit surový klíč zprávy.
+7. Odejdi od holého ohně a vyvolej pokles hladu; i s Rested musí klesat běžnou rychlostí.
+8. Přidej smoker do pěti bloků, znovu nabij Rested a po odchodu ověř nastavený násobitel hladu.
+9. Přidej crafting table, znovu nabij a ověř minutu navíc, Haste I a potion ikonu.
+10. Přidávej ostatní prvky a ověř minutu za unikátní typ bez efektu duplicit.
+11. Pro rychlou expiraci zkrať doby; časovač, snížení hladu a řízený Haste musí skončit.
+12. Před odpočinkem dej hráči silnější Haste a ověř, že ho NekaraRPG nenahradí ani neodstraní.
 
-## Safe Camp Acceptance
+## Akceptace bezpečného tábora
 
-1. Place a bed within five blocks of a lit campfire and move around its default 24-block protection radius.
-2. Allow night-time natural spawning and verify vanilla hostile mobs do not spawn inside the radius but can still walk in from outside.
-3. Leave the area so its chunks unload, return later, and verify the unchanged bed and lit campfire protect the camp again without rebuilding it.
-4. Extinguish the fire or move the bed outside the five-block feature radius and verify natural hostile spawning resumes.
-5. With MythicMobs installed, verify natural `NekaraHostile` random spawns are blocked while `NekaraFauna` continues to spawn.
-6. Trigger a command, summon, quest, or boss spawn inside the camp and verify it is not cancelled.
+1. Polož bed do pěti bloků od zapáleného ohně a pohybuj se kolem výchozího radiusu 24 bloků.
+2. Nech v noci probíhat přirozené spawny. Vanilla nepřátelé nesmí vzniknout uvnitř, ale mohou vejít zvenčí.
+3. Nech chunky odnačíst, později se vrať a ověř obnovenou ochranu beze změny tábora.
+4. Uhas oheň nebo přesuň bed mimo radius prvků a ověř návrat přirozených spawnů.
+5. S MythicMobs ověř blokování přirozených `NekaraHostile` a pokračující `NekaraFauna`.
+6. Vyvolej command, summon, quest nebo boss spawn uvnitř a ověř, že se nezruší.
 
-## Group and Compatibility Acceptance
+## Akceptace skupiny a kompatibility
 
-1. Seat two players near the same campfire and verify the action bar reports two players and a `1.15x` multiplier.
-2. Compare healing over the same interval with one and two players.
-3. Move one player to a different campfire and verify both groups return to `1.00x`.
-4. Run `/nekararpg status` and verify seated, resting, and Rested counts.
-5. With ValhallaMMO installed, compare normal and Rested XP for several skills; Rested should grant exactly `1.10x` normal skill-action and shared XP.
-6. Complete a Rested fishing minigame and verify the original loot is unchanged and deferred fishing XP receives the 10% bonus exactly once.
-7. Grant ValhallaMMO XP through an administrator command and verify it is not multiplied.
-8. Disable each module independently and reload. With Sitting disabled, Campfire should still accept a configured external seat but not `/nrpg sit`.
-9. Start the fishing minigame while Rested is active and verify its timing UI replaces the Rested timer until the minigame ends.
+1. Posaď dva hráče u stejného ohně a ověř dva hráče a násobitel `1.15x` v action baru.
+2. Porovnej léčení za stejný interval s jedním a dvěma hráči.
+3. Přesuň jednoho k jinému ohni; obě skupiny se musí vrátit na `1.00x`.
+4. `/nekararpg status` musí hlásit správné počty seated, resting a Rested.
+5. S ValhallaMMO porovnej běžná a Rested XP více skillů; běžná skill-action a sdílená XP mají být přesně `1.10x`.
+6. Dokonči rybaření s Rested. Původní loot zůstane a odložená XP dostanou 10 % právě jednou.
+7. Uděl ValhallaMMO XP administrativním příkazem a ověř, že se nenásobí.
+8. Vypínej moduly jednotlivě. S vypnutým Sitting má Campfire přijmout externí sedadlo, ale ne `/nrpg sit`.
+9. Spusť rybářskou minihru při Rested a ověř, že její UI dočasně nahradí Rested časovač.
 
-Future camp-quality calculation can be anchored to the existing per-campfire
-group key and add nearby camp structures without changing the sitting contract.
+Budoucí výpočet kvality tábora může vycházet ze stávajícího skupinového klíče
+pro každý oheň a přidat okolní struktury bez změny smlouvy sezení.
 
-## Echo Vein Acceptance
+## Akceptace Echo Vein
 
-1. Use `/nekararpg test vein` in several cave shapes and verify the selected block is visible, reachable, shown only to the test player, and limited to stone, deepslate, netherrack, or end stone.
-2. Confirm the immediate one-block area has a subtle pulse while the visible target face is markedly denser. Ores, dirt, gravel, and wood must never be selected or trigger an automatic echo.
-3. Set trigger chance to `1.0`, mine a host block with both a new and experienced Valhalla Mining profile, and verify the echo starts at either level only after the original mining rewards finish.
-4. Verify natural chat remains empty, the low discovery chime plays once, and the action-bar timer appears.
-5. Mine several non-target blocks and verify the active target and timer remain. Mine the target and verify one success sound when no chain starts.
-6. Enable `plugin.debug`. Compare `markedBlockXp`, `bonusXp`, and the Valhalla profile delta: the bonus must equal 25% of that marked block's final amount, occur once, and use reason `PLUGIN`.
-7. Inspect the bonus item. It must be one exact item from the marked block's finalized natural or Valhalla-prepared output, including metadata, never a rerolled Fortune stack. `/nekararpg test vein` must grant none.
-8. Force ore reveal to `1.0` and test Y 70, Y 15, Y -32, and Y -64. Verify every result belongs to its vanilla-compatible height band and no high diamond/redstone can appear.
-9. Compare normal and Badlands Y 70 for high gold. Test netherrack just outside and inside Y 10-117. End stone must remain unchanged.
-10. Verify successful ore transformation plays its brighter amethyst sound once and is clearly distinct from vein discovery. Repeated damage must not replay it.
-11. Force chaining to `1.0`, mine a target next to a visible host, and verify the next target is face-adjacent and receives its own timer/rewards. Then restore `0.50`.
-12. Let a natural attempt expire and verify it produces no chat or failure sound.
-13. Test Rested, Silk Touch, full inventory overflow, disconnect, death, teleport, and fishing priority.
-14. Verify both the new `modules.mining.enabled` toggle and fallback from the legacy `modules.echo-vein.enabled` value.
-15. Restore defaults (`0.05` chance, no cooldown, `0.50` chain, `0.25` ore reveal) and verify consecutive eligible blocks remain independent.
-16. Disable ValhallaMMO or its Mining skill and verify NekaraRPG starts fail-soft while automatic Echo Vein triggers remain unavailable.
+1. Použij `/nekararpg test vein` v různých jeskyních. Cíl musí být viditelný, dosažitelný, jen pro testujícího hráče a omezený na stone, deepslate, netherrack nebo end stone.
+2. Ověř jemný pulz v okolí jednoho bloku a výrazně hustší viditelnou stěnu. Ores, dirt, gravel ani wood nesmí být cílem či spouštěčem.
+3. Nastav trigger na `1.0`, vytěž hostitelský blok s novým i zkušeným profilem a ověř start bez level gate až po původních odměnách.
+4. Přirozený chat zůstává prázdný, hlubší chime objevení zazní jednou a objeví se časovač.
+5. Vytěž jiné bloky; cíl i časovač zůstávají. Vytěž cíl a bez chainu ověř jeden zvuk úspěchu.
+6. Zapni `plugin.debug`. Porovnej `markedBlockXp`, `bonusXp` a profil: bonus je jednou, 25 % finální hodnoty cíle a důvod `PLUGIN`.
+7. Bonusový item je přesně jeden item z finálního přirozeného nebo Valhalla-prepared výstupu cíle včetně metadat, bez nového Fortune hodu. Testovací příkaz nedává nic.
+8. Vynuť ore reveal `1.0` a testuj Y 70, Y 15, Y -32 a Y -64. Každý výsledek musí patřit do vanilla-kompatibilního pásma; vysoko nesmí diamond ani redstone.
+9. Porovnej běžný biom a Badlands na Y 70. Testuj netherrack těsně uvnitř a vně Y 10-117. End stone se nemění.
+10. Úspěšná přeměna přehraje jednou jasnější ametystový zvuk, zřetelně jiný než objevení žíly. Opakované poškození ho neopakuje.
+11. Vynuť chain `1.0`, vytěž cíl vedle viditelného hostitele a ověř sousední pokračování s vlastním časovačem a odměnami. Poté vrať `0.50`.
+12. Nech pokus vypršet a ověř tichý timeout bez chatu.
+13. Testuj Rested, Silk Touch, plný inventář, odpojení, smrt, teleport a prioritu rybaření.
+14. Ověř nový `modules.mining.enabled` i fallback starého `modules.echo-vein.enabled`.
+15. Vrať defaults (`0.05`, bez cooldownu, `0.50` chain, `0.25` ore reveal) a ověř nezávislé po sobě jdoucí bloky.
+16. Vypni ValhallaMMO nebo Mining skill. NekaraRPG musí bezpečně nastartovat, automatická Echo Vein zůstane nedostupná.
 
-## Updater Acceptance
+## Akceptace updateru
 
-Use a disposable staging release newer than the installed plugin. Its only
-asset must be the stable `NekaraRPG.jar` produced by `build-release.cmd`.
+Použij jednorázový staging release novější než instalovaná verze. Jeho jediný
+asset musí být stabilní `NekaraRPG.jar` vytvořený `build-release.cmd`.
 
-1. Run `/nekararpg update check` and verify the command responds immediately while the download continues asynchronously.
-2. Verify the console reports the staged version and an operator with `nekararpg.update.notify` receives the Czech restart notice.
-3. Confirm the downloaded file is in Paper's configured update folder, not beside the active plugin JAR.
-4. Run `/nekararpg update status`, reconnect the operator, and verify both report that the same version is waiting for restart.
-5. Stop and start the server normally. Verify the staged file is consumed, exactly one active `NekaraRPG.jar` remains, and `/nekararpg status` reports the new version.
-6. Inspect startup logs and rerun the fishing, Sitting, Campfire, Echo Vein, ValhallaMMO, and MythicMobs smoke checks before production rollout.
+1. Spusť `/nekararpg update check`; příkaz odpoví ihned a download pokračuje asynchronně.
+2. Konzole ohlásí připravenou verzi a operátor s `nekararpg.update.notify` dostane české upozornění na restart.
+3. Stažený soubor musí být v update složce Paperu, ne vedle aktivního JARu.
+4. Spusť `/nekararpg update status`, znovu připoj operátora a ověř stejnou čekající verzi.
+5. Server běžně zastav a spusť. Staging soubor se spotřebuje, zůstane jediný aktivní `NekaraRPG.jar` a status hlásí novou verzi.
+6. Zkontroluj startup logy a před produkcí zopakuj smoke testy Fishing, Sitting, Campfire, Echo Vein, ValhallaMMO a MythicMobs.
 
-Never test updater failure modes against production. Use a staging release or a
-temporary repository fixture for wrong digests, identities, sizes, and versions.
+Chybové režimy updateru nikdy netestuj na produkci. Pro špatné digesty, identity,
+velikosti a verze použij staging release nebo dočasnou repository fixture.
