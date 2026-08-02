@@ -118,14 +118,16 @@ not trigger the activity and cannot become its target. There is no cooldown.
 The player has six seconds to find and mine the target with a pickaxe. A subtle
 pulse covers its immediate one-block area while a denser effect marks its
 visible face. On the first mining damage, the block has one 25% chance to reveal
-a weighted vanilla ore: stone and deepslate use their Overworld variants,
-netherrack uses quartz or Nether gold, and end stone remains unchanged.
+a weighted vanilla-compatible ore for that Y level. Stone and deepslate use
+their matching Overworld variants, netherrack uses quartz or Nether gold only
+from Y 10 through 117, and end stone remains unchanged.
 
-The reveal table is deliberately weighted toward common resources. Stone uses
-coal 40%, copper 30%, iron 22%, gold 4%, redstone 2%, lapis 1%, and diamond 1%.
-Deepslate uses coal 2%, copper 15%, iron 30%, gold 12%, redstone 25%, lapis 8%,
-and diamond 8%. Netherrack uses quartz 85% and Nether gold 15%. These weights
-apply only after the 25% reveal roll succeeds.
+The distribution mirrors vanilla height bands and biases: coal above Y 0,
+copper from Y 0 through 96 with a peak around 48, iron below 72 or above 80,
+gold below 32 with extra high Badlands gold, lapis below 64 with a peak around
+0, and redstone/diamond below 16 with increasing weight toward the world floor.
+It intentionally does not reproduce seed noise, biome density modifiers beyond
+Badlands gold, or vanilla air-exposure suppression.
 
 Mining the marked block grants 25% of that block's finalized Mining XP with
 Valhalla's `PLUGIN` reason, preventing Rested, Mining, and global XP multipliers
@@ -136,9 +138,10 @@ metadata is preserved, its amount is capped at one, and Fortune is not rerolled.
 Every completed target has a 50% chance to continue into one visible
 face-adjacent host block. Chained targets use the same timer and rewards, but
 the completed target cannot also roll the independent 5% trigger. Mining other
-blocks does not cancel an active echo. Natural attempts use no chat: discovery
-and final success each play one sound, the action bar shows the timer, and
-timeout is silent. `/nekararpg test vein` remains a reward-free visual test.
+blocks does not cancel an active echo. Natural attempts use no chat: a low
+amethyst chime announces the vein, a brighter related sound confirms an ore
+reveal, final success has its own sound, and the action bar shows the timer.
+Timeout is silent. `/nekararpg test vein` remains a reward-free visual test.
 
 ## Fishing Compatibility Mode
 

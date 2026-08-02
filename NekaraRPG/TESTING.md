@@ -73,14 +73,17 @@ enabled world.
 7. Mine or strike several non-target blocks while the echo is active. Verify the timer and target persist, then actually mine the marked target.
 8. With debug enabled, verify `markedBlockXp`, `bonusXp`, `xpGranted`, and the Valhalla profile delta. The bonus must be exactly 25% of the marked block's finalized Mining XP and must occur once.
 9. Verify at most one bonus item is selected from the marked block's finalized drops. It must preserve metadata and must not reroll Fortune.
-10. Set `ore-reveal.chance` to `1.0`, begin mining marked stone, deepslate, netherrack, and end stone, and verify the first three use their weighted dimension-appropriate ore table while end stone remains unchanged. Repeated damage must not reroll.
-11. Set `chain-chance` to `1.0`, complete a target beside another visible host block, and verify the next target is face-adjacent. The completed target must not also start a separate base echo.
-12. Let a natural echo expire and verify there is no failure chat message or failure sound.
-13. Repeat while Rested and verify the marked-block XP contains the Rested bonus, but the 25% echo reward is not multiplied by Rested again.
-14. Restore defaults (`0.05`, no cooldown, `0.50` chain, `0.25` ore reveal) and verify eligible actions can trigger consecutively.
-15. Verify placed blocks or blocks that grant no Valhalla Mining XP do not trigger Echo Vein.
-16. Begin fishing during an echo and verify the echo yields without affecting fishing.
-17. Remove `modules.mining.enabled`, set legacy `modules.echo-vein.enabled: false`, reload, and verify NekaraMining stays disabled. Then configure the new key explicitly and verify it takes precedence.
+10. Set `ore-reveal.chance` to `1.0`. At Y 70 verify stone can reveal only coal, copper, or iron; diamond, redstone, lapis, and normal gold must be impossible.
+11. Repeat below Y 16 and near Y -64. Verify diamond/redstone become eligible and occur more often deeper down. At Y 48 verify copper is eligible; at Y 97 it must not be.
+12. Test Y 70 in a normal biome and Badlands. High gold must be exclusive to Badlands. Test netherrack at Y 9, 10, 117, and 118; only Y 10-117 may reveal Nether ore. End stone remains unchanged.
+13. Verify vein discovery uses the lower chime and a successful ore transformation uses the brighter related sound exactly once. Repeated target damage must not reroll or replay it.
+14. Set `chain-chance` to `1.0`, complete a target beside another visible host block, and verify the next target is face-adjacent. The completed target must not also start a separate base echo.
+15. Let a natural echo expire and verify there is no failure chat message or failure sound.
+16. Repeat while Rested and verify the marked-block XP contains the Rested bonus, but the 25% echo reward is not multiplied by Rested again.
+17. Restore defaults (`0.05`, no cooldown, `0.50` chain, `0.25` ore reveal) and verify eligible actions can trigger consecutively.
+18. Verify placed blocks or blocks that grant no Valhalla Mining XP do not trigger Echo Vein.
+19. Begin fishing during an echo and verify the echo yields without affecting fishing.
+20. Remove `modules.mining.enabled`, set legacy `modules.echo-vein.enabled: false`, reload, and verify NekaraMining stays disabled. Then configure the new key explicitly and verify it takes precedence.
 
 ### 4. Failed Minigame
 

@@ -5,6 +5,7 @@ import cz.nekara.rpg.compatibility.ValhallaMiningBridge;
 import cz.nekara.rpg.configuration.EchoVeinConfig;
 import cz.nekara.rpg.echovein.BlockPosition;
 import cz.nekara.rpg.echovein.EchoVeinMath;
+import cz.nekara.rpg.echovein.OreHeightDistribution;
 import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.modules.NekaraModule;
 import cz.nekara.rpg.modules.fishing.FishingModule;
@@ -377,7 +378,7 @@ public final class MiningModule implements NekaraModule, Listener {
         Material revealed = null;
         if (EchoVeinMath.winsChance(
                 ThreadLocalRandom.current().nextDouble(), config.oreRevealChance())) {
-            revealed = chooseRevealedOre(event.getBlock().getType());
+            revealed = chooseRevealedOre(event.getBlock());
         }
         if (revealed != null) {
             event.getBlock().setType(revealed, false);
@@ -391,7 +392,9 @@ public final class MiningModule implements NekaraModule, Listener {
                 true);
         sessions.replace(player.getUniqueId(), session, updated);
         if (revealed != null) {
-            debug("Echo Vein ore revealed for " + player.getName() + ": " + revealed);
+            sounds.playAt(player, "echo-vein-ore-reveal", session.targetLocation());
+            debug("Echo Vein ore revealed for " + player.getName()
+                    + ": " + revealed + " at y=" + event.getBlock().getY());
         }
     }
 
@@ -662,25 +665,40 @@ public final class MiningModule implements NekaraModule, Listener {
                 && !(block.getState() instanceof Container);
     }
 
-    private Material chooseRevealedOre(Material host) {
-        int roll = ThreadLocalRandom.current().nextInt(100);
-        return switch (host) {
-            case STONE -> roll < 40 ? Material.COAL_ORE
-                    : roll < 70 ? Material.COPPER_ORE
-                    : roll < 92 ? Material.IRON_ORE
-                    : roll < 96 ? Material.GOLD_ORE
-                    : roll < 98 ? Material.REDSTONE_ORE
-                    : roll < 99 ? Material.LAPIS_ORE
-                    : Material.DIAMOND_ORE;
-            case DEEPSLATE -> roll < 2 ? Material.DEEPSLATE_COAL_ORE
-                    : roll < 17 ? Material.DEEPSLATE_COPPER_ORE
-                    : roll < 47 ? Material.DEEPSLATE_IRON_ORE
-                    : roll < 59 ? Material.DEEPSLATE_GOLD_ORE
-                    : roll < 84 ? Material.DEEPSLATE_REDSTONE_ORE
-                    : roll < 92 ? Material.DEEPSLATE_LAPIS_ORE
-                    : Material.DEEPSLATE_DIAMOND_ORE;
-            case NETHERRACK -> roll < 85 ? Material.NETHER_QUARTZ_ORE : Material.NETHER_GOLD_ORE;
-            default -> null;
+    private Material chooseRevealedOre(Block block) {
+        Material host = block.getType();
+        List<OreHeightDistribution.WeightedOre> candidates = switch (host) {
+            case STONE, DEEPSLATE -> OreHeightDistribution.overworld(
+                    block.getY(), block.getBiome().getKey().getKey().contains("badlands"));
+            case NETHERRACK -> OreHeightDistribution.nether(block.getY());
+            default -> List.of();
+        };
+        int totalWeight = OreHeightDistribution.totalWeight(candidates);
+        if (totalWeight <= 0) {
+            return null;
+        }
+        OreHeightDistribution.OreKind ore = OreHeightDistribution.select(
+                candidates, ThreadLocalRandom.current().nextInt(totalWeight));
+        if (ore == null) {
+            return null;
+        }
+        return switch (ore) {
+            case COAL -> host == Material.DEEPSLATE
+                    ? Material.DEEPSLATE_COAL_ORE : Material.COAL_ORE;
+            case COPPER -> host == Material.DEEPSLATE
+                    ? Material.DEEPSLATE_COPPER_ORE : Material.COPPER_ORE;
+            case IRON -> host == Material.DEEPSLATE
+                    ? Material.DEEPSLATE_IRON_ORE : Material.IRON_ORE;
+            case GOLD -> host == Material.DEEPSLATE
+                    ? Material.DEEPSLATE_GOLD_ORE : Material.GOLD_ORE;
+            case REDSTONE -> host == Material.DEEPSLATE
+                    ? Material.DEEPSLATE_REDSTONE_ORE : Material.REDSTONE_ORE;
+            case LAPIS -> host == Material.DEEPSLATE
+                    ? Material.DEEPSLATE_LAPIS_ORE : Material.LAPIS_ORE;
+            case DIAMOND -> host == Material.DEEPSLATE
+                    ? Material.DEEPSLATE_DIAMOND_ORE : Material.DIAMOND_ORE;
+            case NETHER_QUARTZ -> Material.NETHER_QUARTZ_ORE;
+            case NETHER_GOLD -> Material.NETHER_GOLD_ORE;
         };
     }
 

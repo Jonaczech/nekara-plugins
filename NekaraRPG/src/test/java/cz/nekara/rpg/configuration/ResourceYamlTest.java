@@ -41,6 +41,8 @@ class ResourceYamlTest {
             Map<String, Object> campfire = (Map<String, Object>) root.get("campfire");
             Map<String, Object> sounds = (Map<String, Object>) root.get("sounds");
             Map<String, Object> restedSound = (Map<String, Object>) sounds.get("campfire-rested");
+            Map<String, Object> veinSound = (Map<String, Object>) sounds.get("echo-vein-pulse");
+            Map<String, Object> oreSound = (Map<String, Object>) sounds.get("echo-vein-ore-reveal");
             Map<String, Object> campfireRested = (Map<String, Object>) campfire.get("rested");
             Map<String, Object> haste = (Map<String, Object>) campfireRested.get("haste");
             Map<String, Object> valhallaExperience =
@@ -93,6 +95,9 @@ class ResourceYamlTest {
             assertEquals("ACTION_BAR", rested.get("indicator"));
             assertTrue((Boolean) restedSound.get("enabled"));
             assertEquals("minecraft:block.amethyst_block.chime", restedSound.get("sound"));
+            assertTrue((Boolean) veinSound.get("enabled"));
+            assertTrue((Boolean) oreSound.get("enabled"));
+            assertFalse(veinSound.get("sound").equals(oreSound.get("sound")));
         }
     }
 

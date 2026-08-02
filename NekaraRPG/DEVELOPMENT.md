@@ -75,11 +75,16 @@ are restricted to stone, deepslate, netherrack, and end stone in Paper's
 chain once to a visible face-adjacent host and must not also roll the independent
 base trigger.
 
-The first natural `BlockDamageEvent` rolls ore reveal exactly once. A transformed
-target updates the session material before the ticker validates it. Other block
-interactions do not cancel the activity. Natural attempts have no chat output:
-discovery and final success each use one sound, the action bar carries the
-timer, and natural timeout is silent.
+The first natural `BlockDamageEvent` rolls ore reveal exactly once. Candidate
+ores must pass `OreHeightDistribution`, which mirrors vanilla Y bands and
+relative biases without attempting to reproduce seed noise or air-exposure
+rules. Badlands gold uses the target biome key. Netherrack uses Y 10-117 and end
+stone has no ore candidate. A transformed target updates the session material
+before the ticker validates it.
+
+Other block interactions do not cancel the activity. Natural attempts have no
+chat output: vein discovery, successful ore reveal, and final completion each
+use a distinct sound, the action bar carries the timer, and timeout is silent.
 
 The module ID is `mining`. When that key is absent, upgrades must preserve the
 legacy `modules.echo-vein.enabled` value. Activity-specific `echo-vein` settings

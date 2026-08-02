@@ -254,13 +254,18 @@ public final class ConfigurationService {
 
         Map<String, SoundSettings> sounds = new HashMap<>();
         for (String key : new String[]{"bite", "hit", "miss", "timeout", "escape", "minigame-success",
-                "catch-success", "campfire-rested", "echo-vein-pulse",
+                "catch-success", "campfire-rested", "echo-vein-pulse", "echo-vein-ore-reveal",
                 "echo-vein-success", "echo-vein-failure"}) {
             ConfigurationSection section = config.getConfigurationSection("sounds." + key);
             if (section == null) {
                 if ("campfire-rested".equals(key)) {
                     sounds.put(key, new SoundSettings(true,
                             "minecraft:block.amethyst_block.chime", 0.65f, 1.15f));
+                    continue;
+                }
+                if ("echo-vein-ore-reveal".equals(key)) {
+                    sounds.put(key, new SoundSettings(true,
+                            "minecraft:block.amethyst_cluster.place", 0.9f, 1.15f));
                     continue;
                 }
                 warning.accept("Missing sounds." + key + "; sound is disabled.");

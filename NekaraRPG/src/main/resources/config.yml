@@ -46,8 +46,9 @@ echo-vein:
   bonus-drop-enabled: true
   ore-reveal:
     # Rolled once when natural mining of a marked block begins. Stone and
-    # deepslate reveal weighted Overworld ores, netherrack reveals quartz or
-    # Nether gold, and end stone remains unchanged.
+    # deepslate reveal only ores valid for the target Y level, including the
+    # vanilla height biases and Badlands gold. Netherrack uses its normal
+    # Nether band; end stone remains unchanged.
     chance: 0.25
   particles:
     # A subtle nearby hint is combined with a denser pulse on the visible face.
@@ -251,6 +252,12 @@ sounds:
     sound: minecraft:block.amethyst_block.chime
     volume: 0.8
     pitch: 0.65
+  echo-vein-ore-reveal:
+    # Brighter than the discovery chime so the ore transformation is distinct.
+    enabled: true
+    sound: minecraft:block.amethyst_cluster.place
+    volume: 0.9
+    pitch: 1.15
   echo-vein-success:
     enabled: true
     sound: minecraft:block.amethyst_cluster.hit

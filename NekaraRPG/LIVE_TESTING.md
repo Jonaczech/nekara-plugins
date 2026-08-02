@@ -102,17 +102,19 @@ group key and add nearby camp structures without changing the sitting contract.
 1. Use `/nekararpg test vein` in several cave shapes and verify the selected block is visible, reachable, shown only to the test player, and limited to stone, deepslate, netherrack, or end stone.
 2. Confirm the immediate one-block area has a subtle pulse while the visible target face is markedly denser. Ores, dirt, gravel, and wood must never be selected or trigger an automatic echo.
 3. Set trigger chance to `1.0`, mine a host block with both a new and experienced Valhalla Mining profile, and verify the echo starts at either level only after the original mining rewards finish.
-4. Verify natural chat remains empty, the discovery sound plays once, and the action-bar timer appears.
+4. Verify natural chat remains empty, the low discovery chime plays once, and the action-bar timer appears.
 5. Mine several non-target blocks and verify the active target and timer remain. Mine the target and verify one success sound when no chain starts.
 6. Enable `plugin.debug`. Compare `markedBlockXp`, `bonusXp`, and the Valhalla profile delta: the bonus must equal 25% of that marked block's final amount, occur once, and use reason `PLUGIN`.
 7. Inspect the bonus item. It must be one exact item from the marked block's finalized natural or Valhalla-prepared output, including metadata, never a rerolled Fortune stack. `/nekararpg test vein` must grant none.
-8. Force ore reveal to `1.0`, begin mining each host, and verify the first damage rolls only once. Stone/deepslate reveal matching ores, netherrack reveals quartz or gold, and end stone stays unchanged.
-9. Force chaining to `1.0`, mine a target next to a visible host, and verify the next target is face-adjacent and receives its own timer/rewards. Then restore `0.50`.
-10. Let a natural attempt expire and verify it produces no chat or failure sound.
-11. Test Rested, Silk Touch, full inventory overflow, disconnect, death, teleport, and fishing priority.
-12. Verify both the new `modules.mining.enabled` toggle and fallback from the legacy `modules.echo-vein.enabled` value.
-13. Restore defaults (`0.05` chance, no cooldown, `0.50` chain, `0.25` ore reveal) and verify consecutive eligible blocks remain independent.
-14. Disable ValhallaMMO or its Mining skill and verify NekaraRPG starts fail-soft while automatic Echo Vein triggers remain unavailable.
+8. Force ore reveal to `1.0` and test Y 70, Y 15, Y -32, and Y -64. Verify every result belongs to its vanilla-compatible height band and no high diamond/redstone can appear.
+9. Compare normal and Badlands Y 70 for high gold. Test netherrack just outside and inside Y 10-117. End stone must remain unchanged.
+10. Verify successful ore transformation plays its brighter amethyst sound once and is clearly distinct from vein discovery. Repeated damage must not replay it.
+11. Force chaining to `1.0`, mine a target next to a visible host, and verify the next target is face-adjacent and receives its own timer/rewards. Then restore `0.50`.
+12. Let a natural attempt expire and verify it produces no chat or failure sound.
+13. Test Rested, Silk Touch, full inventory overflow, disconnect, death, teleport, and fishing priority.
+14. Verify both the new `modules.mining.enabled` toggle and fallback from the legacy `modules.echo-vein.enabled` value.
+15. Restore defaults (`0.05` chance, no cooldown, `0.50` chain, `0.25` ore reveal) and verify consecutive eligible blocks remain independent.
+16. Disable ValhallaMMO or its Mining skill and verify NekaraRPG starts fail-soft while automatic Echo Vein triggers remain unavailable.
 
 ## Updater Acceptance
 
