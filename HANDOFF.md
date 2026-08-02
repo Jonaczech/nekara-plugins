@@ -6,33 +6,23 @@ Repozitář je publikovaný jako
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 Výchozí větev je `main`.
 
-Nejnovější vydaná verze je **NekaraRPG 1.4.0**:
+Nejnovější vydaná verze je **NekaraRPG 1.5.0**:
 
-- tag: `v1.4.0`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.4.0>
+- tag: `v1.5.0`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.5.0>
 - nasazovaný soubor: `NekaraRPG.jar`
-- zdrojové PR: <https://github.com/Jonaczech/nekara-plugins/pull/20>
-- release merge commit: `58a636151a53e8dedf89adf37462a6b130019c6a`
+- zdrojové PR: <https://github.com/Jonaczech/nekara-plugins/pull/23>
+- release merge commit: `fc1315a2e173837481bedb3ee8132b48f9ae098f`
 - SHA-256 vydaného JARu:
-  `5F87F3BE595B737F9A38E52DBD37170C626049E9E83DB0752760F19AAC276619`
-- velikost release assetu: `243819` bajtů
-- automatické ověření: 53 úspěšných testů
+  `9A037355089B522580538B81F6EC9EE248145DA7C6165852AF695DB76217E9D6`
+- velikost release assetu: `296564` bajtů
+- automatické ověření: 64 úspěšných testů
 
-Verze 1.4.0 rozšiřuje NekaraAuth o
-desetiminutovou paměťovou relog session svázanou s nickem a IP adresou, viditelný
-odpočet dvouminutového login timeoutu, hráčskou hlavu se skinem v auth GUI a
-výchozí vypnutí `/login` a `/register`. Nouzové příkazy vyžadují současně
-`commands.fallback-enabled: true` v `auth/config.yml` a
-`nekararpg.auth.fallback-commands`.
-Session se ruší při logoutu, kicku, unregisteru, reloadu a restartu a na proxy
-bez správného předávání skutečné IP se má vypnout.
-
-Verze dále rozděluje konfiguraci: kořenový `config.yml` drží jen jádro,
-updater a zapnutí modulů; podrobnosti jsou v `auth/config.yml`,
-`fishing/config.yml`, `sitting/config.yml`, `campfire/config.yml` a
-`mining/config.yml`. První start bezpečně migruje vlastní hodnoty ze starého
-monolitického souboru. Všech šest zabalených configů bylo ověřeno uvnitř
-vydaného JARu.
+Verze 1.5.0 přidává NekaraMounts: virtuálně evidovaného vanilla koně, GUI pro
+jméno, barvu a výbavu, soulbound píšťalku, doběhnutí na místo volání, ochranu
+proti duplicitě a cizí manipulaci a atomické YAML úložiště. Smrt koně zachová
+výbavu a používá minutový cooldown. Starý záznam bez `custom-name` se bezpečně
+migruje na `Bezejmenný`.
 
 Metadata GitHub release, hash zpětně staženého JARu, stabilní stav, jediný asset
 i cíl tagu byly ověřeny. Zbývá živě ověřit zvuky, pořadí událostí a vyvážení na
@@ -42,19 +32,17 @@ Purpur serveru s ValhallaMMO a celý NekaraAuth průchod z `TESTING.md`.
 záměrně stabilní, aby při nasazení nevznikla druhá verzovaná kopie vedle
 aktivního pluginu.
 
-## Lokální kandidát 1.5.0
+## NekaraMounts 1.5.0
 
-Pracovní strom obsahuje zatím nevydaný modul NekaraMounts. Přidává virtuální
+Vydaný modul NekaraMounts přidává virtuální
 vytvoření jednoho vanilla koně přes GUI pro barvu a jméno, svázanou píšťalku,
 management výbavy, atomický YAML backend za `MountRepository`, perzistentní PvP
-okno, cooldown po smrti a ochranu proti duplicitní entitě i vybavení. Testy jsou
-součástí akceptace; živé Purpur scénáře z `TESTING.md` a `LIVE_TESTING.md` musí
-proběhnout před publikací.
+okno, cooldown po smrti a ochranu proti duplicitní entitě i vybavení. Zbývající
+živé Purpur scénáře jsou vedené v `TESTING.md` a `LIVE_TESTING.md`.
 
-Lokální release postup prošel se 64 testy. Kandidátní `NekaraRPG.jar` má velikost
-`296565` bajtů a SHA-256
-`4A83E5114E1310C37CB7C2B37F7AFD6DA9D207E22B49731147D40694ECD86087`.
-Stejný hash byl ověřen po FTP nasazení zpětným stažením.
+Release postup prošel se 64 testy. Vydaný asset má velikost `296564` bajtů a
+SHA-256 `9A037355089B522580538B81F6EC9EE248145DA7C6165852AF695DB76217E9D6`.
+Hash byl ověřen stažením assetu z GitHub release.
 Hotfix migruje starší mount záznam bez `custom-name` na jméno `Bezejmenný`.
 Smrt koně má minutový cooldown a píšťalka je soulbound: nedropuje, nejde uložit do
 cizího inventáře, po smrti hráče se vrací a správa odstraňuje nalezené kopie.

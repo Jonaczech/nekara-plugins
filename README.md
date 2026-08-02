@@ -23,11 +23,11 @@ Tento repozitář obsahuje serverové Minecraft pluginy pro ekosystém Nekara.
 
 `NekaraRPG` se má stát centrálním pluginem pro propojené RPG a imerzivní
 systémy Nekary. Každá herní oblast je samostatný modul, který lze zapnout nebo
-vypnout v konfiguraci. Kandidát 1.5.0 obsahuje moduly `auth`, `fishing`, `sitting`,
+vypnout v konfiguraci. Release 1.5.0 obsahuje moduly `auth`, `fishing`, `sitting`,
 `campfire`, `mining` a `mounts`; Campfire používá Sitting jako základ stavu hráče.
 
-NekaraMounts je implementovaný kandidát verze 1.5.0; rozsah a akceptace jsou v
-`ROADMAP.md`. Před vydáním vyžaduje živou Purpur akceptaci.
+NekaraMounts je vydaný ve verzi 1.5.0; rozsah a zbývající živá akceptace jsou v
+`ROADMAP.md` a `NekaraRPG/LIVE_TESTING.md`.
 Možné pozdější moduly:
 
 - `lockpicking`
