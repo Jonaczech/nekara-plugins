@@ -109,31 +109,36 @@ resets, redemptions, and migration refunds are not multiplied.
 
 ## Echo Vein
 
-Echo Vein is the first optional NekaraMining activity and is available at every Mining
-level. An eligible natural Mining XP action has a 4% chance by default to reveal
-a nearby block from Paper's pickaxe-mineable tag. Dirt, gravel, wood, and other
-non-pickaxe blocks cannot become the fissure. The player has six seconds to find
-and left-click the target with a pickaxe. A subtle pulse covers its immediate
-one-block area while a denser effect marks the visible face of the target.
-The original mining action always completes first; missing the echo never
-removes its drops or XP.
+Echo Vein is the first optional NekaraMining activity and is available at every
+Mining level. Mining stone, deepslate, netherrack, or end stone with real
+ValhallaMMO Mining XP has a 5% chance by default to reveal a nearby visible
+block of the same four host types. Ores, dirt, gravel, wood, and other blocks do
+not trigger the activity and cannot become its target. There is no cooldown.
 
-A successful echo grants 25% of the final triggering Mining XP with Valhalla's
-`PLUGIN` reason, preventing Rested and global XP multipliers from being applied
-again. One bonus item is selected by actual stack quantity from the finalized
-natural and Valhalla-prepared drops of that same mining action. The selected
-item keeps its metadata, but its amount is capped at one; Fortune and the whole
-drop stack are never rerolled or duplicated.
+The player has six seconds to find and mine the target with a pickaxe. A subtle
+pulse covers its immediate one-block area while a denser effect marks its
+visible face. On the first mining damage, the block has one 25% chance to reveal
+a weighted vanilla ore: stone and deepslate use their Overworld variants,
+netherrack uses quartz or Nether gold, and end stone remains unchanged.
 
-The default cooldown is eight minutes and is stored on the player, so reconnects
-and server restarts do not reset it. Mining or striking another block does not
-cancel the active echo; the selected block is visible when the activity starts
-and remains active until success, timeout, or normal lifecycle cleanup. Fishing
-has interaction priority and an active echo yields when fishing begins.
-`/nekararpg test vein` starts a reward-free visual test without consuming the
-cooldown. Natural attempts use no chat messages: one discovery sound announces
-the activity, the action bar shows its timer, success plays one completion
-sound, and natural timeout is silent.
+The reveal table is deliberately weighted toward common resources. Stone uses
+coal 40%, copper 30%, iron 22%, gold 4%, redstone 2%, lapis 1%, and diamond 1%.
+Deepslate uses coal 2%, copper 15%, iron 30%, gold 12%, redstone 25%, lapis 8%,
+and diamond 8%. Netherrack uses quartz 85% and Nether gold 15%. These weights
+apply only after the 25% reveal roll succeeds.
+
+Mining the marked block grants 25% of that block's finalized Mining XP with
+Valhalla's `PLUGIN` reason, preventing Rested, Mining, and global XP multipliers
+from being applied again. One bonus item is selected by actual stack quantity
+from that marked block's finalized natural and Valhalla-prepared drops. Its
+metadata is preserved, its amount is capped at one, and Fortune is not rerolled.
+
+Every completed target has a 50% chance to continue into one visible
+face-adjacent host block. Chained targets use the same timer and rewards, but
+the completed target cannot also roll the independent 5% trigger. Mining other
+blocks does not cancel an active echo. Natural attempts use no chat: discovery
+and final success each play one sound, the action bar shows the timer, and
+timeout is silent. `/nekararpg test vein` remains a reward-free visual test.
 
 ## Fishing Compatibility Mode
 
@@ -302,7 +307,7 @@ dependency.
 - Echo Vein needs ValhallaMMO Mining for automatic triggers. Its test command still verifies target visibility without awarding rewards.
 - Existing `minimum-mining-level` values from 1.2.1 and older are ignored.
 - Existing `modules.echo-vein.enabled` is used when the new `modules.mining.enabled` toggle is absent.
-- Echo Vein derives one bonus item from the triggering action's finalized drops. It does not call the Digging treasure table or invent a separate loot table.
+- Echo Vein derives one bonus item from the marked block's finalized drops. It does not call the Digging treasure table or invent a separate loot table.
 - Rested uses a text-only action-bar timer; crafting-table camps additionally use the vanilla Haste icon. A uniquely branded status icon would require a client resource-pack or mod solution.
 - Smoker camps reduce Rested hunger loss, crafting-table camps grant configurable Haste, and ValhallaMMO skill XP receives the configured Rested multiplier.
 - The minigame starts on the rod click after a bite and defers the original `CAUGHT_FISH` Item until the final hit.

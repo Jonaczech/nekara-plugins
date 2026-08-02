@@ -51,18 +51,22 @@ release deliberately changes one of these decisions.
 - NekaraMining uses the module ID `mining`; Echo Vein is its first optional
   ValhallaMMO activity and is available at every skill level. A real
   non-cancelled Mining `SKILL_ACTION` XP event is required.
-- Targets must belong to Paper's `MINEABLE_PICKAXE` block tag. Mining another
-  block does not cancel the activity. Natural attempts use no chat, play one
-  discovery sound and one success sound, and keep natural timeout silent.
+- Automatic triggers and targets are restricted to stone, deepslate,
+  netherrack, and end stone in Paper's `MINEABLE_PICKAXE` block tag. Mining
+  another block does not cancel the activity. Natural attempts use no chat,
+  play one discovery sound and one final success sound, and keep timeout silent.
 - The original mining action always completes before the challenge starts;
   failure never removes or changes its XP or drops.
-- Success grants a configurable fraction of the final source Mining XP with
-  reason `PLUGIN`, preventing Rested and global multipliers from applying twice.
+- Mining the marked target grants a configurable fraction of that block's final
+  Mining XP with reason `PLUGIN`, preventing Mining, Rested, and global
+  multipliers from applying twice.
 - The optional bonus drop is exactly one quantity-weighted item cloned from the
-  finalized natural and Valhalla-prepared drops of the triggering action. Echo
+  finalized natural and Valhalla-prepared drops of the marked block. Echo
   Vein does not use the Digging treasure table or maintain custom loot.
-- Cooldown persists on the player across reconnects and restarts. Fishing has
-  interaction priority over an active echo.
+- There is no cooldown. A completed target has a configurable chance to chain
+  to a visible face-adjacent host block. The first target damage may reveal a
+  weighted vanilla ore once; end stone stays unchanged. Fishing has interaction
+  priority over an active echo.
 - If `modules.mining.enabled` is absent, preserve the legacy
   `modules.echo-vein.enabled` value. Keep activity settings under `echo-vein`.
 
