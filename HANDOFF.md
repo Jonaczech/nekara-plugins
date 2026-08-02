@@ -6,46 +6,41 @@ Repozitář je publikovaný jako
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 Výchozí větev je `main`.
 
-Nejnovější vydaná verze je **NekaraRPG 1.2.5**:
+Nejnovější vydaná verze je **NekaraRPG 1.3.0**:
 
-- tag: `v1.2.5`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.2.5>
+- tag: `v1.3.0`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.3.0>
 - nasazovaný soubor: `NekaraRPG.jar`
-- zdrojové PR: <https://github.com/Jonaczech/nekara-plugins/pull/15>
-- release merge commit: `47944ab70e7a88a07376a9945449ea5470c80e73`
+- zdrojové PR: <https://github.com/Jonaczech/nekara-plugins/pull/18>
+- release merge commit: `d16386f16a73ed08c87ffb543c67b56f84ac56eb`
 - SHA-256 vydaného JARu:
-  `D6D95DBE342DF9F9161EA154DC1709286BC50611C3B8C5B8AEF7166AD0A4AFA2`
-- velikost release assetu: `190588` bajtů
-- automatické ověření: 42 úspěšných testů
+  `8B60373F4839C48A5523017117A3EF6F41F1BBA641BBE3CFB90B95A4A776541D`
+- velikost release assetu: `230454` bajtů
+- automatické ověření: 49 úspěšných testů
 
-Verze 1.2.5 zachovává tok Echo Vein z 1.2.4 a přidává výškově řízené
-odhalování rud. Kandidáti respektují vanilla rozsahy Y a relativní výškové
-váhy, včetně zlata ve vyšších polohách Badlands a netherového rozsahu Y 10-117.
-Diamant ani redstone se nemohou objevit vysoko mimo svoji přirozenou oblast.
-Seedový noise a vanilla potlačení rud vystavených vzduchu se záměrně
-nesimulují. Úspěšná přeměna na rudu používá jasnější ametystový zvuk, odlišný od
-hlubšího zvuku objevení žíly.
+Verze 1.3.0 přidává modul `auth` (NekaraAuth): GUI registraci a přihlášení přes
+virtuální kovadlinu, ochranu nicku pro offline-mode, PBKDF2-HMAC-SHA256,
+per-nick lockout a fail-closed souborové repository
+`plugins/NekaraRPG/auth/accounts.yml`. Pokud je při startu aktivní AuthMe,
+NekaraAuth zůstane vypnutý a převezme autentizaci až po odstranění AuthMe a
+následujícím plném restartu.
 
 Metadata GitHub release, hash zpětně staženého JARu, stabilní stav, jediný asset
 i cíl tagu byly ověřeny. Zbývá živě ověřit zvuky, pořadí událostí a vyvážení na
-Purpur serveru s ValhallaMMO.
+Purpur serveru s ValhallaMMO a celý NekaraAuth průchod z `TESTING.md`.
 
 Čísla verzí patří do metadat pluginu, changelogu a Git tagů. Název JARu zůstává
 záměrně stabilní, aby při nasazení nevznikla druhá verzovaná kopie vedle
 aktivního pluginu.
 
-## Rozpracovaný kandidát 1.3.0
-
-Lokální pracovní strom po 1.2.5 obsahuje nový modul `auth` (NekaraAuth). Přidává
-GUI registraci a přihlášení přes virtuální kovadlinu, ochranu nicku pro
-offline-mode, PBKDF2-HMAC-SHA256, per-nick lockout a souborové repository
-`plugins/NekaraRPG/auth/accounts.yml`. Úložiště i chyby selhávají uzavřeně.
-
-Kandidát zatím není GitHub release a nesmí být automaticky nasazen do produkce.
-Před odstraněním AuthMe je nutný živý průchod sekce NekaraAuth v `TESTING.md`,
-plán migrace existujících AuthMe účtů a whitelist během prvotní rezervace nicků.
-
 ## Vydané moduly NekaraRPG
+
+### NekaraAuth
+
+- Chrání offline-mode nick registrací a přihlášením přes herní GUI.
+- Hesla ukládá pouze jako salted PBKDF2-HMAC-SHA256 hash.
+- Před přihlášením blokuje pohyb, interakce, inventář, chat, boj a běžné příkazy.
+- Aktivní AuthMe má při přechodu přednost; existující účty se automaticky nemigrují.
 
 ### Rybaření
 
@@ -132,8 +127,11 @@ provést úplný restart a zkontrolovat startovací logy.
 
 ## Další práce
 
-Nejdřív živě otestuj verzi 1.2.5 podle `NekaraRPG/LIVE_TESTING.md`, zejména:
+Nejdřív živě otestuj verzi 1.3.0 podle `NekaraRPG/TESTING.md` a
+`NekaraRPG/LIVE_TESTING.md`, zejména:
 
+- registraci, login, lockout, přesný zápis nicku a blokaci akcí NekaraAuth,
+- bezpečný přechod s aktivním AuthMe a převzetí po jeho odstranění,
 - že se vysoké rudy neobjevují mimo vanilla rozsahy,
 - že jsou tři zvuky Echo Vein jasně rozlišitelné,
 - že +25 % XP vzniká právě jednou z označeného bloku,
