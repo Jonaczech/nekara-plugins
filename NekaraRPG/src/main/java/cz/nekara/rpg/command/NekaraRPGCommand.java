@@ -1,6 +1,7 @@
 package cz.nekara.rpg.command;
 
 import cz.nekara.rpg.NekaraRPGPlugin;
+import cz.nekara.rpg.campfire.LieResult;
 import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.menu.NekaraRPGMenu;
 import cz.nekara.rpg.minigame.FishingMinigameManager;
@@ -167,8 +168,8 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
             }
             case "sit" -> {
                 if (!require(sender, "nekararpg.sitting.use")) yield true;
-                if (!modules.isEnabled(SittingModule.ID)) {
-                    messages.send(sender, "module-disabled", Map.of("module", SittingModule.ID));
+                if (!modules.isEnabled(CampfireModule.ID)) {
+                    messages.send(sender, "module-disabled", Map.of("module", CampfireModule.ID));
                     yield true;
                 }
                 if (!(sender instanceof Player player)) {
@@ -194,6 +195,31 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                 }
                 messages.send(player, sittingModule.stand(player)
                         ? "sitting-stopped" : "sitting-not-seated");
+                yield true;
+            }
+            case "lay" -> {
+                if (!require(sender, "nekararpg.campfire.use")) yield true;
+                if (!(sender instanceof Player player)) {
+                    messages.send(sender, "player-only");
+                    yield true;
+                }
+                LieResult result = campfireModule.lieDown(player);
+                messages.send(player, switch (result) {
+                    case SUCCESS -> "campfire-lying-started";
+                    case MODULE_DISABLED, LYING_DISABLED -> "campfire-lying-disabled";
+                    case ALREADY_RESTING -> "campfire-already-resting";
+                    case NOT_NEAR_CAMPFIRE -> "campfire-lying-needs-fire";
+                    case INVALID_STATE -> "campfire-lying-invalid-state";
+                });
+                yield true;
+            }
+            case "rise" -> {
+                if (!(sender instanceof Player player)) {
+                    messages.send(sender, "player-only");
+                    yield true;
+                }
+                messages.send(player, campfireModule.rise(player)
+                        ? "campfire-lying-stopped" : "campfire-not-lying");
                 yield true;
             }
             case "test" -> {
@@ -278,7 +304,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return prefix(List.of("menu", "help", "reload", "status", "update", "sit", "stand", "mount", "test", "cancel"), args[0]);
+            return prefix(List.of("menu", "help", "reload", "status", "update", "sit", "stand", "lay", "rise", "mount", "test", "cancel"), args[0]);
         }
         if (args.length == 2 && "update".equalsIgnoreCase(args[0])) {
             return prefix(List.of("check", "status"), args[1]);

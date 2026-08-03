@@ -94,14 +94,22 @@ public final class ConfigurationService {
         );
 
         SittingConfig sitting = new SittingConfig(
-                config.getBoolean("sitting.require-ground", true),
-                parseSeatYOffset(config, warning),
-                config.getBoolean("sitting.allow-creative", true),
-                config.getBoolean("sitting.allow-flying", false),
-                config.getBoolean("sitting.stand-on-damage", true),
-                config.getBoolean("sitting.detect-external-seats", true),
-                parseEntityTypes(config, "sitting.external-seat-entity-types",
+                config.getBoolean("campfire.sitting.require-ground", true),
+                parseSeatYOffset(config, "campfire.sitting.seat-y-offset", warning),
+                config.getBoolean("campfire.sitting.allow-creative", true),
+                config.getBoolean("campfire.sitting.allow-flying", false),
+                config.getBoolean("campfire.sitting.stand-on-damage", true),
+                config.getBoolean("campfire.sitting.detect-external-seats", true),
+                parseEntityTypes(config, "campfire.sitting.external-seat-entity-types",
                         Set.of(EntityType.ARMOR_STAND), warning)
+        );
+
+        LyingConfig lying = new LyingConfig(
+                config.getBoolean("campfire.lying.enabled", true),
+                config.getBoolean("campfire.lying.wake-on-damage", true),
+                config.getBoolean("campfire.lying.skip-night-when-alone", true),
+                validateInt(config.getInt("campfire.lying.fall-asleep-seconds", 5),
+                        1, 60, 5, "campfire.lying.fall-asleep-seconds", warning)
         );
 
         int configuredRestedDuration = config.getInt("campfire.rested.duration-seconds", 300);
@@ -191,6 +199,7 @@ public final class ConfigurationService {
                         0.0, 1.0, 0.5, "campfire.rested.hunger-loss-multiplier", warning),
                 restedValhalla,
                 restedEffect,
+                lying,
                 camping,
                 validateDouble(config.getDouble("campfire.group.multiplier-per-extra-player", 0.15),
                         0.0, 2.0, 0.15, "campfire.group.multiplier-per-extra-player", warning),
@@ -386,7 +395,6 @@ public final class ConfigurationService {
                 config.getBoolean("plugin.debug", false),
                 Map.of(
                         "fishing", config.getBoolean("modules.fishing.enabled", true),
-                        "sitting", config.getBoolean("modules.sitting.enabled", true),
                         "campfire", config.getBoolean("modules.campfire.enabled", true),
                         "auth", config.getBoolean("modules.auth.enabled", true),
                         "mining", miningModuleEnabled,
@@ -523,16 +531,16 @@ public final class ConfigurationService {
         return org.bukkit.Particle.valueOf(fallback);
     }
 
-    private double parseSeatYOffset(FileConfiguration config, Consumer<String> warning) {
-        double value = config.getDouble("sitting.seat-y-offset", 0.20);
+    private double parseSeatYOffset(FileConfiguration config, String path, Consumer<String> warning) {
+        double value = config.getDouble(path, 0.20);
         if (Double.compare(value, -1.15) == 0
                 || Double.compare(value, -0.35) == 0
                 || Double.compare(value, 0.35) == 0
                 || Double.compare(value, 0.25) == 0) {
-            warning.accept("Migrating the pre-release sitting.seat-y-offset to 0.20.");
+            warning.accept("Migrating the pre-release " + path + " to 0.20.");
             return 0.20;
         }
-        return validateDouble(value, -2.0, 1.0, 0.20, "sitting.seat-y-offset", warning);
+        return validateDouble(value, -2.0, 1.0, 0.20, path, warning);
     }
 
     private boolean parseRestedIndicator(FileConfiguration config, Consumer<String> warning) {

@@ -9,7 +9,8 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
 - Funkce patří do NekaraRPG, pokud sdílí hráčský stav, životní cyklus,
   konfiguraci, příkazy nebo integrace. Skutečně nezávislý systém může vzniknout
   jako samostatný plugin v tomto repozitáři.
-- Moduly musí zůstat samostatně zapínatelné, i když se distribuují v jednom JARu.
+- Doménové moduly musí zůstat samostatně zapínatelné, i když se distribuují v
+  jednom JARu. Sezení a ležení patří do Campfire, nejsou samostatným modulem.
 - Nevytvářej znovu vyspělé systémy, které už vlastní CMI, ValhallaMMO,
   MythicMobs, Lands nebo jiný produkční plugin. Integruj se pouze úzce.
 
@@ -28,7 +29,10 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
 
 ## Pravidla Campfire a Rested
 
-- Hráč odpočívá pouze při sezení u nejbližšího zapáleného campfire.
+- Hráč odpočívá při sezení nebo ležení u nejbližšího zapáleného campfire.
+- Ležení používá pevnou spánkovou pózu bez falešné postele, změny spawnu nebo
+  volání CMI. Noc smí přeskočit jen jediný online hráč v Overworldu po
+  nastaveném čekání; příchod dalšího hráče čekání zruší, ale ležení ponechá.
 - Čas používá skutečné sekundy, aby lag serveru neprodlužoval nabíjení.
 - Základ Rested trvá pět minut po 20sekundovém nabíjení.
 - Kvalita tábora počítá unikátní typy prvků, ne množství bloků. Každý zapnutý
@@ -132,7 +136,9 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
 - Centrální hráčské GUI `/nekararpg` zobrazuje pouze zapnuté moduly dostupné podle
   oprávnění. Modulová GUI a příkazy zůstávají vlastníky své doménové logiky.
   Podrobné hodnoty patří do `<module>/config.yml`; současné moduly používají
-  složky `auth`, `fishing`, `sitting`, `campfire`, `mining` a `mounts`.
+  složky `auth`, `fishing`, `campfire`, `mining` a `mounts`. Starý
+  `sitting/config.yml` se jednou převezme pod `campfire.sitting` a zůstane jako
+  záloha.
 - Centrální GUI poskytuje osobní přehled a oprávněnou administrátorskou
   diagnostiku. Běžná krátká zpětná vazba patří do action baru a delší vysvětlení
   do lore GUI; technické detaily patří do konzole.
@@ -155,6 +161,8 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
   cache ani lokální certificate truststore.
 - Release vyžaduje odpovídající sémantickou verzi a nadpis changelogu, čistý
   release build, úspěšné testy, ověření verze uvnitř pluginu, Git tag a GitHub release.
+- Verze používají `MAJOR.MINOR.PATCH`: patch je menší změna nebo bugfix, minor
+  přidává funkce a major (`2.0.0`) je pro významné systémy či nekompatibilní změny.
 - GitHub release obsahuje pouze stabilně pojmenovaný plugin JAR, pokud není
   výslovně schválený další asset.
 - Každý release musí současně aktualizovat kořenové `HANDOFF.md`,

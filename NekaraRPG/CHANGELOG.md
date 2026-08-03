@@ -1,5 +1,30 @@
 # Přehled změn
 
+## 1.10.0
+
+- Sezení je nově součástí modulu Campfire/Táboření; samostatný modul a jeho
+  přepínač zmizely. Staré hodnoty ze `sitting/config.yml` se při prvním startu
+  bezpečně převezmou pod `sitting` v `campfire/config.yml`.
+- Hlavní GUI seskupuje Rybaření, Táboření a Těžbu do nové obrazovky Činnosti.
+  Tábořiště má vlastní nabídku pro sezení, vstávání, ležení a ukončení ležení.
+- U zapáleného campfire nebo soul campfire lze ulehnout bez postele. Ležení se
+  počítá do Rested stejně jako sezení a ukončí se pohybem, teleportem, smrtí,
+  odpojením nebo volitelně poškozením.
+- Pokud ležící hráč zůstane jediným online hráčem na celém serveru, po krátkém
+  čekání může v Overworldu přeskočit noc. Plugin nevolá CMI, nemění spawn hráče
+  a při příchodu dalšího hráče ponechá pouze ležení bez zásahu do času.
+- Správa NekaraRPG zůstává skrytá a znovu chráněná oprávněním
+  `nekararpg.command.status`, které má výchozí hodnotu `op`.
+
+## 1.8.1
+
+- Opraveno management GUI koně, které rušilo také kliknutí ve spodním hráčském
+  inventáři, takže nebylo možné vzít truhlu, sedlo ani koňské brnění na kurzor.
+- Vhodnou obyčejnou truhlu, sedlo nebo koňské brnění lze nyní nasadit jedním
+  běžným kliknutím přímo v hráčském inventáři. Nahrazený kus se vrátí na kurzor.
+- Běžná práce s kurzorem zůstává dostupná, zatímco shift-click, hotbar přesuny a
+  jiné zkratky zůstávají blokované proti obejití atomického uložení výbavy.
+
 ## 1.8.0
 
 - NekaraMounts používá transakční SQLite úložiště. První start bezpečně importuje

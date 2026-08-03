@@ -18,8 +18,8 @@ class ResourceYamlTest {
     @Test
     void bundledYamlResourcesAreValid() throws Exception {
         for (String resource : new String[]{"config.yml", "messages.yml", "plugin.yml",
-                "auth/config.yml", "fishing/config.yml", "sitting/config.yml",
-                "campfire/config.yml", "mining/config.yml", "mounts/config.yml"}) {
+                "auth/config.yml", "fishing/config.yml", "campfire/config.yml",
+                "mining/config.yml", "mounts/config.yml"}) {
             InputStream stream = getClass().getClassLoader().getResourceAsStream(resource);
             assertNotNull(stream, resource + " is missing from the test classpath");
             try (stream; InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
@@ -33,8 +33,9 @@ class ResourceYamlTest {
     void bundledCampfireDefaultsExposeExternalSeatsAndVisualFeedback() throws Exception {
         Map<String, Object> root = loadYaml("config.yml");
         Map<String, Object> auth = loadYaml("auth/config.yml");
-        Map<String, Object> sitting = loadYaml("sitting/config.yml");
         Map<String, Object> campfire = loadYaml("campfire/config.yml");
+        Map<String, Object> sitting = (Map<String, Object>) campfire.get("sitting");
+        Map<String, Object> lying = (Map<String, Object>) campfire.get("lying");
         Map<String, Object> mining = loadYaml("mining/config.yml");
         Map<String, Object> fishing = loadYaml("fishing/config.yml");
         Map<String, Object> mountsConfig = loadYaml("mounts/config.yml");
@@ -73,11 +74,15 @@ class ResourceYamlTest {
             Map<String, Object> mountWhistle = (Map<String, Object>) mountsConfig.get("whistle");
 
             assertEquals(0.20, ((Number) sitting.get("seat-y-offset")).doubleValue(), 0.0001);
+            assertTrue((Boolean) lying.get("enabled"));
+            assertTrue((Boolean) lying.get("skip-night-when-alone"));
+            assertEquals(5, ((Number) lying.get("fall-asleep-seconds")).intValue());
             assertTrue((Boolean) updater.get("enabled"));
             assertEquals(2, ((Number) root.get("configuration-layout")).intValue());
             assertNotNull(modules.get("mining"));
             assertNotNull(modules.get("auth"));
             assertNotNull(modules.get("mounts"));
+            assertFalse(modules.containsKey("sitting"));
             assertFalse(root.containsKey("auth"));
             assertFalse(root.containsKey("campfire"));
             assertFalse(root.containsKey("minigame"));
@@ -207,6 +212,10 @@ class ResourceYamlTest {
 
         assertNotNull(menuPermission);
         assertEquals(true, menuPermission.get("default"));
+        Map<String, Object> statusPermission =
+                (Map<String, Object>) permissions.get("nekararpg.command.status");
+        assertNotNull(statusPermission);
+        assertEquals("op", statusPermission.get("default"));
     }
 
     @SuppressWarnings("unchecked")

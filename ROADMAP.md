@@ -5,9 +5,9 @@ zůstávají v `PROJECT_MEMORY.md` a aktuální release stav v `HANDOFF.md`.
 
 ## Aktuální stav
 
-- Nejnovější stabilní release: **NekaraRPG 1.8.0** s osobním přehledem, administrátorskou
-  diagnostikou a rozšířeným modulem **NekaraMounts** (`mounts`).
-- Release je dostupný updateru; migrace SQLite, brašny a pathfinding
+- Připravovaný stabilní release: **NekaraRPG 1.10.0** s opravou výbavy koně,
+  obrazovkou Činnosti a rozšířeným Tábořením se sezením a ležením.
+- Po publikaci bude release dostupný updateru; migrace SQLite, brašny, pathfinding
   ještě vyžadují živou Purpur akceptaci.
 - Modul zůstane součástí jediného `NekaraRPG.jar` a bude samostatně zapínatelný.
 
@@ -33,6 +33,17 @@ jehož stav přežije odvolání, restart i změnu chunku.
 - výchozí sedlo, volitelná truhla a virtuální brašny o 54 slotech,
 - přirozené putování v okolí místa volání a bezpečný nový pokus při zaseknutí,
 - typovaná konfigurace, české zprávy, unit testy a ruční Purpur akceptace.
+- nasazení truhly, sedla a koňského brnění jedním kliknutím ze spodního inventáře.
+
+## Táboření — sjednocený odpočinek
+
+- Sitting už není samostatný modul; jeho životní cyklus a konfiguraci vlastní Campfire.
+- Rybaření, Táboření a Těžba jsou v centrálním GUI seskupené pod Činnosti.
+- Tábořiště nabízí sezení, ležení a vstávání bez nutnosti samostatných příkazů.
+- Ležení u zapáleného ohně nabíjí Rested stejně jako sezení.
+- Přeskočení noci je možné jen jedinému online hráči v Overworldu a bez volání CMI.
+- Správa NekaraRPG zůstává skrytá za oprávněním `nekararpg.command.status`
+  s výchozí hodnotou `op`.
 
 ### Bezpečnostní pravidla
 

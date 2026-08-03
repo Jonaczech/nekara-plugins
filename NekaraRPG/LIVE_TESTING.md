@@ -61,7 +61,7 @@ radius 24 bloků, jeden bod zdraví za pět sekund a jeden bod jídla za deset s
 5. Ověř chybný současný údaj, neshodné potvrzení, zavření každého kroku a odpojení
    během výpočtu. Účet musí zůstat použitelný a plaintext se nesmí objevit v logu.
 
-## Akceptace sezení
+## Akceptace sezení a ležení
 
 1. Spusť `/nekararpg sit` na plných blocích, slabech, schodech a nerovném terénu.
 2. Ověř dosednutí modelu na povrch s offsetem `0.20` bez průniku či levitování a odstranění sedadla přes `/nekararpg stand`.
@@ -69,7 +69,12 @@ radius 24 bloků, jeden bod zdraví za pět sekund a jeden bod jídla za deset s
 4. Teleport, smrt, odpojení, poškození, reload a shutdown nesmí zanechat armor stand.
 5. S CMI ověř nezměněný hlavní `/sit`. NekaraRPG registruje jen `/nekararpg sit` a `/nrpg sit`.
 6. Použij `/cmi sit` nebo jeho alias u ohně a ověř spuštění Campfire bez příkazu NekaraRPG.
-7. Vypni `modules.sitting.enabled`, reloaduj a opakuj CMI test. Externí sezení musí Campfire dál pohánět.
+7. Ověř, že samostatný přepínač `modules.sitting.enabled` už neexistuje a vypnutí
+   Campfire uklidí interní sedadlo i ležení.
+8. Ulehni přes Tábořiště u zapáleného ohně. Bez postele musí vzniknout spánková
+   póza a pohyb, teleport, smrt, odpojení či nakonfigurované poškození ji uklidí.
+9. Se dvěma hráči noc nesmí přeskočit. Po odpojení druhého smí jediný ležící hráč
+   po pěti sekundách přejít do rána; CMI příkaz se nesmí spustit a spawn se nezmění.
 
 ## Akceptace Campfire
 
@@ -104,11 +109,9 @@ radius 24 bloků, jeden bod zdraví za pět sekund a jeden bod jídla za deset s
 5. S ValhallaMMO porovnej běžná a Rested XP více skillů; běžná skill-action a sdílená XP mají být přesně `1.10x`.
 6. Dokonči rybaření s Rested. Původní loot zůstane a odložená XP dostanou 10 % právě jednou.
 7. Uděl ValhallaMMO XP administrativním příkazem a ověř, že se nenásobí.
-8. Vypínej moduly jednotlivě. S vypnutým Sitting má Campfire přijmout externí sedadlo, ale ne `/nrpg sit`.
+8. Vypínej moduly jednotlivě. Vypnutý Campfire nesmí přijmout interní ani externí
+   sezení pro Rested a `/nrpg sit` nesmí vytvořit sedadlo.
 9. Spusť rybářskou minihru při Rested a ověř, že její UI dočasně nahradí Rested časovač.
-
-Budoucí výpočet kvality tábora může vycházet ze stávajícího skupinového klíče
-pro každý oheň a přidat okolní struktury bez změny smlouvy sezení.
 
 ## Akceptace Echo Vein
 
@@ -155,6 +158,8 @@ pro každý oheň a přidat okolní struktury bez změny smlouvy sezení.
 10. V menu klikni na prázdný armor slot, výplně a citlivé akce. Prázdný slot nesmí
     hlásit uložení, výplně nezavírají GUI a odvolání i odebrání píšťalky vyžaduje
     potvrzení.
+    Potom ve spodním inventáři běžně klikni na sedlo, truhlu a koňské brnění;
+    každý item se musí nasadit jedním kliknutím a nahrazená výbava vrátit na kurzor.
 11. Na kopii serveru spusť upgrade s původním `mounts/data.yml`. Zkontroluj
     databázi i zálohu, stejné vlastníky, mount ID, výbavu, brašny a combat okna.
     Druhý restart nesmí nic znovu importovat ani duplikovat.
@@ -172,7 +177,8 @@ asset musí být stabilní `NekaraRPG.jar` vytvořený `build-release.cmd`.
 3. Stažený soubor musí být v update složce Paperu, ne vedle aktivního JARu.
 4. Spusť `/nekararpg update status`, znovu připoj operátora a ověř stejnou čekající verzi.
 5. Server běžně zastav a spusť. Staging soubor se spotřebuje, zůstane jediný aktivní `NekaraRPG.jar` a status hlásí novou verzi.
-6. Zkontroluj startup logy a před produkcí zopakuj smoke testy Fishing, Sitting, Campfire, Echo Vein, ValhallaMMO a MythicMobs.
+6. Zkontroluj startup logy a před produkcí zopakuj smoke testy Fishing, Campfire
+   (včetně sezení a ležení), Echo Vein, ValhallaMMO a MythicMobs.
 
 Chybové režimy updateru nikdy netestuj na produkci. Pro špatné digesty, identity,
 velikosti a verze použij staging release nebo dočasnou repository fixture.

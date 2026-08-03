@@ -725,11 +725,21 @@ public final class MountsModule implements NekaraModule, Listener {
             return;
         }
         if (holder instanceof EquipmentMenuHolder equipmentMenu) {
-            event.setCancelled(true);
             if (!ownsHolder(player, equipmentMenu.ownerId)) {
+                event.setCancelled(true);
                 player.closeInventory();
                 return;
             }
+            int topSize = event.getView().getTopInventory().getSize();
+            if (event.getRawSlot() >= topSize) {
+                if (tryEquipFromPlayerInventory(player, event) || event.isShiftClick()
+                        || event.getAction() == InventoryAction.COLLECT_TO_CURSOR
+                        || event.getHotbarButton() >= 0) {
+                    event.setCancelled(true);
+                }
+                return;
+            }
+            event.setCancelled(true);
             handleEquipmentClick(player, event.getRawSlot());
             return;
         }
@@ -775,7 +785,9 @@ public final class MountsModule implements NekaraModule, Listener {
         }
         InventoryHolder holder = event.getView().getTopInventory().getHolder();
         if (holder instanceof MountMenuHolder || holder instanceof ColorMenuHolder
-                || holder instanceof EquipmentMenuHolder || holder instanceof ConfirmationMenuHolder
+                || (holder instanceof EquipmentMenuHolder
+                && event.getRawSlots().stream().anyMatch(slot -> slot < event.getView().getTopInventory().getSize()))
+                || holder instanceof ConfirmationMenuHolder
                 || (holder instanceof StorageMenuHolder
                 && event.getRawSlots().stream().anyMatch(slot -> slot < event.getView().getTopInventory().getSize()))
                 || managedHorse(event.getView().getTopInventory()) != null) {
@@ -1108,6 +1120,79 @@ public final class MountsModule implements NekaraModule, Listener {
         player.getOpenInventory().setItem(slot,
                 equipmentDisplay(kind == EquipmentKind.SADDLE ? updated.saddle()
                         : kind == EquipmentKind.CHEST ? updated.chest() : updated.armor(), kind));
+    }
+
+    private boolean tryEquipFromPlayerInventory(Player player, InventoryClickEvent event) {
+        ItemStack source = emptyToNull(event.getCurrentItem());
+        EquipmentKind kind = equipmentKind(source);
+        if (kind == null || !isEmpty(event.getCursor()) || event.isShiftClick()
+                || event.getHotbarButton() >= 0
+                || (event.getAction() != InventoryAction.PICKUP_ALL
+                && event.getAction() != InventoryAction.PICKUP_HALF)) {
+            return false;
+        }
+        event.setCancelled(true);
+        Optional<MountRecord> found = findOwned(player);
+        if (found.isEmpty()) {
+            player.closeInventory();
+            messages.send(player, "mount-not-owned");
+            return true;
+        }
+        MountRecord record = found.get();
+        ItemStack previous = equipment(record, kind);
+        ItemStack equipped = source.clone();
+        equipped.setAmount(1);
+        if (sameItem(previous, equipped)) {
+            return true;
+        }
+        MountRecord updated = record.withEquipment(
+                kind == EquipmentKind.SADDLE ? equipped : record.saddle(),
+                kind == EquipmentKind.ARMOR ? equipped : record.armor(),
+                kind == EquipmentKind.CHEST ? equipped : record.chest(),
+                Instant.now());
+        if (!updateRecord(updated)) {
+            return true;
+        }
+
+        ItemStack remaining = source.clone();
+        remaining.setAmount(source.getAmount() - 1);
+        event.setCurrentItem(remaining.getAmount() == 0 ? new ItemStack(Material.AIR) : remaining);
+        player.setItemOnCursor(previous == null ? new ItemStack(Material.AIR) : previous);
+        applyEquipmentToActive(updated);
+        player.getOpenInventory().setItem(equipmentSlot(kind), equipmentDisplay(equipped, kind));
+        return true;
+    }
+
+    private EquipmentKind equipmentKind(ItemStack item) {
+        if (item == null) return null;
+        for (EquipmentKind kind : EquipmentKind.values()) {
+            if (isValidEquipment(item, kind)) return kind;
+        }
+        return null;
+    }
+
+    private ItemStack equipment(MountRecord record, EquipmentKind kind) {
+        return switch (kind) {
+            case SADDLE -> record.saddle();
+            case CHEST -> record.chest();
+            case ARMOR -> record.armor();
+        };
+    }
+
+    private int equipmentSlot(EquipmentKind kind) {
+        return switch (kind) {
+            case SADDLE -> EQUIPMENT_SADDLE_SLOT;
+            case CHEST -> EQUIPMENT_CHEST_SLOT;
+            case ARMOR -> EQUIPMENT_ARMOR_SLOT;
+        };
+    }
+
+    private void applyEquipmentToActive(MountRecord record) {
+        Horse active = resolveActive(record);
+        if (active != null) {
+            active.getInventory().setSaddle(record.saddle());
+            active.getInventory().setArmor(record.armor());
+        }
     }
 
     private void openStorageOrEquipment(Player player) {
@@ -1899,7 +1984,8 @@ public final class MountsModule implements NekaraModule, Listener {
                 Component.text(kind == EquipmentKind.SADDLE ? "Prázdný slot sedla"
                         : kind == EquipmentKind.CHEST ? "Prázdný slot truhly"
                         : "Prázdný slot brnění", NamedTextColor.GRAY),
-                Component.text("Vlož jeden vhodný předmět na kurzoru.", NamedTextColor.DARK_GRAY));
+                Component.text("Klikni na vhodný předmět ve svém inventáři.", NamedTextColor.DARK_GRAY),
+                Component.text("Nebo jej vlož do slotu pomocí kurzoru.", NamedTextColor.DARK_GRAY));
     }
 
     private boolean isValidEquipment(ItemStack item, EquipmentKind kind) {

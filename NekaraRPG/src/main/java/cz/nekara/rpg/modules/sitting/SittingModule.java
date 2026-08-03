@@ -3,7 +3,6 @@ package cz.nekara.rpg.modules.sitting;
 import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.configuration.SittingConfig;
 import cz.nekara.rpg.messages.MessageService;
-import cz.nekara.rpg.modules.NekaraModule;
 import cz.nekara.rpg.sitting.SitResult;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -12,6 +11,7 @@ import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Pose;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
@@ -19,6 +19,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerKickEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.scheduler.BukkitTask;
@@ -30,13 +31,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public final class SittingModule implements NekaraModule, Listener {
-    public static final String ID = "sitting";
+public final class SittingModule implements Listener {
     private static final String SEAT_TAG = "nekararpg-seat";
 
     private final NekaraRPGPlugin plugin;
     private final MessageService messages;
     private final Map<UUID, ArmorStand> seats = new HashMap<>();
+    private final Map<UUID, Long> lyingSince = new HashMap<>();
     private BukkitTask cleanupTask;
     private boolean enabled;
 
@@ -45,12 +46,6 @@ public final class SittingModule implements NekaraModule, Listener {
         this.messages = messages;
     }
 
-    @Override
-    public String id() {
-        return ID;
-    }
-
-    @Override
     public void enable() {
         if (enabled) {
             return;
@@ -60,7 +55,6 @@ public final class SittingModule implements NekaraModule, Listener {
         enabled = true;
     }
 
-    @Override
     public void disable() {
         if (!enabled) {
             return;
@@ -73,15 +67,16 @@ public final class SittingModule implements NekaraModule, Listener {
         for (UUID playerId : new ArrayList<>(seats.keySet())) {
             removeSeat(playerId, false);
         }
+        for (UUID playerId : new ArrayList<>(lyingSince.keySet())) {
+            rise(playerId, false);
+        }
         enabled = false;
     }
 
-    @Override
     public void reload() {
         cleanupInvalidSeats();
     }
 
-    @Override
     public boolean isEnabled() {
         return enabled;
     }
@@ -93,6 +88,9 @@ public final class SittingModule implements NekaraModule, Listener {
         UUID playerId = player.getUniqueId();
         if (isSitting(playerId)) {
             return SitResult.ALREADY_SITTING;
+        }
+        if (isLying(playerId)) {
+            return SitResult.INVALID_STATE;
         }
         if (player.isInsideVehicle()) {
             return SitResult.ALREADY_RIDING;
@@ -119,7 +117,34 @@ public final class SittingModule implements NekaraModule, Listener {
     }
 
     public boolean stand(Player player) {
-        return removeSeat(player.getUniqueId(), false);
+        return removeSeat(player.getUniqueId(), false) | rise(player.getUniqueId(), false);
+    }
+
+    public boolean lie(Player player) {
+        if (!enabled || isSeated(player) || player.isDead() || player.isSleeping()
+                || player.isGliding() || player.isSwimming() || player.isInsideVehicle()
+                || player.isFlying()) {
+            return false;
+        }
+        player.setPose(Pose.SLEEPING, true);
+        lyingSince.put(player.getUniqueId(), System.currentTimeMillis());
+        return true;
+    }
+
+    public boolean rise(Player player) {
+        return rise(player.getUniqueId(), false);
+    }
+
+    public boolean isLying(UUID playerId) {
+        return lyingSince.containsKey(playerId);
+    }
+
+    public boolean isLying(Player player) {
+        return isLying(player.getUniqueId());
+    }
+
+    public long lyingSince(UUID playerId) {
+        return lyingSince.getOrDefault(playerId, 0L);
     }
 
     public boolean isSitting(UUID playerId) {
@@ -131,6 +156,16 @@ public final class SittingModule implements NekaraModule, Listener {
         List<Player> players = new ArrayList<>();
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (isSeated(player)) {
+                players.add(player);
+            }
+        }
+        return List.copyOf(players);
+    }
+
+    public Collection<Player> restingPlayers() {
+        List<Player> players = new ArrayList<>();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (isSeated(player) || isLying(player)) {
                 players.add(player);
             }
         }
@@ -162,28 +197,51 @@ public final class SittingModule implements NekaraModule, Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         removeSeat(event.getPlayer().getUniqueId(), false);
+        rise(event.getPlayer().getUniqueId(), false);
     }
 
     @EventHandler
     public void onKick(PlayerKickEvent event) {
         removeSeat(event.getPlayer().getUniqueId(), false);
+        rise(event.getPlayer().getUniqueId(), false);
     }
 
     @EventHandler
     public void onDeath(PlayerDeathEvent event) {
         removeSeat(event.getPlayer().getUniqueId(), false);
+        rise(event.getPlayer().getUniqueId(), false);
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent event) {
         removeSeat(event.getPlayer().getUniqueId(), false);
+        rise(event.getPlayer().getUniqueId(), false);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDamage(EntityDamageEvent event) {
-        if (event.getEntity() instanceof Player player
-                && plugin.configuration().get().sitting().standOnDamage()) {
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+        if (plugin.configuration().get().sitting().standOnDamage()) {
             removeSeat(player.getUniqueId(), true);
+        }
+        if (plugin.configuration().get().campfire().lying().wakeOnDamage()) {
+            rise(player.getUniqueId(), true);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onMove(PlayerMoveEvent event) {
+        if (!isLying(event.getPlayer()) || event.getTo() == null) {
+            return;
+        }
+        Location from = event.getFrom();
+        Location to = event.getTo();
+        if (Double.compare(from.getX(), to.getX()) != 0
+                || Double.compare(from.getY(), to.getY()) != 0
+                || Double.compare(from.getZ(), to.getZ()) != 0) {
+            rise(event.getPlayer().getUniqueId(), false);
         }
     }
 
@@ -224,6 +282,20 @@ public final class SittingModule implements NekaraModule, Listener {
         }
         if (notify && player != null && player.isOnline()) {
             messages.sendActionBar(player, "sitting-stopped", Map.of());
+        }
+        return true;
+    }
+
+    private boolean rise(UUID playerId, boolean notify) {
+        if (lyingSince.remove(playerId) == null) {
+            return false;
+        }
+        Player player = Bukkit.getPlayer(playerId);
+        if (player != null) {
+            player.setPose(Pose.STANDING, false);
+            if (notify && player.isOnline()) {
+                messages.sendActionBar(player, "campfire-lying-stopped", Map.of());
+            }
         }
         return true;
     }

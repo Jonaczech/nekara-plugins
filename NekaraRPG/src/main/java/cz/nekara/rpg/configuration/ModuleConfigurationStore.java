@@ -22,8 +22,7 @@ final class ModuleConfigurationStore {
                     List.of("minigame", "fishing", "worlds", "effects", "valhalla"),
                     List.of("bite", "hit", "miss", "timeout", "escape",
                             "minigame-success", "catch-success")),
-            new ModuleFile("sitting/config.yml", "sitting", List.of("sitting"), List.of()),
-            new ModuleFile("campfire/config.yml", "campfire", List.of("campfire"),
+            new ModuleFile("campfire/config.yml", "campfire", List.of("campfire", "sitting"),
                     List.of("campfire-rested")),
             new ModuleFile("mining/config.yml", null, List.of("echo-vein"),
                     List.of("echo-vein-pulse", "echo-vein-ore-reveal",
@@ -80,8 +79,48 @@ final class ModuleConfigurationStore {
         YamlConfiguration defaults = loadResource(definition.resourcePath());
         YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
         configuration.setDefaults(defaults);
+        migrateSittingIntoCampfire(definition, configuration, file);
         migrateMountsPreReleaseDefaults(definition, configuration, file);
         return new LoadedModule(file, defaults, configuration, existedBeforeLoad);
+    }
+
+    private void migrateSittingIntoCampfire(
+            ModuleFile definition,
+            YamlConfiguration configuration,
+            File file
+    ) {
+        if (!"campfire/config.yml".equals(definition.resourcePath())
+                || configuration.contains("sitting", true)) {
+            return;
+        }
+        File legacyFile = new File(plugin.getDataFolder(), "sitting/config.yml");
+        if (!legacyFile.isFile()) {
+            return;
+        }
+        YamlConfiguration legacy = YamlConfiguration.loadConfiguration(legacyFile);
+        if (!migrateLegacySittingValues(legacy, configuration)) {
+            return;
+        }
+        save(configuration, file);
+        plugin.getLogger().info("Moved sitting settings under the Campfire module configuration.");
+    }
+
+    static boolean migrateLegacySittingValues(
+            YamlConfiguration legacy,
+            YamlConfiguration campfire
+    ) {
+        if (campfire.contains("sitting", true)) {
+            return false;
+        }
+        boolean copied = false;
+        for (Map.Entry<String, Object> entry : legacy.getValues(true).entrySet()) {
+            if (entry.getValue() instanceof ConfigurationSection) {
+                continue;
+            }
+            campfire.set("sitting." + entry.getKey(), entry.getValue());
+            copied = true;
+        }
+        return copied;
     }
 
     private void migrateMountsPreReleaseDefaults(

@@ -4,8 +4,10 @@ import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.campfire.CampfireKey;
 import cz.nekara.rpg.campfire.CampfireRestMath;
 import cz.nekara.rpg.campfire.CampfireRestSession;
+import cz.nekara.rpg.campfire.CampfireSleepRules;
 import cz.nekara.rpg.campfire.CampFeature;
 import cz.nekara.rpg.campfire.CampFeatureSnapshot;
+import cz.nekara.rpg.campfire.LieResult;
 import cz.nekara.rpg.campfire.RestedBonusState;
 import cz.nekara.rpg.compatibility.ValhallaRestedExperienceBridge;
 import cz.nekara.rpg.configuration.CampfireConfig;
@@ -21,6 +23,7 @@ import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.data.type.Campfire;
@@ -58,6 +61,7 @@ public final class CampfireModule implements NekaraModule, Listener {
     private final Map<UUID, CampfireRestSession> restingSessions = new HashMap<>();
     private final Map<UUID, RestedBonusState> restedBonuses = new HashMap<>();
     private final Map<UUID, ManagedHasteEffect> managedHasteEffects = new HashMap<>();
+    private final Map<UUID, Long> soloSleepSince = new HashMap<>();
     private Listener mythicSpawnListener;
     private BukkitTask updateTask;
     private boolean enabled;
@@ -87,6 +91,7 @@ public final class CampfireModule implements NekaraModule, Listener {
             return;
         }
         clearStaleRestedHasteEffects();
+        sitting.enable();
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         valhallaRestedExperienceBridge.register();
         registerMythicSpawnListener();
@@ -107,8 +112,10 @@ public final class CampfireModule implements NekaraModule, Listener {
             mythicSpawnListener = null;
         }
         restingSessions.clear();
+        soloSleepSince.clear();
         clearManagedHasteEffects();
         restedBonuses.clear();
+        sitting.disable();
         enabled = false;
     }
 
@@ -116,6 +123,7 @@ public final class CampfireModule implements NekaraModule, Listener {
     public void reload() {
         stopUpdateTask();
         clearManagedHasteEffects();
+        sitting.reload();
         startUpdateTask();
     }
 
@@ -142,6 +150,29 @@ public final class CampfireModule implements NekaraModule, Listener {
         long now = System.currentTimeMillis();
         RestedBonusState state = activeRestedBonus(playerId, now);
         return state == null ? 0L : state.remainingSeconds(now);
+    }
+
+    public LieResult lieDown(Player player) {
+        if (!enabled) {
+            return LieResult.MODULE_DISABLED;
+        }
+        CampfireConfig config = plugin.configuration().get().campfire();
+        if (!config.lying().enabled()) {
+            return LieResult.LYING_DISABLED;
+        }
+        if (sitting.isSeated(player) || sitting.isLying(player)) {
+            return LieResult.ALREADY_RESTING;
+        }
+        if (!player.hasPermission("nekararpg.campfire.use")
+                || !plugin.configuration().get().worlds().isEnabled(player.getWorld().getName())
+                || findNearestLitCampfire(player.getLocation(), config.radius()) == null) {
+            return LieResult.NOT_NEAR_CAMPFIRE;
+        }
+        return sitting.lie(player) ? LieResult.SUCCESS : LieResult.INVALID_STATE;
+    }
+
+    public boolean rise(Player player) {
+        return sitting.rise(player);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -267,7 +298,7 @@ public final class CampfireModule implements NekaraModule, Listener {
 
         Map<CampfireKey, List<Player>> groups = new HashMap<>();
         Map<UUID, CampfireKey> activeCampfires = new HashMap<>();
-        for (Player player : sitting.seatedPlayers()) {
+        for (Player player : sitting.restingPlayers()) {
             if (!player.hasPermission("nekararpg.campfire.use")
                     || !plugin.configuration().get().worlds().isEnabled(player.getWorld().getName())) {
                 continue;
@@ -298,7 +329,41 @@ public final class CampfireModule implements NekaraModule, Listener {
                         features, config, now);
             }
         }
+        trySkipNight(now, config);
         updateRestedVisuals(now, config);
+    }
+
+    private void trySkipNight(long now, CampfireConfig config) {
+        if (Bukkit.getOnlinePlayers().size() != 1) {
+            soloSleepSince.clear();
+            return;
+        }
+        Player player = Bukkit.getOnlinePlayers().iterator().next();
+        World world = player.getWorld();
+        long time = world.getTime();
+        UUID playerId = player.getUniqueId();
+        boolean eligiblePosture = sitting.isLying(player) && restingSessions.containsKey(playerId);
+        boolean normalNight = world.getEnvironment() == World.Environment.NORMAL
+                && time >= 12_542L && time < 23_460L;
+        if (!eligiblePosture || !normalNight || !config.lying().skipNightWhenAlone()) {
+            soloSleepSince.remove(playerId);
+            return;
+        }
+        long eligibleSince = soloSleepSince.computeIfAbsent(playerId, ignored -> now);
+        if (!CampfireSleepRules.canSkipNight(
+                config.lying().skipNightWhenAlone(),
+                Bukkit.getOnlinePlayers().size(),
+                eligiblePosture,
+                now - eligibleSince,
+                config.lying().fallAsleepSeconds() * 1_000L,
+                true,
+                time)) {
+            return;
+        }
+        world.setTime(0L);
+        soloSleepSince.remove(playerId);
+        sitting.rise(player);
+        messages.sendActionBar(player, "campfire-night-passed", Map.of());
     }
 
     private void processRestingPlayer(

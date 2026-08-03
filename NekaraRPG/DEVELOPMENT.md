@@ -17,9 +17,15 @@ Moduly se nesestavují jako samostatné pluginy. Release je úplný pouze tehdy,
 8. Publikovaný GitHub release je stabilní, označený `v<version>`, obsahuje přesně
    jeden `NekaraRPG.jar` a zpřístupňuje jeho SHA-256 v release metadatech.
 
-Pro opravy používej patch verzi, pro nový modul nebo významnou herní změnu minor
-verzi. Auth, fishing, sitting, campfire, mining a mounts musí zůstat samostatně zapínatelné
-pod `modules` v `config.yml`.
+Verze používají tvar `MAJOR.MINOR.PATCH`:
+
+- `PATCH` (`1.10.1`) je pro menší opravy a drobné změny bez nové hlavní funkce,
+- `MINOR` (`1.11.0`) je pro nové funkce a větší rozšíření existujících modulů,
+- `MAJOR` (`2.0.0`) je vyhrazený pro významnou změnu produktu, nové zásadní
+  systémy nebo nekompatibilní změnu smluv.
+
+Auth, fishing, campfire, mining a mounts zůstávají samostatně zapínatelné pod
+`modules` v `config.yml`. Sezení a ležení jsou interní součástí Campfire.
 
 ## Standardní postup
 

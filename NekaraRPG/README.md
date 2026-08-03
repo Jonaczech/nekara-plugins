@@ -1,8 +1,8 @@
 # NekaraRPG
 
 NekaraRPG je modulární plugin pro Purpur/Paper, který zajišťuje RPG a imerzivní
-systémy Nekary. V jednom JARu aktuálně obsahuje NekaraAuth, NekaraFishing, volné
-sezení, odpočinek u ohně, NekaraMining s první ValhallaMMO aktivitou Echo Vein a
+systémy Nekary. V jednom JARu aktuálně obsahuje NekaraAuth, NekaraFishing,
+Táboření se sezením, ležením a odpočinkem u ohně, NekaraMining s Echo Vein a
 NekaraMounts s jedním trvalým vanilla koněm na hráče.
 
 Plugin je záměrně konzervativní: nenahrazuje vanilla loot tabulky, nevytváří
@@ -18,8 +18,6 @@ modules:
     enabled: true
   fishing:
     enabled: true
-  sitting:
-    enabled: true
   campfire:
     enabled: true
   mining:
@@ -30,8 +28,7 @@ modules:
 
 Kořenový `config.yml` obsahuje pouze jádro, updater a přepínače modulů. Podrobné
 nastavení je rozdělené do `auth/config.yml`, `fishing/config.yml`,
-`sitting/config.yml`, `campfire/config.yml`, `mining/config.yml` a
-`mounts/config.yml` uvnitř datové
+`campfire/config.yml`, `mining/config.yml` a `mounts/config.yml` uvnitř datové
 složky pluginu. Při prvním upgradu ze starého monolitického configu se vlastní
 hodnoty automaticky přenesou do odpovídajících souborů.
 
@@ -41,31 +38,29 @@ Aktuální moduly:
 | --- | --- | --- |
 | `auth` | testovací | Registrace, přihlášení a ochrana nicku pro offline-mode server. |
 | `fishing` | produkční | Nenásilná časovací rybářská minihra kompatibilní s vanilla a ValhallaMMO. |
-| `sitting` | produkční | Sezení řízené příkazem a nastavitelná detekce externích sedadel. |
-| `campfire` | produkční | Léčení, ochrana hladu, Rested bonus, skupinové škálování a roleplay v action baru u zapáleného ohně. |
+| `campfire` | produkční | Sezení, ležení, léčení, Rested bonus, skupinové škálování a roleplay u zapáleného ohně. |
 | `mining` | testovací | Aktivity NekaraMining, aktuálně prostorová výzva Echo Vein s nativními ValhallaMMO odměnami. |
 | `mounts` | testovací | Jeden trvalý vanilla kůň na hráče s píšťalkou, brašnami a ochranou proti duplikaci. |
 
 Campfire přijímá sedadla NekaraRPG i nakonfigurovaná externí vehicle sedadla.
-Interní Sitting proto může být vypnutý, pokud sezení poskytuje jiný plugin.
-Budoucí moduly lze přidávat bez rozdělení projektu do nesouvisejících JARů.
-Vhodnými kandidáty jsou lockpicking, wounds, world events, rumors, territory,
-reputation.
+Při upgradu se vlastní hodnoty ze starého `sitting/config.yml` jednou převezmou
+do sekce `sitting` v `campfire/config.yml`; starý soubor zůstane jako záloha.
 
 ## Centrální menu
 
 Hráč otevře hlavní nabídku příkazem `/nekararpg` nebo `/nekararpg menu`. Nabídka
 zobrazuje jen moduly, které jsou právě zapnuté v `config.yml` a ke kterým má hráč
-oprávnění. Umožňuje otevřít účet a NekaraMounts, sednout si nebo vstát a zobrazuje
-stav rybaření, odpočinku a těžby. Původní příkazy zůstávají dostupné jako fallback
+oprávnění. Rybaření, Táboření a Těžbu sdružuje pod dlaždicí Činnosti; v Tábořišti
+lze sednout, vstát, lehnout si i ukončit ležení. Původní příkazy zůstávají jako fallback
 a pro administraci. Pokud je načtený ValhallaMMO, menu nabízí také přímý vstup do
 jeho nabídky dovedností přes `/skills`. Přístup k nabídce řídí oprávnění
 `nekararpg.menu.use`.
 
 Ikona osobního přehledu spojuje stav účtu, Rested, právě probíhající činnost a
 koně bez vypisování technických zpráv do chatu. Hráči s administrátorským
-oprávněním pro status mají také diagnostické GUI se stavem modulů, integrací,
-updateru, paměti a úložiště Mounts.
+oprávněním `nekararpg.command.status` mají také diagnostické GUI se stavem modulů,
+integrací, updateru, paměti a úložiště Mounts. Toto oprávnění je výchozím stavem
+pouze pro operátory a kontroluje se znovu i při samotném otevření obrazovky.
 
 ## NekaraMounts
 
@@ -90,6 +85,8 @@ Nový kůň dostane sedlo. Přejmenování, barva, sedlo, brnění, truhla a obn
 píšťalky jsou v management GUI. Nasazená obyčejná truhla zpřístupní pouze přes
 toto GUI trvalé brašny o 54 slotech; plnou truhlu nelze z koně sundat. Každá změna
 brašen se nejprve atomicky uloží a při chybě se v inventáři neprovede.
+Sedlo, obyčejnou truhlu i koňské brnění lze nasadit jedním běžným kliknutím na
+vhodný předmět ve spodním hráčském inventáři nebo klasicky přes kurzor a horní slot.
 Píšťalka je svázaná s hráčem: nelze ji zahodit, uložit do cizího inventáře ani
 sebrat jiným hráčem. `/nekararpg mount whistle <restore|remove>` odstraní všechny
 hráčovy nalezené kopie nebo vydá právě jednu novou.
@@ -138,23 +135,29 @@ Při upgradu může updater nový JAR bezpečně připravit ještě s nainstalov
 AuthMe. Pokud je AuthMe při startu aktivní, NekaraAuth se záměrně nezapne. Pro
 převzetí autentizace zastav server, odstraň AuthMe a proveď plný restart.
 
-## Sezení
+## Sezení a ležení
 
 Příkaz `/nekararpg sit` posadí hráče na aktuální uzemněné pozici a
 `/nekararpg stand` ho postaví. Sedadlo je neviditelná netrvalá entita, která se
 odstraní při sesednutí, teleportu, smrti, odpojení, nakonfigurovaném poškození,
 vypnutí modulu, čištění při reloadu a ukončení serveru.
 
+Příkaz `/nekararpg lay` nebo tlačítko v Tábořišti uloží hráče do spánkové pózy,
+pokud je nablízku zapálený campfire nebo soul campfire. Nejde o vanilla spánek:
+nevzniká falešná postel, nemění se spawn a plugin nevolá příkaz CMI. Ležení se
+ukončí pohybem, teleportem, smrtí, odpojením, poškozením podle konfigurace nebo
+pomocí `/nekararpg rise`.
+
 NekaraRPG záměrně neregistruje hlavní příkaz `/sit`. CMI a jiné sitting pluginy
 tak zůstávají vlastníky svých příkazů. Campfire výchozím stavem detekuje externí
 sedadla `ARMOR_STAND`, takže `/cmi sit` funguje bez compile-time závislosti na
-CMI. Další vehicle typy lze přidat pod `external-seat-entity-types` v
-`sitting/config.yml`.
+CMI. Další vehicle typy lze přidat pod `sitting.external-seat-entity-types` v
+`campfire/config.yml`.
 
 ## Odpočinek u ohně
 
-Hráč aktivně odpočívá, když sedí v nastaveném radiusu od zapáleného campfire
-nebo soul campfire. Výchozí radius je `5.0` bloků a používá skutečnou
+Hráč aktivně odpočívá, když sedí nebo leží v nastaveném radiusu od zapáleného
+campfire nebo soul campfire. Výchozí radius je `5.0` bloků a používá skutečnou
 trojrozměrnou vzdálenost od hráče k ohni. Aktivní odpočinek:
 
 - pomalu obnovuje zdraví,
@@ -163,6 +166,10 @@ trojrozměrnou vzdálenost od hráče k ohni. Aktivní odpočinek:
 - škáluje léčení a hlad, pokud jeden oheň sdílí více hráčů,
 - zobrazuje nastavitelné progress a roleplay zprávy v action baru,
 - používá malé množství částic jako potvrzení aktivní mechaniky.
+
+Ležící hráč může po výchozích pěti sekundách přeskočit noc pouze tehdy, pokud je
+jediným online hráčem na celém serveru a nachází se v Overworldu. Připojení
+dalšího hráče přeskočení zablokuje, ale samotné ležení ani Rested nepřeruší.
 
 Po výchozích 20 skutečných sekundách hráč získá základní pětiminutový Rested.
 Samotný Rested ztrátu hladu nemění. Smoker v nabitém táboře sníží průměrnou
@@ -330,9 +337,9 @@ Zkopíruj JAR z `dist/` do serverového `plugins/`, spusť Purpur a uprav:
 - `plugins/NekaraRPG/messages.yml`
 - `plugins/NekaraRPG/auth/config.yml`
 - `plugins/NekaraRPG/fishing/config.yml`
-- `plugins/NekaraRPG/sitting/config.yml`
 - `plugins/NekaraRPG/campfire/config.yml`
 - `plugins/NekaraRPG/mining/config.yml`
+- `plugins/NekaraRPG/mounts/config.yml`
 - `plugins/NekaraRPG/auth/accounts.yml` (vznikne po prvním spuštění NekaraAuth)
 
 Při upgradu není nutné mazat stávající `plugins/NekaraRPG`. Starý monolitický
@@ -372,6 +379,8 @@ upozornění při přípravě releasu a znovu při připojení před restartem.
 | `/nekararpg update status` | `nekararpg.command.update` |
 | `/nekararpg sit` | `nekararpg.sitting.use` |
 | `/nekararpg stand` | žádné; hráč se musí vždy moci postavit |
+| `/nekararpg lay` | `nekararpg.campfire.use` |
+| `/nekararpg rise` | žádné; hráč se musí vždy moci zvednout |
 | `/nekararpg mount [menu\|status\|call\|dismiss\|whistle]` | `nekararpg.mount.use` |
 | `/nekararpg mount grant <hráč>` | `nekararpg.mount.admin` |
 | `/nekararpg test [fishing|vein]` | `nekararpg.command.test` |

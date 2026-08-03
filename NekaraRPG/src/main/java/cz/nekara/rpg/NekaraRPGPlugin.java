@@ -52,7 +52,6 @@ public final class NekaraRPGPlugin extends JavaPlugin {
         mountsModule = new MountsModule(this, messages);
         modules.register(authModule);
         modules.register(fishingModule);
-        modules.register(sittingModule);
         modules.register(campfireModule);
         modules.register(miningModule);
         modules.register(mountsModule);

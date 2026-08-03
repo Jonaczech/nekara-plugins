@@ -1,6 +1,22 @@
 # Only lit CAMPFIRE and SOUL_CAMPFIRE blocks count.
 radius: 5.0
 update-period-ticks: 20
+sitting:
+  require-ground: true
+  seat-y-offset: 0.20
+  allow-creative: true
+  allow-flying: false
+  stand-on-damage: true
+  detect-external-seats: true
+  external-seat-entity-types:
+    - ARMOR_STAND
+lying:
+  enabled: true
+  wake-on-damage: true
+  # Lying remains available near a lit campfire with other players online.
+  # Only the night skip requires this player to be alone on the whole server.
+  skip-night-when-alone: true
+  fall-asleep-seconds: 5
 healing:
   amount: 1.0
   period-seconds: 5

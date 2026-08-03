@@ -54,4 +54,17 @@ class ModuleConfigurationStoreTest {
         assertEquals("mounts/data.db", configuration.getString("storage.database-file"));
         assertFalse(ModuleConfigurationStore.migrateMountsPreReleaseDefaults(configuration));
     }
+
+    @Test
+    void legacySittingSettingsMoveUnderCampfireWithoutOverwritingNewSettings() {
+        YamlConfiguration legacy = new YamlConfiguration();
+        legacy.set("require-ground", false);
+        legacy.set("seat-y-offset", 0.1);
+        YamlConfiguration campfire = new YamlConfiguration();
+
+        assertTrue(ModuleConfigurationStore.migrateLegacySittingValues(legacy, campfire));
+        assertFalse(campfire.getBoolean("sitting.require-ground"));
+        assertEquals(0.1, campfire.getDouble("sitting.seat-y-offset"));
+        assertFalse(ModuleConfigurationStore.migrateLegacySittingValues(legacy, campfire));
+    }
 }

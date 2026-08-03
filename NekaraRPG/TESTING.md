@@ -20,7 +20,8 @@ vloženou release verzi. NekaraMounts navíc testuje normalizaci offline identit
 hranice a formát cooldownu, starý YAML round-trip, SQLite transakce, import a
 perzistenci combat okna.
 NekaraAuth navíc ověřuje, že výměna hashe hesla zachová identitu a auditní údaje
-účtu; resource test kontroluje zprávy a výchozí oprávnění centrálního menu.
+účtu. Campfire testuje pravidla přeskočení noci osamělým hráčem a migraci starého
+Sitting configu; resource test kontroluje zprávy a výchozí oprávnění menu.
 
 ## Ruční akceptace na Purpur 26.1.2
 
@@ -31,11 +32,12 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 
 1. Nainstaluj jediný release artefakt `NekaraRPG.jar`.
 2. Spusť server a ověř vznik kořenového `plugins/NekaraRPG/config.yml` a souborů
-   `auth/config.yml`, `fishing/config.yml`, `sitting/config.yml`,
-   `campfire/config.yml`, `mining/config.yml` a `mounts/config.yml`.
-3. Ověř výchozí hodnotu true u `modules.fishing.enabled`, `modules.sitting.enabled`, `modules.campfire.enabled`, `modules.mining.enabled` a `modules.mounts.enabled`.
+   `auth/config.yml`, `fishing/config.yml`, `campfire/config.yml`,
+   `mining/config.yml` a `mounts/config.yml`.
+3. Ověř výchozí hodnotu true u `modules.fishing.enabled`,
+   `modules.campfire.enabled`, `modules.mining.enabled` a `modules.mounts.enabled`.
 4. Ověř, že kořenový config neobsahuje detailní sekce modulů. Spusť
-   `/nekararpg status` a ověř zobrazení všech pěti modulů.
+   `/nekararpg status` a ověř, že `sitting` už není samostatný modul.
 5. Nastav `modules.fishing.enabled: false`, spusť `/nekararpg reload` a ověř, že rybářská minihra nezačne.
 6. Modul znovu zapni a proveď další reload.
 7. Upgraduj kopii starého monolitického configu s několika změněnými hodnotami.
@@ -47,7 +49,7 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 1. Jako běžný přihlášený hráč spusť `/nekararpg` a ověř otevření centrálního GUI.
 2. Vypínej jednotlivé moduly v `config.yml` a používej `/nekararpg reload`; vypnutá
    dlaždice se po novém otevření nesmí zobrazit.
-3. Odeber hráči oprávnění k Sitting nebo Mounts. Příslušná dlaždice se nesmí
+3. Odeber hráči oprávnění k Táboření nebo Mounts. Příslušná dlaždice se nesmí
    zobrazit ani být použitelná přes staré otevřené menu.
 4. Kliknutím na účet otevři NekaraAuth, klikni na změnu hesla a postupně zadej
    současné heslo, nové heslo a stejné nové heslo znovu.
@@ -57,6 +59,32 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 7. Během asynchronního ověření proveď logout nebo odpojení. Rozpracované GUI se
    nesmí znovu otevřít a zápis změny se nesmí zahájit v neplatném autentizačním stavu.
 8. Ověř, že konzole, chat a `auth/accounts.yml` nikde neobsahují plaintext hesla.
+9. Jako běžný hráč ověř, že dlaždice Správa NekaraRPG není vidět. Jako op ji
+   otevři, pak odeber `nekararpg.command.status` a ověř, že staré GUI správu
+   znovu neotevře.
+10. Otevři Činnosti a ověř Rybaření, Táboření a Těžbu podle aktivních modulů.
+    Z Táboření otevři Tábořiště a vyzkoušej tlačítka sednout/vstát a lehnout/vstát.
+
+### 1b. Sezení, ležení a noční klid
+
+1. Ulehni přes Tábořiště bez zapáleného ohně v radiusu. Hráč musí zůstat stát a
+   dostat pouze stručnou action-bar informaci.
+2. Zapal campfire nebo soul campfire, ulehni a ověř spánkovou pózu bez postele.
+   Rested se musí nabíjet stejně jako při sezení.
+3. Pohni se, teleportuj, utrp poškození, zemři a odpoj se. Každý odpovídající
+   případ musí ležení bezpečně uklidit bez trvalé pózy po návratu.
+4. Se dvěma online hráči zůstaň ležet přes noc déle než nastavený čas. Noc se
+   nesmí změnit. Druhý hráč se odpojí; pokud je stále noc a oheň hoří, jediný
+   zbývající hráč může po nastaveném čekání přejít do rána.
+5. Během čekání připoj druhého hráče. Přeskočení se zablokuje, ale ležení a
+   nabíjení Rested pokračuje. Ověř, že CMI nehlásí spuštěný sleep příkaz a spawn
+   hráče se nezměnil.
+6. Reloaduj s vypnutým `campfire.lying.enabled` a potom s vypnutým
+   `skip-night-when-alone`; v prvním případě nejde ulehnout, ve druhém ležení
+   funguje bez posunu času.
+7. Upgraduj kopii datové složky se starým `sitting/config.yml` a bez sekce
+   `campfire.sitting`. Ověř převzetí vlastních hodnot do `campfire/config.yml`,
+   ponechání starého souboru jako zálohy a žádné další přepisování po restartu.
 
 ### 2. Běžné úspěšné rybaření
 
@@ -134,6 +162,9 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 7. Přes GUI změň jméno, barvu, sedlo a brnění. Kliknutí na prázdný slot výbavy
    nesmí nic uložit ani ohlásit. Ověř návratová tlačítka, potvrzení odvolání a
    odebrání píšťalky a to, že kliknutí na výplň GUI menu nezavře.
+   Ve spodním inventáři postupně běžně klikni na sedlo, obyčejnou truhlu a všechny
+   podporované druhy koňského brnění. Každý vhodný kus se musí rovnou nasadit a
+   nahrazený kus vrátit na kurzor. Ověř také klasický přesun přes kurzor a horní slot.
 8. Nasaď obyčejnou truhlu, otevři 54slotové brašny přes GUI koně a naplň několik
    krajních slotů různými stacky a itemy s metadaty. Odvolej, zabij koně, reloaduj
    a restartuj server; obsah musí zůstat beze změny. Plnou truhlu nelze sundat,
@@ -245,7 +276,7 @@ chycenou entitu, již zrušený fishing event a vypnutí serveru.
 ### 14. Závislosti modulů a reload
 
 1. Vypni `modules.campfire.enabled`, reloaduj a ověř sezení bez efektů ohně.
-2. Zapni Campfire, vypni Sitting a ověř Campfire přes nakonfigurované CMI sedadlo.
+2. Zapni Campfire a ověř Rested přes interní i nakonfigurované CMI sedadlo.
 3. Zapni oba a ověř, že nevznikly duplicitní listenery, action bary ani scheduler efekty.
 
 ### 15. GitHub updater
