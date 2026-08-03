@@ -1,5 +1,23 @@
 # Přehled změn
 
+## 2.1.0 (ve vývoji)
+
+- Schváleny české názvy všech šestnácti dovedností včetně `Obchodování` a
+  `Hlavní úroveň`; názvy jsou nyní na jednom místě a používá je celé GUI.
+- Přidán původní clean-room katalog 90 perků: každá z patnácti trénovaných
+  dovedností má šest uzlů ve dvou větvích a vrcholový perk na úrovni 100.
+  Typované efekty pokrývají veřejně popsané rodiny statistik a schopností, ale
+  nepřebírají cizí názvy, texty, hodnoty ani rozložení.
+- Kliknutí na dovednost otevře vlastní 54slotovou stezku. GUI rozlišuje naučené,
+  dostupné a zamčené perky, ukazuje cenu, hodnost, potřebnou úroveň a předchůdce,
+  dovoluje přepínat sousední stezky a při kliknutí na výplň zůstává otevřené.
+- Nákup perku používá potvrzovací obrazovku a server znovu ověří rank, úroveň,
+  předchůdce i společné Power body. SQLite compare-and-save zabraňuje přečerpání
+  při souběhu a hráčský zámek tlumí dvojklik během probíhajícího zápisu.
+- Tento milestone ještě nezapíná získávání nativních XP ani provádění herních
+  efektů perků. Modul zůstává výchozím stavem vypnutý a ValhallaMMO zůstává
+  autoritativním systémem produkčního serveru.
+
 ## 2.0.0
 
 - Založeno nativní jádro Nekara Skills se 16 dovednostmi: patnáct dovedností

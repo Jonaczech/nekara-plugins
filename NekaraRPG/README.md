@@ -23,11 +23,12 @@ hodnoty ani rozložení stromů. Podrobná rozhodnutí jsou v
 `docs/adr/0001-native-skills-platform.md` a pořadí práce v
 `docs/SKILLS_2_0_ROADMAP.md`.
 
-Aktuální milestone obsahuje doménový základ, transakční SQLite adaptér a bezpečný
-read-only 54slotový přehled. Modul `skills` je výchozím stavem vypnutý; po ručním
-zapnutí nahradí tlačítko ValhallaMMO v `/nrpg` vlastním přehledem, ale zatím
-neuděluje XP ani neutratí perk pointy. Release 2.0.0 tento základ zpřístupňuje k
-řízenému testování vedle nadále aktivního ValhallaMMO.
+Vývojová verze 2.1.0 přidává původní katalog 90 perků, detailní 54slotové stezky,
+české názvy dovedností a potvrzený transakční nákup za společné Power body.
+Každá dovednost má šest uzlů ve dvou větvích; GUI vysvětluje rank, cenu, úroveň
+a předchůdce. Modul `skills` je výchozím stavem vypnutý. Nativní zdroje XP a živé
+provádění uložených efektů ještě nejsou zapojené, takže ValhallaMMO musí při
+staging testu zůstat aktivní jako autoritativní produkční systém.
 
 ## Moduly
 
@@ -66,7 +67,7 @@ Aktuální moduly:
 | `campfire` | produkční | Sezení, ležení, léčení, Rested bonus, skupinové škálování a roleplay u zapáleného ohně. |
 | `mining` | testovací | Aktivity NekaraMining, aktuálně prostorová výzva Echo Vein s nativními ValhallaMMO odměnami. |
 | `mounts` | testovací | Jeden trvalý vanilla kůň na hráče s píšťalkou, brašnami a ochranou proti duplikaci. |
-| `skills` | vývojový náhled | Read-only přehled 16 dovedností a SQLite profil; XP a perky ještě nejsou aktivní. |
+| `skills` | vývojový náhled | Přehled 16 dovedností, 90 perků a transakční nákup; nativní XP a živé efekty ještě nejsou aktivní. |
 
 Campfire přijímá sedadla NekaraRPG i nakonfigurovaná externí vehicle sedadla.
 Při upgradu se vlastní hodnoty ze starého `sitting/config.yml` jednou převezmou
@@ -78,8 +79,8 @@ Hráč otevře hlavní nabídku příkazem `/nekararpg` nebo `/nekararpg menu`. 
 zobrazuje jen moduly, které jsou právě zapnuté v `config.yml` a ke kterým má hráč
 oprávnění. Rybaření, Táboření a Těžbu sdružuje pod dlaždicí Činnosti; v Tábořišti
 lze sednout, vstát, lehnout si i ukončit ležení. Původní příkazy zůstávají jako fallback
-a pro administraci. Zapnutý nativní modul `skills` nabídne vlastní read-only
-přehled; jinak při načteném ValhallaMMO zůstává přímý vstup do jeho nabídky přes
+a pro administraci. Zapnutý nativní modul `skills` nabídne vlastní přehled a
+perk stezky; jinak při načteném ValhallaMMO zůstává přímý vstup do jeho nabídky přes
 `/skills`. Přístup k nabídce řídí oprávnění
 `nekararpg.menu.use`.
 

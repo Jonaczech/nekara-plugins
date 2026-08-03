@@ -19,12 +19,25 @@ bojovými efekty a bezpečnými aktivními schopnostmi. Detailní fáze a bloká
 plné aktivace jsou v `NekaraRPG/docs/SKILLS_2_0_ROADMAP.md`; architekturu a
 clean-room hranice určuje `NekaraRPG/docs/adr/0001-native-skills-platform.md`.
 
-Aktuálně je hotové čisté doménové jádro: XP křivka, Power, profily, validace perk
-grafu, statistiky, nerekurzivní bojové efekty, drop multiplier, bezpečnost aktivních
-schopností a XP deduplikace. Přibyl SQLite adaptér s optimistic revision a výchozím
-stavem vypnutý read-only 54slotový přehled. Následuje detail perk stromu, transakční
-nákup a první XP vertikála. Rozpracovaná oprava ležení z 1.10.1 zůstává zachovaná
-uvnitř 2.0 větve.
+Aktuálně je hotové čisté doménové jádro, SQLite adaptér s optimistic revision,
+český katalog 90 původních perků, detailní 54slotové stezky a potvrzený
+transakční nákup za Power body. Vývojová verze je 2.1.0, ale nejnovějším
+publikovaným releasem zůstává 2.0.0. Následuje první úplná XP vertikála a živé
+provedení efektů jedné dovednosti; do té doby modul zůstává vypnutý.
+
+### Bezprostřední další krok po GUI 2.1.0
+
+1. Vybrat jednu dovednost jako úplnou vertikálu; doporučené je Hornictví, protože
+   už existuje ochranná logika aktivních blokových schopností a Echo Vein.
+2. Napojit důvěryhodné Paper eventy na `SkillExperienceService`, včetně původu
+   bloku, hráčem položených zdrojů, chunk heat a deduplikace.
+3. Složit zakoupené ranky přes stat engine a skutečně provést pouze efekty dané
+   vertikály. Vein Mining a Drilling musí respektovat region, limit bloků,
+   durability, cooldown a jediný odměnový průchod.
+4. Doplnit administrátorský staging nástroj pro auditovatelný grant/reset XP a
+   perků; nesmí být dostupný běžnému hráči ani obcházet stejnou doménovou policy.
+5. Ověřit restart, souběžné XP, dvojklik, packet replay, položené bloky, Fortune,
+   Silk Touch, custom itemy a kompatibilitu s ValhallaMMO bez dvojí odměny.
 
 ValhallaMMO zůstane na produkčním serveru až do ověřené migrace a nebude se
 odstraňovat ani paralelně odměňovat bez exportu, zálohy, rollback plánu a živé

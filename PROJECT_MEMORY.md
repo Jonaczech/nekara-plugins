@@ -114,6 +114,21 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
 - Powerlevel je odvozený průměr patnácti trénovaných dovedností. Poskytuje
   společné perk pointy a obecné milníky; mount může být odemknutelný na Power 50,
   zatímco příběhové podmínky a udělení nadále vlastní BetonQuest.
+- Schválené české názvy dovedností jsou centralizované v `SkillPresentation`.
+  Pro Trading se používá `Obchodování`, nikoliv Barter. Ostatní schválené názvy
+  jsou uvedené v `HANDOFF.md` a jejich přesný tvar hlídá test.
+- První katalog obsahuje 90 původních perků: šest uzlů pro každou z patnácti
+  trénovaných dovedností, dvě větve a společný vrchol na úrovni 100. Jde o
+  vlastní kompaktní strom Nekary, nikoliv tvrzení o přesné shodě počtu, názvů,
+  hodnot nebo rozložení s ValhallaMMO.
+- Veřejně popsané rodiny efektů lze modelovat mechanicky srovnatelně, ale jejich
+  názvy, texty, hodnoty, interní graf a implementace musí být původní. Stav 2.1.0
+  pouze ukládá zvolené ranky a typované definice efektů; samotné herní listenery
+  těchto efektů musí být implementované a exploit-testované po jednotlivých
+  vertikálách.
+- Perk body jsou společný rozpočet odvozený z hlavní úrovně. Každý nákup musí
+  serverově znovu ověřit rank, skill level, předchůdce a dostupné body a uložit
+  profil přes optimistic revision. GUI ani klientský klik nejsou autorita.
 - Změny Mounts statistik za economy a questové získávání nejsou aktuální rozsah.
 
 ## Pravidla NekaraAuth

@@ -17,29 +17,21 @@ Tento repozitář obsahuje serverové Minecraft pluginy pro ekosystém Nekara.
 
 | Plugin | Stav | Popis |
 | --- | --- | --- |
-| `NekaraRPG` | aktivní | Centrální modulární plugin s NekaraAuth, rybařením, sezením, odpočinkem u ohně, NekaraMining a NekaraMounts. |
+| `NekaraRPG` | aktivní | Centrální modulární plugin s NekaraAuth, činnostmi, Tábořením, NekaraMining, NekaraMounts a vývojovou platformou Nekara Skills. |
 
 ## Aktuální směr
 
-`NekaraRPG` se má stát centrálním pluginem pro propojené RPG a imerzivní
-systémy Nekary. Každá herní oblast je samostatný modul, který lze zapnout nebo
-vypnout v konfiguraci. Release 1.5.1 obsahuje moduly `auth`, `fishing`, `sitting`,
-`campfire`, `mining` a `mounts`; Campfire používá Sitting jako základ stavu hráče.
+`NekaraRPG` je centrální plugin pro propojené RPG a imerzivní systémy Nekary.
+Každá herní oblast zůstává samostatně zapínatelným modulem uvnitř jednoho JARu.
+Nejnovější stabilní release je 2.0.0; vývojová větev 2.1.0 přidává 16 českých
+dovedností, původní katalog 90 perků, detailní GUI a transakční nákup za body
+hlavní úrovně.
 
-NekaraMounts je vydaný ve verzi 1.5.1; rozsah a zbývající živá akceptace jsou v
-`ROADMAP.md` a `NekaraRPG/LIVE_TESTING.md`.
-Možné pozdější moduly:
-
-- `lockpicking`
-- `wounds`
-- `world-events`
-- `rumors`
-- `territory`
-- `reputation`
-
-Plugin nemá duplikovat systémy, které už dobře řeší ValhallaMMO. Integrace s
-ValhallaMMO musí zůstat volitelná a zachovat vanilla i ValhallaMMO odměny místo
-jejich nahrazování.
+Nativní skill modul zatím nemá živé XP zdroje ani vykonávání efektů perků, a je
+proto výchozím stavem vypnutý. ValhallaMMO zůstává produkční autoritou až do
+ověřené migrace bez dvojího udělování XP nebo odměn. Aktuální rozsah a přesný
+další krok jsou v `HANDOFF.md`, `ROADMAP.md` a
+`NekaraRPG/docs/SKILLS_2_0_ROADMAP.md`.
 
 ## Vydání NekaraRPG
 

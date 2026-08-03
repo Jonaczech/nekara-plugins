@@ -67,23 +67,23 @@ předchůdcem, kolizí pozic nebo cizím stromem se při startu odmítne.
 - fail-closed chování při chybě storage,
 - export, záloha a administrativní audit bez editace za běhu.
 
-### 3. Read-only GUI a navigace — rozpracováno
+### 3. GUI a navigace — hotovo pro katalog 2.1.0
 
-- hotovo: bezpečně vypnutelný 54slotový přehled všech dovedností, Power a XP,
-- hotovo: asynchronní čtení profilu a návrat do centrálního `/nrpg`,
-- zbývá: detail dovednosti s viewportem perk grafu inspirovaným dodanou referencí,
-- středový perk graf, směrové ovládání a trvalá lišta dovedností,
-- XP progress, dostupné body a srozumitelné důvody zamčených perků,
-- návrat do centrálního `/nrpg`, bez zavírání při kliknutí na prázdný slot,
+- bezpečně vypnutelný 54slotový přehled všech dovedností, hlavní úrovně a XP,
+- asynchronní čtení profilu a návrat do centrálního `/nrpg`,
+- 90 původních uzlů, šest na každou trénovanou dovednost ve dvou větvích,
+- detail dovednosti, přepínání sousedních stezek a stav naučeno/dostupné/zamčeno,
+- dostupné body a srozumitelné důvody zamčených perků,
+- bez zavírání při kliknutí na prázdný slot,
 - vlastní vizuální jazyk Nekary; žádná kopie cizího layoutu či textů.
 
-### 4. Bezpečný nákup perků
+### 4. Bezpečný nákup perků — hráčský průchod hotov
 
-- potvrzovací dialog,
-- serverová kontrola úrovně, bodů, ranku a předchůdců,
-- atomické compare-and-save nad revision profilu,
-- idempotentní zpracování dvojkliku a packet replay,
-- administrativní reset s auditem a explicitní cenovou politikou.
+- hotovo: potvrzovací dialog,
+- hotovo: serverová kontrola úrovně, bodů, ranku a předchůdců,
+- hotovo: atomické compare-and-save nad revision profilu,
+- hotovo: zámek souběžného nákupu jednoho hráče a bezpečné znovunačtení profilu,
+- zbývá: administrativní reset s auditem a explicitní cenovou politikou.
 
 ### 5. Sběrné dovednosti
 

@@ -25,8 +25,9 @@ verze, parsování GitHub release, důvěryhodný asset, SHA-256, identitu JARu 
 vloženou release verzi. NekaraMounts navíc testuje normalizaci offline identity,
 hranice a formát cooldownu, starý YAML round-trip, SQLite transakce, import a
 perzistenci combat okna.
-Nekara Skills testuje katalog 16 dovedností, celočíselnou XP křivku do úrovně
-100, odvozený Powerlevel, validaci perk DAG, skládání statistik, nerekurzivní
+Nekara Skills testuje katalog 16 dovedností a 90 prezentovaných perků,
+celočíselnou XP křivku do úrovně 100, odvozený Powerlevel, validaci perk DAG,
+transakční nákup a nepřečerpání bodů, skládání statistik, nerekurzivní
 bojové efekty, vzájemně výlučné dropy, bezpečnost aktivních schopností, XP policy,
 časovou deduplikaci a SQLite round-trip se zamítnutím zastaralé revision.
 NekaraAuth navíc ověřuje, že výměna hashe hesla zachová identitu a auditní údaje
@@ -60,15 +61,22 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
    `/nekararpg reload`. V produkci ponech modul vypnutý.
 2. Otevři `/nrpg`. Tlačítko Dovednosti musí otevřít vlastní 54slotový přehled,
    nikoliv `/skills` z ValhallaMMO.
-3. Ověř Power 0, všech 15 přímých dovedností na úrovni 0 a bezpečný návrat do
-   hlavního menu. Kliknutí na výplň ani spodní inventář nesmí přesunout item.
-4. Ověř vznik `plugins/NekaraRPG/skills/data.db`. Reload a restart nesmí databázi
+3. Ověř hlavní úroveň 0, všech 15 přímých dovedností na úrovni 0 a schválené
+   české názvy včetně `Obchodování`. Kliknutí na výplň ani spodní inventář nesmí
+   přesunout item nebo zavřít GUI.
+4. Klikni na každou dovednost. Stezka musí obsahovat šest uzlů, přepínání
+   předchozí/další dovednosti a návrat na přehled. Zamčený uzel musí vysvětlit
+   chybějící úroveň, body nebo předchůdce.
+5. Na kopii profilu s hlavní úrovní a volnými body otevři dostupný perk, zruš
+   potvrzení a ověř beze změny databáze. Potom nákup potvrď: přibude právě jeden
+   rank a odečte se přesná cena. Rychlý dvojklik nesmí přečerpat body.
+6. Ověř vznik `plugins/NekaraRPG/skills/data.db`. Reload a restart nesmí databázi
    poškodit ani změnit revision existujícího testovacího profilu.
-5. Poškoď na kopii databáze schema version. Modul se musí uzamknout, nesmí vytvořit
+7. Poškoď na kopii databáze schema version. Modul se musí uzamknout, nesmí vytvořit
    náhradní profil a hráči ukáže pouze krátké RPG sdělení bez SQL detailů.
-6. Vypni modul během asynchronního otevírání GUI. Starý požadavek nesmí po reloadu
+8. Vypni modul během asynchronního otevírání GUI. Starý požadavek nesmí po reloadu
    znovu otevřít obrazovku jiné generace modulu.
-7. Vypni `modules.skills.enabled`. Pokud je ValhallaMMO načtené, centrální tlačítko
+9. Vypni `modules.skills.enabled`. Pokud je ValhallaMMO načtené, centrální tlačítko
    se musí bezpečně vrátit k jeho `/skills`.
 
 ### 1a. Centrální menu a účet

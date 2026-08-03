@@ -120,4 +120,24 @@ public final class SkillProfile {
     public SkillProfile withRevision(long newRevision) {
         return new SkillProfile(playerKey, totalExperience, perkRanks, spentPerkPoints, newRevision);
     }
+
+    public SkillProfile withPurchasedPerk(PerkId perkId, int newRank, int pointCost) {
+        Objects.requireNonNull(perkId, "perkId");
+        if (newRank < 1 || pointCost < 1) {
+            throw new IllegalArgumentException("Perk rank and point cost must be positive");
+        }
+        int expectedRank = perkRank(perkId) + 1;
+        if (newRank != expectedRank) {
+            throw new IllegalArgumentException("A perk purchase must add exactly one rank");
+        }
+        Map<PerkId, Integer> updated = new HashMap<>(perkRanks);
+        updated.put(perkId, newRank);
+        return new SkillProfile(
+            playerKey,
+            totalExperience,
+            updated,
+            Math.addExact(spentPerkPoints, pointCost),
+            revision
+        );
+    }
 }
