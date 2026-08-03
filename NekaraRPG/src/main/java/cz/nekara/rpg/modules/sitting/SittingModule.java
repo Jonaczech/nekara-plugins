@@ -5,12 +5,15 @@ import cz.nekara.rpg.configuration.SittingConfig;
 import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.sitting.SitResult;
 import cz.nekara.rpg.sitting.LyingMovementPolicy;
+import io.papermc.paper.event.player.PlayerTrackEntityEvent;
+import io.papermc.paper.event.player.PlayerUntrackEntityEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Mannequin;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Pose;
 import org.bukkit.event.EventHandler;
@@ -29,8 +32,10 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public final class SittingModule implements Listener {
@@ -40,6 +45,7 @@ public final class SittingModule implements Listener {
     private final MessageService messages;
     private final Map<UUID, ArmorStand> seats = new HashMap<>();
     private final Map<UUID, Long> lyingSince = new HashMap<>();
+    private LyingVisualService lyingVisuals = new ServerPoseLyingVisualService();
     private BukkitTask cleanupTask;
     private boolean enabled;
 
@@ -52,8 +58,9 @@ public final class SittingModule implements Listener {
         if (enabled) {
             return;
         }
+        lyingVisuals = createLyingVisualService();
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
-        cleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, this::cleanupInvalidSeats, 1L, 1L);
+        cleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, this::cleanupInvalidSeats, 10L, 10L);
         enabled = true;
     }
 
@@ -72,10 +79,20 @@ public final class SittingModule implements Listener {
         for (UUID playerId : new ArrayList<>(lyingSince.keySet())) {
             rise(playerId, false);
         }
+        lyingVisuals.close();
+        lyingVisuals = new ServerPoseLyingVisualService();
         enabled = false;
     }
 
     public void reload() {
+        lyingVisuals.close();
+        lyingVisuals = createLyingVisualService();
+        for (UUID playerId : List.copyOf(lyingSince.keySet())) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player != null && player.isOnline()) {
+                lyingVisuals.show(player, trackedViewers(player));
+            }
+        }
         cleanupInvalidSeats();
     }
 
@@ -123,13 +140,21 @@ public final class SittingModule implements Listener {
     }
 
     public boolean lie(Player player) {
-        if (!enabled || isSeated(player) || player.isDead() || player.isSleeping()
+        if (!enabled || isSeated(player) || player.isDead() || player.isSleeping() || !player.isOnGround()
                 || player.isGliding() || player.isSwimming() || player.isInsideVehicle()
                 || player.isFlying()) {
             return false;
         }
         player.setPose(Pose.SLEEPING, true);
-        lyingSince.put(player.getUniqueId(), System.currentTimeMillis());
+        UUID playerId = player.getUniqueId();
+        lyingSince.put(playerId, System.currentTimeMillis());
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            Player current = Bukkit.getPlayer(playerId);
+            if (enabled && current != null && current.isOnline() && isLying(playerId)) {
+                current.setPose(Pose.SLEEPING, true);
+                lyingVisuals.show(current, trackedViewers(current));
+            }
+        });
         return true;
     }
 
@@ -200,12 +225,14 @@ public final class SittingModule implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         removeSeat(event.getPlayer().getUniqueId(), false);
         rise(event.getPlayer().getUniqueId(), false);
+        lyingVisuals.forgetViewer(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
     public void onKick(PlayerKickEvent event) {
         removeSeat(event.getPlayer().getUniqueId(), false);
         rise(event.getPlayer().getUniqueId(), false);
+        lyingVisuals.forgetViewer(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
@@ -253,6 +280,29 @@ public final class SittingModule implements Listener {
         }
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onTrackEntity(PlayerTrackEntityEvent event) {
+        if (!(event.getEntity() instanceof Player subject) || !isLying(subject)) {
+            return;
+        }
+        UUID subjectId = subject.getUniqueId();
+        UUID viewerId = event.getPlayer().getUniqueId();
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            Player currentSubject = Bukkit.getPlayer(subjectId);
+            Player currentViewer = Bukkit.getPlayer(viewerId);
+            if (enabled && currentSubject != null && currentViewer != null && isLying(subjectId)) {
+                lyingVisuals.show(currentSubject, currentViewer);
+            }
+        });
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onUntrackEntity(PlayerUntrackEntityEvent event) {
+        if (event.getEntity() instanceof Player subject && isLying(subject)) {
+            lyingVisuals.hide(subject, event.getPlayer());
+        }
+    }
+
     private void configureSeat(ArmorStand seat) {
         seat.setVisible(false);
         seat.setGravity(false);
@@ -272,6 +322,15 @@ public final class SittingModule implements Listener {
             if (player == null || !player.isOnline() || !seat.isValid()
                     || !seat.getPassengers().contains(player)) {
                 removeSeat(entry.getKey(), player != null && player.isOnline());
+            }
+        }
+        for (UUID playerId : new ArrayList<>(lyingSince.keySet())) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player == null || !player.isOnline() || player.isDead()) {
+                rise(playerId, false);
+            } else if (LyingMovementPolicy.shouldRefreshPose(player.getPose())) {
+                player.setPose(Pose.SLEEPING, true);
+                lyingVisuals.show(player, trackedViewers(player));
             }
         }
     }
@@ -300,11 +359,37 @@ public final class SittingModule implements Listener {
         }
         Player player = Bukkit.getPlayer(playerId);
         if (player != null) {
+            Collection<Player> viewers = trackedViewers(player);
             player.setPose(Pose.STANDING, false);
+            lyingVisuals.hide(player, viewers);
             if (notify && player.isOnline()) {
                 messages.sendActionBar(player, "campfire-lying-stopped", Map.of());
             }
         }
         return true;
     }
+
+    private Collection<Player> trackedViewers(Player subject) {
+        Set<Player> viewers = new LinkedHashSet<>(subject.getTrackedBy());
+        if (subject.isOnline()) {
+            viewers.add(subject);
+        }
+        return List.copyOf(viewers);
+    }
+
+    private LyingVisualService createLyingVisualService() {
+        if (!plugin.configuration().get().campfire().lying().mannequinVisualEnabled()) {
+            plugin.getLogger().warning(
+                "Native mannequin lying visuals are disabled; using the safe server pose implementation.");
+            return new ServerPoseLyingVisualService();
+        }
+        if (!Mannequin.validPoses().contains(Pose.SLEEPING)) {
+            plugin.getLogger().warning(
+                "This server does not support the sleeping mannequin pose; using the safe server pose implementation.");
+            return new ServerPoseLyingVisualService();
+        }
+        plugin.getLogger().info("Native mannequin lying visuals enabled.");
+        return new MannequinLyingVisualService(plugin);
+    }
+
 }

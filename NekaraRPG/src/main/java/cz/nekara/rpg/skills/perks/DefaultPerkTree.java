@@ -68,15 +68,15 @@ public final class DefaultPerkTree {
         builder.tree(SkillId.MINING,
             node("yield", "Hlas kamene", "Zvyšuje šanci na násobný výtěžek.", stat(StatId.DOUBLE_DROP_CHANCE, 0.025)),
             node("tempo", "Rytmus krumpáče", "Zrychluje dobývání kamene a rud.", stat(StatId.MINING_SPEED, 0.05)),
-            node("furnace", "Žhavá směna", "Pece pracují rychleji.", stat(StatId.FURNACE_SPEED, 0.08)),
-            node("vein", "Žilobití", "Odemkne bezpečné vytěžení propojené rudné žíly.", mechanic(MechanicId.VEIN_MINING)),
-            node("blast", "Řízený odstřel", "Zvyšuje účinnost důlních výbuchů.", stat(StatId.TNT_POWER, 0.08), mechanic(MechanicId.DRILLING)),
+            node("furnace", "Žhavá směna", "Pece otevřené horníkem pracují rychleji.", stat(StatId.FURNACE_SPEED, 0.08)),
+            node("vein", "Žilobití", "Při plížení vytěží propojenou rudnou žílu.", mechanic(MechanicId.VEIN_MINING)),
+            node("blast", "Řízený odstřel", "Bezpečně posílí vlastní TNT s omezeným záběrem.", stat(StatId.TNT_POWER, 0.08), mechanic(MechanicId.DRILLING)),
             node("triple", "Srdce hory", "Přidává šanci na trojitý výtěžek.", stat(StatId.TRIPLE_DROP_CHANCE, 0.08)));
         builder.tree(SkillId.WOODCUTTING,
             node("yield", "Míza lesa", "Zvyšuje šanci na násobný výtěžek dřeva.", stat(StatId.DOUBLE_DROP_CHANCE, 0.025)),
             node("tempo", "Jistý zásek", "Zrychluje práci se sekerou.", stat(StatId.WOODCUTTING_SPEED, 0.05)),
-            node("recipes", "Úsporné trámy", "Odemkne výhodnější recepty ze dřeva.", mechanic(MechanicId.WOOD_RECIPES)),
-            node("feller", "Pád velikána", "Odemkne poražení celého stromu od kmene.", mechanic(MechanicId.TREE_FELLER)),
+            node("recipes", "Úsporné trámy", "Vanilla recept z jednoho kmene vydá pět prken.", mechanic(MechanicId.WOOD_RECIPES)),
+            node("feller", "Pád velikána", "Při plížení porazí propojený přírodní strom.", mechanic(MechanicId.TREE_FELLER)),
             node("leaves", "Koruna tajemství", "Listí může skrývat vzácnou odměnu.", mechanic(MechanicId.RARE_LEAF_DROPS), stat(StatId.RARE_DROP_CHANCE, 0.015)),
             node("triple", "Dědictví hvozdu", "Přidává šanci na trojitý výtěžek.", stat(StatId.TRIPLE_DROP_CHANCE, 0.08)));
         builder.tree(SkillId.DIGGING,
@@ -101,12 +101,12 @@ public final class DefaultPerkTree {
             node("salvage", "Druhý život", "Odemkne rozebrání vylovené výbavy.", mechanic(MechanicId.EQUIPMENT_SALVAGING)),
             node("master", "Pán tichých vod", "Spojuje nejvyšší rychlost a štěstí rybáře.", stat(StatId.FISHING_LUCK, 0.25), stat(StatId.FISHING_SPEED, 0.20)));
         builder.tree(SkillId.LIGHT_WEAPONS,
-            node("damage", "Ostrá odpověď", "Zvyšuje poškození lehkých zbraní.", stat(StatId.DAMAGE_MULTIPLIER, 0.03)),
+            node("damage", "Ostrá odpověď", "Zvyšuje poškození a šanci na krvácení.", stat(StatId.DAMAGE_MULTIPLIER, 0.03), stat(StatId.BLEED_CHANCE, 0.006)),
             node("critical", "Mezera v obraně", "Zvyšuje šanci a sílu kritického zásahu.", stat(StatId.CRITICAL_CHANCE, 0.012), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.04)),
             node("parry", "Včasný kryt", "Odemkne odražení útoku a krátké omráčení útočníka.", mechanic(MechanicId.PARRY)),
             node("coating", "Jed na ostří", "Odemkne nanášení lektvarových účinků na zbraň.", mechanic(MechanicId.WEAPON_COATING)),
-            node("immunity", "Pod kůži", "Snižuje odolnost cíle vůči stavovým účinkům.", stat(StatId.STATUS_IMMUNITY_REDUCTION, 0.02)),
-            node("master", "Sto rychlých ran", "Vrchol stezky posiluje kritické zásahy.", stat(StatId.CRITICAL_CHANCE, 0.08), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.20)));
+            node("immunity", "Pod kůži", "Prohlubuje krvácení a zvyšuje šanci na jeho obnovení.", stat(StatId.BLEED_DAMAGE_MULTIPLIER, 0.20), stat(StatId.BLEED_CHANCE, 0.02)),
+            node("master", "Sto rychlých ran", "Vrchol stezky posiluje kritické zásahy i krvácení.", stat(StatId.CRITICAL_CHANCE, 0.08), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.20), stat(StatId.BLEED_CHANCE, 0.07), stat(StatId.BLEED_DAMAGE_MULTIPLIER, 0.25)));
         builder.tree(SkillId.HEAVY_WEAPONS,
             node("damage", "Váha rozsudku", "Zvyšuje poškození těžkých zbraní.", stat(StatId.DAMAGE_MULTIPLIER, 0.035)),
             node("power", "Drtivý nápřah", "Zesiluje silové útoky.", stat(StatId.POWER_ATTACK_DAMAGE_MULTIPLIER, 0.05)),

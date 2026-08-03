@@ -2,6 +2,7 @@ package cz.nekara.rpg.configuration;
 
 import cz.nekara.rpg.campfire.CampFeature;
 import cz.nekara.rpg.echovein.EchoVeinMath;
+import cz.nekara.rpg.skills.SkillId;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -106,6 +107,7 @@ public final class ConfigurationService {
 
         LyingConfig lying = new LyingConfig(
                 config.getBoolean("campfire.lying.enabled", true),
+                config.getBoolean("campfire.lying.mannequin-visual-enabled", true),
                 config.getBoolean("campfire.lying.wake-on-damage", true),
                 config.getBoolean("campfire.lying.skip-night-when-alone", true),
                 validateInt(config.getInt("campfire.lying.fall-asleep-seconds", 5),
@@ -358,6 +360,44 @@ public final class ConfigurationService {
                         0, 16_777_215, 260102, "mounts.whistle.custom-model-data", warning)
         );
 
+        int miningChunkSoftLimit = validateInt(
+                config.getInt("skills.mining.experience.chunk-soft-limit", 32),
+                0, 100_000, 32, "skills.mining.experience.chunk-soft-limit", warning);
+        int miningChunkHardLimit = validateInt(
+                config.getInt("skills.mining.experience.chunk-hard-limit", 128),
+                1, 1_000_000, 128, "skills.mining.experience.chunk-hard-limit", warning);
+        if (miningChunkHardLimit <= miningChunkSoftLimit) {
+            warning.accept("Invalid skills.mining experience chunk limits; using 32/128.");
+            miningChunkSoftLimit = 32;
+            miningChunkHardLimit = 128;
+        }
+        NativeMiningConfig nativeMining = new NativeMiningConfig(
+                config.getBoolean("skills.mining.experience.enabled", true),
+                validateInt(config.getInt("skills.mining.experience.chunk-window-seconds", 300),
+                        1, 86_400, 300,
+                        "skills.mining.experience.chunk-window-seconds", warning),
+                miningChunkSoftLimit,
+                miningChunkHardLimit,
+                validateDouble(config.getDouble(
+                                "skills.mining.experience.farm-floor-multiplier", 0.10),
+                        0.01, 1.0, 0.10,
+                        "skills.mining.experience.farm-floor-multiplier", warning),
+                config.getBoolean("skills.mining.rewards.final-drop-multiplier-enabled", true),
+                parseMiningExperienceTable(config, warning)
+        );
+        NativeGatheringConfig nativeWoodcutting = parseGatheringConfig(
+                config,
+                "woodcutting",
+                NativeGatheringConfig.defaultWoodcuttingExperience(),
+                NativeGatheringConfig.defaultWoodcuttingRareDrops(),
+                warning);
+        NativeGatheringConfig nativeDigging = parseGatheringConfig(
+                config,
+                "digging",
+                NativeGatheringConfig.defaultDiggingExperience(),
+                NativeGatheringConfig.defaultDiggingRareDrops(),
+                warning);
+
         SkillsConfig skills = new SkillsConfig(
                 validateRelativeStoragePath(
                         config.getString("skills.storage.database-file", "skills/data.db"),
@@ -367,7 +407,14 @@ public final class ConfigurationService {
                 validateLong(config.getLong("skills.progression.linear-growth", 35),
                         0, 1_000_000, 35, "skills.progression.linear-growth", warning),
                 validateLong(config.getLong("skills.progression.quadratic-growth", 2),
-                        0, 100_000, 2, "skills.progression.quadratic-growth", warning)
+                        0, 100_000, 2, "skills.progression.quadratic-growth", warning),
+                nativeMining,
+                nativeWoodcutting,
+                nativeDigging,
+                parseGatheringAbility(config, "mining", "vein-mining", 24, 6, 8, warning),
+                parseGatheringAbility(config, "mining", "drilling", 64, 8, 20, warning),
+                parseGatheringAbility(config, "woodcutting", "tree-feller", 64, 8, 12, warning),
+                parseNativeActivities(config, warning)
         );
 
         Map<String, SoundSettings> sounds = new HashMap<>();
@@ -625,6 +672,154 @@ public final class ConfigurationService {
             return fallback;
         }
         return Set.copyOf(features);
+    }
+
+    private Map<Material, Long> parseMiningExperienceTable(
+            FileConfiguration config,
+            Consumer<String> warning
+    ) {
+        Map<Material, Long> fallback = NativeMiningConfig.defaultExperienceByMaterial();
+        ConfigurationSection section = config.getConfigurationSection(
+                "skills.mining.experience.blocks");
+        if (section == null) {
+            return fallback;
+        }
+        Map<Material, Long> values = new HashMap<>(fallback);
+        for (String key : section.getKeys(false)) {
+            Material material = Material.matchMaterial(key);
+            long experience = section.getLong(key, 0);
+            if (material == null || !material.isBlock() || experience < 1 || experience > 1_000_000) {
+                warning.accept("Invalid skills.mining.experience.blocks." + key + "; ignoring it.");
+                continue;
+            }
+            values.put(material, experience);
+        }
+        if (values.isEmpty()) {
+            warning.accept("No valid native Mining experience values; using bundled defaults.");
+            return fallback;
+        }
+        return Map.copyOf(values);
+    }
+
+    private NativeGatheringConfig parseGatheringConfig(
+            FileConfiguration config,
+            String skill,
+            Map<Material, Long> defaultExperience,
+            Map<Material, Integer> defaultRareDrops,
+            Consumer<String> warning
+    ) {
+        String root = "skills." + skill;
+        int softLimit = validateInt(config.getInt(root + ".experience.chunk-soft-limit", 32),
+                0, 100_000, 32, root + ".experience.chunk-soft-limit", warning);
+        int hardLimit = validateInt(config.getInt(root + ".experience.chunk-hard-limit", 128),
+                1, 1_000_000, 128, root + ".experience.chunk-hard-limit", warning);
+        if (hardLimit <= softLimit) {
+            warning.accept("Invalid " + root + " experience chunk limits; using 32/128.");
+            softLimit = 32;
+            hardLimit = 128;
+        }
+        return new NativeGatheringConfig(
+                config.getBoolean(root + ".experience.enabled", true),
+                validateInt(config.getInt(root + ".experience.chunk-window-seconds", 300),
+                        1, 86_400, 300, root + ".experience.chunk-window-seconds", warning),
+                softLimit,
+                hardLimit,
+                validateDouble(config.getDouble(root + ".experience.farm-floor-multiplier", 0.10),
+                        0.01, 1.0, 0.10, root + ".experience.farm-floor-multiplier", warning),
+                config.getBoolean(root + ".rewards.final-drop-multiplier-enabled", true),
+                config.getBoolean(root + ".rewards.rare-drops-enabled", true),
+                parseMaterialLongTable(config, root + ".experience.blocks", defaultExperience, warning),
+                parseMaterialIntTable(config, root + ".rewards.rare-drops", defaultRareDrops, warning)
+        );
+    }
+
+    private GatheringAbilityConfig parseGatheringAbility(
+            FileConfiguration config,
+            String skill,
+            String ability,
+            int defaultMaximumBlocks,
+            int defaultBlocksPerTick,
+            int defaultCooldownSeconds,
+            Consumer<String> warning
+    ) {
+        String root = "skills." + skill + ".abilities." + ability;
+        int maximumBlocks = validateInt(config.getInt(root + ".maximum-blocks", defaultMaximumBlocks),
+                1, 512, defaultMaximumBlocks, root + ".maximum-blocks", warning);
+        int blocksPerTick = validateInt(config.getInt(root + ".blocks-per-tick", defaultBlocksPerTick),
+                1, maximumBlocks, Math.min(defaultBlocksPerTick, maximumBlocks),
+                root + ".blocks-per-tick", warning);
+        return new GatheringAbilityConfig(
+                config.getBoolean(root + ".enabled", true),
+                maximumBlocks,
+                blocksPerTick,
+                validateInt(config.getInt(root + ".cooldown-seconds", defaultCooldownSeconds),
+                        0, 86_400, defaultCooldownSeconds, root + ".cooldown-seconds", warning)
+        );
+    }
+
+    private NativeActivityConfig parseNativeActivities(
+            FileConfiguration config,
+            Consumer<String> warning
+    ) {
+        Map<SkillId, Long> values = new java.util.EnumMap<>(NativeActivityConfig.defaults());
+        for (SkillId skill : NativeActivityConfig.defaults().keySet()) {
+            String path = "skills." + skill.id() + ".experience.amount";
+            values.put(skill, validateLong(config.getLong(path, values.get(skill)),
+                    0, 1_000_000, values.get(skill), path, warning));
+        }
+        return new NativeActivityConfig(
+                config.getBoolean("skills.activities.enabled", true),
+                validateInt(config.getInt("skills.activities.deduplication-milliseconds", 750),
+                        100, 60_000, 750,
+                        "skills.activities.deduplication-milliseconds", warning),
+                values
+        );
+    }
+
+    private Map<Material, Long> parseMaterialLongTable(
+            FileConfiguration config,
+            String path,
+            Map<Material, Long> fallback,
+            Consumer<String> warning
+    ) {
+        ConfigurationSection section = config.getConfigurationSection(path);
+        if (section == null) {
+            return fallback;
+        }
+        Map<Material, Long> values = new HashMap<>(fallback);
+        for (String key : section.getKeys(false)) {
+            Material material = Material.matchMaterial(key);
+            long value = section.getLong(key, 0);
+            if (material == null || !material.isBlock() || value < 1 || value > 1_000_000) {
+                warning.accept("Invalid " + path + "." + key + "; ignoring it.");
+            } else {
+                values.put(material, value);
+            }
+        }
+        return Map.copyOf(values);
+    }
+
+    private Map<Material, Integer> parseMaterialIntTable(
+            FileConfiguration config,
+            String path,
+            Map<Material, Integer> fallback,
+            Consumer<String> warning
+    ) {
+        ConfigurationSection section = config.getConfigurationSection(path);
+        if (section == null) {
+            return fallback;
+        }
+        Map<Material, Integer> values = new HashMap<>(fallback);
+        for (String key : section.getKeys(false)) {
+            Material material = Material.matchMaterial(key);
+            int value = section.getInt(key, 0);
+            if (material == null || !material.isItem() || value < 1 || value > 1_000_000) {
+                warning.accept("Invalid " + path + "." + key + "; ignoring it.");
+            } else {
+                values.put(material, value);
+            }
+        }
+        return Map.copyOf(values);
     }
 
     private int validateInt(int value, int minimum, int maximum, int fallback,

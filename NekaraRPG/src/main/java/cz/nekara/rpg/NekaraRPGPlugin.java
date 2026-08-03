@@ -52,7 +52,7 @@ public final class NekaraRPGPlugin extends JavaPlugin {
         campfireModule = new CampfireModule(this, messages, sounds, sittingModule);
         miningModule = new MiningModule(this, messages, sounds, fishingModule);
         mountsModule = new MountsModule(this, messages);
-        skillsModule = new SkillsModule(this);
+        skillsModule = new SkillsModule(this, messages);
         modules.register(authModule);
         modules.register(fishingModule);
         modules.register(campfireModule);
@@ -62,7 +62,7 @@ public final class NekaraRPGPlugin extends JavaPlugin {
         mainMenu = new NekaraRPGMenu(this, messages, modules, authModule, fishingModule,
                 sittingModule, campfireModule, mountsModule, skillsModule);
         fishingModule.registerCommand(new NekaraRPGCommand(
-                this, fishingModule, sittingModule, campfireModule, miningModule, mountsModule,
+                this, fishingModule, sittingModule, campfireModule, miningModule, mountsModule, skillsModule,
                 modules, messages, updater, mainMenu));
         AuthCommand authCommand = new AuthCommand(authModule, messages);
         for (String commandName : new String[]{"nekaraauth", "login", "register", "logout"}) {

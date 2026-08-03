@@ -23,14 +23,18 @@ Tento repozitář obsahuje serverové Minecraft pluginy pro ekosystém Nekara.
 
 `NekaraRPG` je centrální plugin pro propojené RPG a imerzivní systémy Nekary.
 Každá herní oblast zůstává samostatně zapínatelným modulem uvnitř jednoho JARu.
-Nejnovější stabilní release je 2.0.0; vývojová větev 2.1.0 přidává 16 českých
-dovedností, původní katalog 90 perků, detailní GUI a transakční nákup za body
-hlavní úrovně.
+Nejnovější stabilní release je 2.1.0. Přidává 16 českých dovedností, původní
+katalog 90 perků, detailní GUI, transakční nákup za body hlavní úrovně, runtime
+vertikály všech 15 trénovaných skillů, eventové perk efekty, omezenou XP frontu a
+rozdělené konfigurace jednotlivých dovedností. Oprava ležení používá nativní
+Paper/Purpur mannequin namísto ručně sestavovaných packetových metadat.
+Součástí releasu je také operátorská staging správa s transakčním auditem v
+SQLite schématu v2.
 
-Nativní skill modul zatím nemá živé XP zdroje ani vykonávání efektů perků, a je
-proto výchozím stavem vypnutý. ValhallaMMO zůstává produkční autoritou až do
-ověřené migrace bez dvojího udělování XP nebo odměn. Aktuální rozsah a přesný
-další krok jsou v `HANDOFF.md`, `ROADMAP.md` a
+Všech 15 skillů je připraveno pro postupnou živou akceptaci, ale nativní modul
+zůstává výchozím stavem vypnutý. ValhallaMMO je produkční autoritou až do ověřené
+migrace, měření MSPT a rollbacku bez dvojího udělování XP nebo odměn. Aktuální rozsah a přesný další krok
+jsou v `HANDOFF.md`, `ROADMAP.md` a
 `NekaraRPG/docs/SKILLS_2_0_ROADMAP.md`.
 
 ## Vydání NekaraRPG

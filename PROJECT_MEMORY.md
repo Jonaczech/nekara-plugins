@@ -122,13 +122,51 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
   vlastní kompaktní strom Nekary, nikoliv tvrzení o přesné shodě počtu, názvů,
   hodnot nebo rozložení s ValhallaMMO.
 - Veřejně popsané rodiny efektů lze modelovat mechanicky srovnatelně, ale jejich
-  názvy, texty, hodnoty, interní graf a implementace musí být původní. Stav 2.1.0
-  pouze ukládá zvolené ranky a typované definice efektů; samotné herní listenery
-  těchto efektů musí být implementované a exploit-testované po jednotlivých
-  vertikálách.
+  názvy, texty, hodnoty, interní graf a implementace musí být původní. Release
+  2.1.0 obsahuje eventové XP baseline a runtime efekty všech 15 trénovaných
+  dovedností; před převzetím produkční autority stále vyžadují živé exploit a
+  balance testy po jednotlivých vertikálách.
+- Nativní Mining XP smí vzniknout jen z fyzicky dokončeného, nezrušeného těžení
+  krumpáčem ve schváleném světě. Creative, Spectator, hráčem položený zdroj,
+  opakovaný otisk a tvrdý chunk limit odměnu odmítnou; mezi limity se XP tlumí.
+- Původ hráčem položených bloků se ukládá do PDC chunku bez načítání cizích
+  chunků. Značky se udržují při těžení, výbuchu a přesunu pístem. Historické
+  bloky položené před zapnutím trackeru nelze zpětně odlišit a před produkční
+  aktivací vyžadují řízené přechodové období.
+- Dvojitý a trojitý výtěžek se řeší jediným vzájemně výlučným hodem nad
+  zakoupenými ranky. Bonus klonuje skutečné finální `BlockDropItemEvent` itemy,
+  nepouští znovu loot tabulku, Fortune ani odměnovou logiku ValhallaMMO.
+- Hromadné sběrné schopnosti smějí pracovat pouze v načtených chunkech, mají
+  pevný blokový rozpočet, dávku na tick a cooldown. Každý sekundární blok musí
+  projít `Player.breakBlock`, aby regionové pluginy mohly operaci zrušit a vanilla
+  durability i loot proběhly právě jednou. Sekundární bloky nevytvářejí další
+  nativní XP ani nativní výtěžkový hod.
+- ValhallaMMO lze bez migrace vypnout pouze v plánovaném testovacím okně po
+  ověřené záloze pro čistě nativní test všech 15 vertikál. Všechny XP zdroje a
+  runtime baseline jsou v kódu; produkční odstranění stále vyžaduje export a
+  mapování profilů, období paritního provozu, měření MSPT, rollback plán a živou
+  exploit akceptaci.
 - Perk body jsou společný rozpočet odvozený z hlavní úrovně. Každý nákup musí
   serverově znovu ověřit rank, skill level, předchůdce a dostupné body a uložit
   profil přes optimistic revision. GUI ani klientský klik nejsou autorita.
+- XP přírůstky procházejí jedinou omezenou frontou s kapacitou 8192 a dávkou
+  nejvýše 256 zápisů. Herní událost nesmí zakládat vlastní periodický task ani
+  spouštět neomezený průchod světem; cache a grafové průchody mají pevné limity.
+- Sekundární combat damage musí být označený a nesmí znovu spustit XP, critical,
+  stun, bleed, reflection ani další proc. Centrální bleed registr má nejvýše 2048
+  aktivních cílů a výchozí krvácení probíhá ve třech sekundových ticích.
+- Stabilní ID perků se nemění kvůli prezentaci. GUI volí materiálovou ikonku podle
+  dominantního efektu, aby byly critical, stun, bleed a ostatní rodiny mechanik
+  rozpoznatelné bez změny perzistentních dat.
+- Staging změny Nekara Skills smějí probíhat pouze přes
+  `nekararpg.skills.admin`. Známý hráč se identifikuje UUID, každá skutečná změna
+  zvýší revision a SQLite zapíše profil i audit správce atomicky. Admin grant
+  perku respektuje katalogové ID, maximum ranku a započítá katalogovou cenu;
+  reset jednoho skillu nemaže perky, zatímco `perks` vrací všechny utracené body.
+- Vizuální ležení na Paper/Purpur 26.1 používá nativní `Mannequin` se skinem a
+  výbavou hráče. Ručně sestavovaná entity metadata přes ProtocolLib se nepoužívají;
+  nepodporovaná póza nebo runtime chyba musí aktivovat bezpečný fallback a všechny
+  vizuální entity se musí při ukončení ležení nebo pluginu odstranit.
 - Změny Mounts statistik za economy a questové získávání nejsou aktuální rozsah.
 
 ## Pravidla NekaraAuth
@@ -162,7 +200,9 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
 - Centrální hráčské GUI `/nekararpg` zobrazuje pouze zapnuté moduly dostupné podle
   oprávnění. Modulová GUI a příkazy zůstávají vlastníky své doménové logiky.
   Podrobné hodnoty patří do `<module>/config.yml`; současné moduly používají
-  složky `auth`, `fishing`, `campfire`, `mining` a `mounts`. Starý
+  složky `auth`, `fishing`, `campfire`, `mining`, `mounts` a `skills`. Každá z 15
+  trénovaných dovedností má ve `skills/<skill>/` vlastní `config.yml` a
+  `messages.yml`; volitelný `loot-tables.yml` patří do stejné složky. Starý
   `sitting/config.yml` se jednou převezme pod `campfire.sitting` a zůstane jako
   záloha.
 - Centrální GUI poskytuje osobní přehled a oprávněnou administrátorskou

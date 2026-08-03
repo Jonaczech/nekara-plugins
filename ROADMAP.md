@@ -5,9 +5,10 @@ zůstávají v `PROJECT_MEMORY.md` a aktuální release stav v `HANDOFF.md`.
 
 ## Aktuální stav
 
-- Nejnovější stabilní release: **NekaraRPG 2.0.0** s vypnutým základem Nekara
-  Skills, opravou výbavy koně, obrazovkou Činnosti a rozšířeným Tábořením.
-- Release je dostupný updateru; migrace SQLite, brašny, pathfinding
+- Nejnovější stabilní release: **NekaraRPG 2.1.0** s 90 původními perky,
+  chráněnými runtime vertikálami všech 15 trénovaných dovedností, rozdělenými
+  konfiguracemi skillů a bezpečným mannequin vizuálem ležení.
+- Release je dostupný updateru; živá akceptace skillů, migrace SQLite, brašny a pathfinding
   ještě vyžadují živou Purpur akceptaci.
 - Modul zůstane součástí jediného `NekaraRPG.jar` a bude samostatně zapínatelný.
 
@@ -21,27 +22,35 @@ clean-room hranice určuje `NekaraRPG/docs/adr/0001-native-skills-platform.md`.
 
 Aktuálně je hotové čisté doménové jádro, SQLite adaptér s optimistic revision,
 český katalog 90 původních perků, detailní 54slotové stezky a potvrzený
-transakční nákup za Power body. Vývojová verze je 2.1.0, ale nejnovějším
-publikovaným releasem zůstává 2.0.0. Následuje první úplná XP vertikála a živé
-provedení efektů jedné dovednosti; do té doby modul zůstává vypnutý.
+transakční nákup za Power body. Všech 15 trénovaných dovedností zapisuje nativní
+XP z validovaných událostí a provádí vlastní runtime efekty. Sběrné vertikály
+sledují původ bloků, používají omezené grafové průchody a chrání vanilla i custom
+loot před druhým odměnovým průchodem. Auditovaná staging správa používá SQLite
+schéma v2 a bezpečnou migraci profilů z v1. Verze 2.1.0 je publikovaná, ale modul
+zůstává ve výchozím stavu vypnutý.
 
-### Bezprostřední další krok po GUI 2.1.0
+### Bezprostřední další krok po release 2.1.0
 
-1. Vybrat jednu dovednost jako úplnou vertikálu; doporučené je Hornictví, protože
-   už existuje ochranná logika aktivních blokových schopností a Echo Vein.
-2. Napojit důvěryhodné Paper eventy na `SkillExperienceService`, včetně původu
-   bloku, hráčem položených zdrojů, chunk heat a deduplikace.
-3. Složit zakoupené ranky přes stat engine a skutečně provést pouze efekty dané
-   vertikály. Vein Mining a Drilling musí respektovat region, limit bloků,
-   durability, cooldown a jediný odměnový průchod.
-4. Doplnit administrátorský staging nástroj pro auditovatelný grant/reset XP a
-   perků; nesmí být dostupný běžnému hráči ani obcházet stejnou doménovou policy.
-5. Ověřit restart, souběžné XP, dvojklik, packet replay, položené bloky, Fortune,
-   Silk Touch, custom itemy a kompatibilitu s ValhallaMMO bez dvojí odměny.
+1. Hotovo v kódu: všech 15 trénovaných dovedností používá validované eventové
+   zdroje XP napojené na společný `SkillExperienceService`.
+2. Hotovo v kódu: perzistentní původ hráčem položených bloků, chunk heat,
+   deduplikace a výtěžkové staty nad skutečnými finálními dropy.
+3. Hotovo v kódu: operátorský staging nástroj pro inspect, grant XP/perku a
+   reset se společnou transakcí profilu a auditního záznamu.
+4. Hotovo v kódu: Žilobití, Řízený odstřel a Pád velikána respektují regionové
+   eventy, limit bloků, dávkování, durability, cooldown a jediný odměnový průchod;
+   rychlost nástroje a pece nepřepisuje silnější externí efekt. Bojové efekty mají
+   ochranu před syntetickou rekurzí, krvácení má centrální kapacitu a perk GUI
+   zobrazuje ikonku podle dominantního efektu.
+5. Živě ověřit restart, migraci schématu i rozdělených configů, souběžné XP/admin
+   změny, dvojklik, mannequin ležení, položené bloky, Fortune, Silk Touch, custom
+   itemy, aktivní schopnosti a kompatibilitu s ValhallaMMO bez druhého loot
+   průchodu. Potom na kopii stagingu provést čistě nativní test všech 15 vertikál
+   bez ValhallaMMO a měřit MSPT.
 
 ValhallaMMO zůstane na produkčním serveru až do ověřené migrace a nebude se
 odstraňovat ani paralelně odměňovat bez exportu, zálohy, rollback plánu a živé
-akceptace. Release 2.0.0 proto vydává modul `skills` vypnutý a ponechává
+akceptace. Release 2.1.0 proto vydává modul `skills` vypnutý a ponechává
 ValhallaMMO jako autoritativní produkční systém.
 
 ## NekaraMounts — aktuální rozsah

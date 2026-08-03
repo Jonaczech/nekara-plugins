@@ -12,7 +12,7 @@ softdepend:
 commands:
   nekararpg:
     description: Manage NekaraRPG.
-    usage: /nekararpg [menu|help|reload|status|update|sit|stand|lay|rise|mount|test [fishing|vein]|cancel [player]]
+    usage: /nekararpg [menu|help|reload|status|update|skills admin|sit|stand|lay|rise|mount|test [fishing|vein]|cancel [player]]
     aliases: [nrpg, nekarafishing, nfishing]
   nekaraauth:
     description: Opens and administers NekaraAuth.
@@ -77,6 +77,9 @@ permissions:
   nekararpg.skills.use:
     description: Opens the native Nekara Skills progression overview when the module is enabled.
     default: true
+  nekararpg.skills.admin:
+    description: Allows audited administrative inspection and staging mutations for Nekara Skills.
+    default: op
   nekararpg.mount.admin:
     description: Allows administrators to open virtual horse creation for another player.
     default: op

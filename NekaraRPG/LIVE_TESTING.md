@@ -31,12 +31,54 @@ po dokončení pozdější migrační fáze.
    hodnota zůstává záměrně `false`.
 2. Otevři `/nrpg` a Dovednosti. Zkontroluj 54slotový přehled, všech 15 trénovaných
    dovedností, Power, volné body, návrat a blokaci přesunů itemů.
-3. S ValhallaMMO ověř, že zapnutý nativní modul má v centrálním menu přednost, ale
-   sám neuděluje žádné XP ani odměny. Po jeho vypnutí se vrátí původní `/skills`.
-4. Ověř `skills/data.db`, restart a reload. Při chybě storage se modul uzamkne a
+3. V čisté oblasti vytěž krumpáčem přirozený stone a několik rud. Hornictví musí
+   získat právě jednu konfigurovanou XP odměnu; Power se pouze přepočítá z průměru.
+   Creative, Spectator, položený blok a zrušený break odměnu nedají.
+4. S ValhallaMMO ověř, že zapnutý nativní modul má v centrálním menu přednost.
+   ValhallaMMO zatím ponech zapnuté pouze na izolovaném stagingu; před produkcí
+   musí zůstat `modules.skills.enabled: false`, aby nevznikly dva postupové systémy.
+5. Ověř `skills/data.db`, restart a reload. Při chybě storage se modul uzamkne a
    nesmí tiše vytvořit druhou databázi nebo přepsat profil.
-5. Neprováděj ruční úpravy živé SQLite databáze. Import ValhallaMMO v tomto milníku
+6. Přes `/nrpg skills admin` ověř `inspect`, zastropovaný `grant-xp`, validovaný
+   `grant-perk` a reset skillu/perků/celého profilu. Bez
+   `nekararpg.skills.admin` musí být příkazy odmítnuté. Každá změna má zvýšit
+   revision a objevit se v posledních auditních záznamech.
+7. Na kopii v1 databáze ověř automatický přechod na schéma v2 bez ztráty XP,
+   perků nebo revision. Souběžný admin reset a těžební XP nesmí vytvořit
+   částečný profil či audit.
+8. Zakoupený `Hlas kamene` nebo `Srdce hory` musí násobit pouze skutečné finální
+   dropy jednoho přirozeného bloku. Ověř metadata, Fortune, Silk Touch, plný
+   inventář a současné ValhallaMMO odměny bez druhého loot průchodu.
+9. Neprováděj ruční úpravy živé SQLite databáze. Import ValhallaMMO v tomto milníku
    ještě neexistuje.
+10. Uděl staging profilu perky všech 15 dovedností. Ověř XP postupně po skupinách:
+    pět sběrných, čtyři výrobní/obchodní a šest bojových/armor. Po každé skupině
+    zkontroluj konzoli, TPS/MSPT a velikost `skills/data.db`.
+11. Žilobití a Pád velikána spusť plížením. Ověř blokový limit, cooldown, dávkování,
+    durability, nenahrávání sousedního chunku a skutečné zrušení každého chráněného
+    bloku přes Lands.
+12. Řízený odstřel ověř vlastním TNT: žádný oheň, omezený počet bloků, žádné XP za
+    výbuch a beze změny bloků odstraněných regionovou ochranou.
+13. Po úspěchu s načteným ValhallaMMO vytvoř ověřenou zálohu JARů, konfigurace,
+    Valhalla dat a `skills/data.db`. V plánovaném testovacím okně ValhallaMMO
+    dočasně vypni a zopakuj všech 15 vertikál čistě nativně. Produkční odstranění
+    proveď až po přijetí výsledků, mapovacím reportu profilů a úspěšném rollbacku.
+14. Zátěžový průchod: skliď pole, poraz strom, vytěž žílu a bojuj ve více hráčích.
+    Nesmí vznikat per-tick scan světa; XP fronta nesmí hlásit zaplnění a serverové
+    MSPT se musí po skončení burstu vrátit na původní baseline.
+15. Výrobní exploit průchod: shift-click crafting, dva hráči u jednoho vesničana,
+    hopper brewing bez nového ručního vstupu a zrušený enchant/craft. Bonus ani XP
+    nesmí vzniknout bez dokončené nativní události.
+16. Po upgradu ověř vznik všech 15 složek `skills/<skill>`. Vlastní hodnoty ze
+    starého `skills/config.yml` musí být v nových souborech a woodcutting/digging
+    nálezy v `loot-tables.yml`; databáze ani profily se migrací nemění.
+17. U lehkých zbraní ověř krvácení na nepřátelské entitě: tři následné tiky,
+    žádná rekurzivní kritika/XP a obnovení silnějším zásahem. V GUI musí mít
+    krvácení redstone, omráčení mace a kritický zásah netheritový meč.
+18. `/nrpg` → `Lehnout si` nesmí hráče odpojit ani zapsat chybu
+    `clientbound/minecraft:set_entity_data`. V první i třetí osobě a z pohledu
+    druhého hráče ověř nativní sleeping mannequin, shodný skin/výbavu, odstranění
+    po vstání, zásahu, teleportu a odpojení a pokračující nabíjení Rested bonusu.
 
 ## Profil pro rychlé testování
 
@@ -80,7 +122,9 @@ radius 24 bloků, jeden bod zdraví za pět sekund a jeden bod jídla za deset s
 
 ## Akceptace sezení a ležení
 
-1. Spusť `/nekararpg sit` na plných blocích, slabech, schodech a nerovném terénu.
+1. Po prvním ulehnutí ověř v logu `Native mannequin lying visuals enabled`; nesmí se
+   objevit chyba spawnu ani packet encoderu. Potom spusť `/nekararpg sit` na plných
+   blocích, slabech, schodech a nerovném terénu.
 2. Ověř dosednutí modelu na povrch s offsetem `0.20` bez průniku či levitování a odstranění sedadla přes `/nekararpg stand`.
 3. Sedni znovu a použij běžnou klávesu sesednutí; neviditelné sedadlo musí zmizet.
 4. Teleport, smrt, odpojení, poškození, reload a shutdown nesmí zanechat armor stand.

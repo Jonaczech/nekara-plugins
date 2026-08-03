@@ -1,4 +1,8 @@
 prefix: "&8[&bNekaraRPG&8] &r"
+skills-vein-mining-complete: "&aŽilobití dokončeno."
+skills-tree-feller-complete: "&aPád velikána dokončen."
+skills-drilling-ready: "&6Řízený odstřel je připraven."
+skills-ability-cooldown: "&eSchopnost bude připravena za &f%seconds% s&e."
 update-help: |-
   &f/nekararpg update check &7- zkontroluje a připraví aktualizaci
   &f/nekararpg update status &7- zobrazí stav aktualizace
@@ -35,6 +39,7 @@ help: |-
   &f/nekararpg help &7- zobrazí tuto nápovědu
   &f/nekararpg reload &7- znovu načte konfiguraci
   &f/nekararpg status &7- zobrazí stav pluginu
+  &f/nekararpg skills admin <operace> &7- auditovaná správa nativních dovedností
   &f/nekaraauth &7- otevře registraci a správu účtu
   &f/nekararpg sit &7- posadí tě na aktuálním místě
   &f/nekararpg stand &7- ukončí sezení
@@ -172,4 +177,28 @@ mount-status: |-
   &7Stav: &f%state% &7| Zdraví: &f%health%
   &7Rychlost: &f%speed% &7| Skok: &f%jump%
   &7Barva: &f%color% &7| Styl: &f%style%
+  &8&m--------------------------------
+
+# Nekara Skills staging administration
+skills-admin-usage: |-
+  %prefix%&7Auditovaná správa Nekara Skills:
+  &f/nekararpg skills admin inspect <hráč>
+  &f/nekararpg skills admin grant-xp <hráč> <skill> <množství>
+  &f/nekararpg skills admin grant-perk <hráč> <perk-id> [rank]
+  &f/nekararpg skills admin reset <hráč> <skill|perks|all>
+skills-admin-invalid-input: "%prefix%&cNeplatný vstup: &f%reason%"
+skills-admin-processing: "%prefix%&7Operace Nekara Skills byla přijata ke zpracování."
+skills-admin-busy: "%prefix%&ePro tohoto hráče už probíhá jiná administrativní změna."
+skills-admin-storage-error: "%prefix%&cÚložiště Nekara Skills není dostupné. Operace nebyla provedena."
+skills-admin-result: "%prefix%&a%player%: %summary% &7Revision: &f%revision% &7| Audit: &f%audit%&7."
+skills-admin-inspect-header: |-
+  &8&m--------------------------------
+  &bNekara Skills &7- %player%
+  &7Revision: &f%revision% &7| Hlavní úroveň: &f%power% &7| Body: &f%available% volných / %spent% utracených
+skills-admin-inspect-skill: "&7%name% &8(%id%): &flevel %level% &8| &7%experience% XP"
+skills-admin-inspect-perks: "&7Perky: &f%perks%"
+skills-admin-inspect-audit-header: "&7Poslední auditní změny:"
+skills-admin-inspect-audit: "&8- &7%time% &8| &f%actor% &8| &b%operation% &8| &7r%before%→r%after% &8| &7%detail%"
+skills-admin-inspect-no-audit: |-
+  &7Audit: &fžádné změny
   &8&m--------------------------------

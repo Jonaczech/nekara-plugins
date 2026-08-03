@@ -1,0 +1,44 @@
+configuration-version: 1
+experience:
+  enabled: true
+  chunk-window-seconds: 300
+  chunk-soft-limit: 32
+  chunk-hard-limit: 128
+  farm-floor-multiplier: 0.10
+  blocks:
+    STONE: 2
+    DEEPSLATE: 2
+    NETHERRACK: 2
+    END_STONE: 2
+    COAL_ORE: 5
+    DEEPSLATE_COAL_ORE: 5
+    COPPER_ORE: 5
+    DEEPSLATE_COPPER_ORE: 5
+    IRON_ORE: 8
+    DEEPSLATE_IRON_ORE: 8
+    NETHER_QUARTZ_ORE: 8
+    GOLD_ORE: 12
+    DEEPSLATE_GOLD_ORE: 12
+    NETHER_GOLD_ORE: 12
+    REDSTONE_ORE: 12
+    DEEPSLATE_REDSTONE_ORE: 12
+    LAPIS_ORE: 12
+    DEEPSLATE_LAPIS_ORE: 12
+    DIAMOND_ORE: 20
+    DEEPSLATE_DIAMOND_ORE: 20
+    EMERALD_ORE: 20
+    DEEPSLATE_EMERALD_ORE: 20
+    ANCIENT_DEBRIS: 30
+rewards:
+  final-drop-multiplier-enabled: true
+abilities:
+  vein-mining:
+    enabled: true
+    maximum-blocks: 24
+    blocks-per-tick: 6
+    cooldown-seconds: 8
+  drilling:
+    enabled: true
+    maximum-blocks: 64
+    blocks-per-tick: 8
+    cooldown-seconds: 20

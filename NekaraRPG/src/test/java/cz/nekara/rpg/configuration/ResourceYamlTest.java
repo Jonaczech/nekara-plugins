@@ -19,7 +19,24 @@ class ResourceYamlTest {
     void bundledYamlResourcesAreValid() throws Exception {
         for (String resource : new String[]{"config.yml", "messages.yml", "plugin.yml",
                 "auth/config.yml", "fishing/config.yml", "campfire/config.yml",
-                "mining/config.yml", "mounts/config.yml", "skills/config.yml"}) {
+                "mining/config.yml", "mounts/config.yml", "skills/config.yml",
+                "skills/martial_arts/config.yml", "skills/martial_arts/messages.yml",
+                "skills/trading/config.yml", "skills/trading/messages.yml",
+                "skills/smithing/config.yml", "skills/smithing/messages.yml",
+                "skills/enchanting/config.yml", "skills/enchanting/messages.yml",
+                "skills/alchemy/config.yml", "skills/alchemy/messages.yml",
+                "skills/mining/config.yml", "skills/mining/messages.yml",
+                "skills/woodcutting/config.yml", "skills/woodcutting/messages.yml",
+                "skills/digging/config.yml", "skills/digging/messages.yml",
+                "skills/farming/config.yml", "skills/farming/messages.yml",
+                "skills/fishing/config.yml", "skills/fishing/messages.yml",
+                "skills/light_weapons/config.yml", "skills/light_weapons/messages.yml",
+                "skills/heavy_weapons/config.yml", "skills/heavy_weapons/messages.yml",
+                "skills/archery/config.yml", "skills/archery/messages.yml",
+                "skills/light_armor/config.yml", "skills/light_armor/messages.yml",
+                "skills/heavy_armor/config.yml", "skills/heavy_armor/messages.yml",
+                "skills/woodcutting/loot-tables.yml",
+                "skills/digging/loot-tables.yml"}) {
             InputStream stream = getClass().getClassLoader().getResourceAsStream(resource);
             assertNotNull(stream, resource + " is missing from the test classpath");
             try (stream; InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
@@ -40,6 +57,9 @@ class ResourceYamlTest {
         Map<String, Object> fishing = loadYaml("fishing/config.yml");
         Map<String, Object> mountsConfig = loadYaml("mounts/config.yml");
         Map<String, Object> skillsConfig = loadYaml("skills/config.yml");
+        Map<String, Object> miningSkillConfig = loadYaml("skills/mining/config.yml");
+        Map<String, Object> woodcuttingSkillConfig = loadYaml("skills/woodcutting/config.yml");
+        Map<String, Object> diggingSkillConfig = loadYaml("skills/digging/config.yml");
 
             Map<String, Object> updater = (Map<String, Object>) root.get("updater");
             Map<String, Object> modules = (Map<String, Object>) root.get("modules");
@@ -75,9 +95,16 @@ class ResourceYamlTest {
             Map<String, Object> mountWhistle = (Map<String, Object>) mountsConfig.get("whistle");
             Map<String, Object> skillStorage = (Map<String, Object>) skillsConfig.get("storage");
             Map<String, Object> skillProgression = (Map<String, Object>) skillsConfig.get("progression");
+            Map<String, Object> skillWoodcutting = woodcuttingSkillConfig;
+            Map<String, Object> skillDigging = diggingSkillConfig;
+            Map<String, Object> miningAbilities =
+                    (Map<String, Object>) miningSkillConfig.get("abilities");
+            Map<String, Object> woodcuttingAbilities =
+                    (Map<String, Object>) woodcuttingSkillConfig.get("abilities");
 
             assertEquals(0.20, ((Number) sitting.get("seat-y-offset")).doubleValue(), 0.0001);
             assertTrue((Boolean) lying.get("enabled"));
+            assertTrue((Boolean) lying.get("mannequin-visual-enabled"));
             assertTrue((Boolean) lying.get("skip-night-when-alone"));
             assertEquals(5, ((Number) lying.get("fall-asleep-seconds")).intValue());
             assertTrue((Boolean) updater.get("enabled"));
@@ -165,6 +192,12 @@ class ResourceYamlTest {
             assertEquals(100, ((Number) skillProgression.get("base-experience")).intValue());
             assertEquals(35, ((Number) skillProgression.get("linear-growth")).intValue());
             assertEquals(2, ((Number) skillProgression.get("quadratic-growth")).intValue());
+            assertNotNull(skillWoodcutting.get("experience"));
+            assertNotNull(skillDigging.get("experience"));
+            assertEquals(24, ((Number) ((Map<String, Object>)
+                    miningAbilities.get("vein-mining")).get("maximum-blocks")).intValue());
+            assertEquals(64, ((Number) ((Map<String, Object>)
+                    woodcuttingAbilities.get("tree-feller")).get("maximum-blocks")).intValue());
     }
 
     @Test
@@ -204,6 +237,13 @@ class ResourceYamlTest {
             assertNotNull(messages.get("mount-whistle-restored"));
             assertNotNull(messages.get("mount-equipment-chest-only"));
             assertNotNull(messages.get("mount-storage-not-empty"));
+            assertNotNull(messages.get("skills-admin-usage"));
+            assertNotNull(messages.get("skills-admin-result"));
+            assertNotNull(messages.get("skills-admin-inspect-audit"));
+            assertNotNull(messages.get("skills-vein-mining-complete"));
+            assertNotNull(messages.get("skills-tree-feller-complete"));
+            assertNotNull(messages.get("skills-drilling-ready"));
+            assertNotNull(messages.get("skills-ability-cooldown"));
             assertEquals(
                     "<green>Odpočatý</green> <dark_gray>|</dark_gray> <white>%remaining_text%</white>",
                     messages.get("campfire-rested-timer")
@@ -215,6 +255,8 @@ class ResourceYamlTest {
     @SuppressWarnings("unchecked")
     void centralMenuPermissionIsAvailableToPlayersByDefault() throws Exception {
         Map<String, Object> plugin = loadYaml("plugin.yml");
+        List<String> softDependencies = (List<String>) plugin.get("softdepend");
+        assertFalse(softDependencies.contains("ProtocolLib"));
         Map<String, Object> permissions = (Map<String, Object>) plugin.get("permissions");
         Map<String, Object> menuPermission =
                 (Map<String, Object>) permissions.get("nekararpg.menu.use");
@@ -225,6 +267,10 @@ class ResourceYamlTest {
                 (Map<String, Object>) permissions.get("nekararpg.command.status");
         assertNotNull(statusPermission);
         assertEquals("op", statusPermission.get("default"));
+        Map<String, Object> skillsAdminPermission =
+                (Map<String, Object>) permissions.get("nekararpg.skills.admin");
+        assertNotNull(skillsAdminPermission);
+        assertEquals("op", skillsAdminPermission.get("default"));
     }
 
     @SuppressWarnings("unchecked")

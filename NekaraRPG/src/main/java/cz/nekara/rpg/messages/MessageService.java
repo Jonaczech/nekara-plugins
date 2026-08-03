@@ -1,5 +1,6 @@
 package cz.nekara.rpg.messages;
 
+import cz.nekara.rpg.skills.SkillId;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -7,6 +8,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -35,12 +37,48 @@ public final class MessageService {
             if (stream != null) {
                 bundledMessages = YamlConfiguration.loadConfiguration(
                         new InputStreamReader(stream, StandardCharsets.UTF_8));
+                mergeSkillMessages(loaded, (YamlConfiguration) bundledMessages);
                 loaded.setDefaults(bundledMessages);
             }
         } catch (java.io.IOException exception) {
             plugin.getLogger().warning("Could not close the bundled messages resource: " + exception.getMessage());
         }
         messages = loaded;
+    }
+
+    private void mergeSkillMessages(
+            YamlConfiguration loaded,
+            YamlConfiguration bundled
+    ) {
+        for (SkillId skill : SkillId.gameplaySkills()) {
+            String resourcePath = "skills/" + skill.id() + "/messages.yml";
+            File file = new File(plugin.getDataFolder(), resourcePath);
+            if (!file.isFile()) {
+                plugin.saveResource(resourcePath, false);
+            }
+            YamlConfiguration skillMessages = YamlConfiguration.loadConfiguration(file);
+            try (InputStream stream = plugin.getResource(resourcePath)) {
+                if (stream == null) {
+                    throw new IllegalStateException("Missing bundled messages: " + resourcePath);
+                }
+                YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
+                        new InputStreamReader(stream, StandardCharsets.UTF_8));
+                mergeUnder("skills." + skill.id(), defaults, bundled);
+                mergeUnder("skills." + skill.id(), skillMessages, loaded);
+            } catch (java.io.IOException exception) {
+                plugin.getLogger().warning(
+                        "Could not close bundled skill messages " + resourcePath + ": "
+                                + exception.getMessage());
+            }
+        }
+    }
+
+    private void mergeUnder(String root, FileConfiguration source, YamlConfiguration target) {
+        for (Map.Entry<String, Object> entry : source.getValues(true).entrySet()) {
+            if (!(entry.getValue() instanceof ConfigurationSection)) {
+                target.set(root + "." + entry.getKey(), entry.getValue());
+            }
+        }
     }
 
     public Component component(String key, Map<String, ?> placeholders) {

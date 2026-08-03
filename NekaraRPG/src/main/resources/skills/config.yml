@@ -9,3 +9,8 @@ progression:
   base-experience: 100
   linear-growth: 35
   quadratic-growth: 2
+
+# Shared event-driven XP controls. Per-skill XP values live in each skill folder.
+activities:
+  enabled: true
+  deduplication-milliseconds: 750

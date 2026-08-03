@@ -12,6 +12,8 @@ sitting:
     - ARMOR_STAND
 lying:
   enabled: true
+  # Uses the native 26.1 mannequin entity; no hand-crafted metadata packets.
+  mannequin-visual-enabled: true
   wake-on-damage: true
   # Lying is available anywhere. Rested and night skipping still require a lit
   # campfire nearby; the night skip also requires the player to be alone.

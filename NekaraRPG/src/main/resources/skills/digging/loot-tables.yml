@@ -1,0 +1,6 @@
+# Weighted entries are rolled only after the rare-drop perk succeeds.
+rare-drops:
+  IRON_NUGGET: 10
+  GOLD_NUGGET: 4
+  AMETHYST_SHARD: 2
+  PRISMARINE_SHARD: 1

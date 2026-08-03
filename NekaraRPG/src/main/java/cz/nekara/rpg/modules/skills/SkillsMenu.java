@@ -8,6 +8,7 @@ import cz.nekara.rpg.skills.SkillPresentation;
 import cz.nekara.rpg.skills.perks.DefaultPerkTree;
 import cz.nekara.rpg.skills.perks.PerkDefinition;
 import cz.nekara.rpg.skills.perks.PerkId;
+import cz.nekara.rpg.skills.perks.PerkIconResolver;
 import cz.nekara.rpg.skills.perks.PerkPresentation;
 import cz.nekara.rpg.skills.perks.PerkPurchaseDecision;
 import cz.nekara.rpg.skills.perks.PerkPurchasePolicy;
@@ -279,8 +280,7 @@ final class SkillsMenu implements Listener {
         int rank = profile.perkRank(perk.id());
         PerkPurchaseDecision decision = purchasePolicy.evaluate(profile, snapshot, perk);
         boolean maxed = rank >= perk.maxRank();
-        Material material = maxed ? Material.LIME_DYE
-            : decision.allowed() ? Material.GLOWSTONE_DUST : Material.GRAY_DYE;
+        Material material = PerkIconResolver.resolve(perk);
         NamedTextColor color = maxed ? NamedTextColor.GREEN
             : decision.allowed() ? NamedTextColor.GOLD : NamedTextColor.GRAY;
         PerkPresentation presentation = perkTree.presentation(perk.id());
