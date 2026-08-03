@@ -10,7 +10,8 @@ Aktuální vývoj pokračuje na větvi
 `codex/nekararpg-2.1.0-perk-trees`. Tato větev obsahuje kandidáta **2.1.0** s
 prvními plně navigovatelnými perk stromy a transakčním nákupem. Nejde zatím o
 GitHub release ani verzi pro updater; nejnovějším stabilním releasem zůstává
-2.0.0.
+2.0.0. Kontrolovaný draft je
+[pull request #31](https://github.com/Jonaczech/nekara-plugins/pull/31).
 
 Nejnovější stabilní a publikovaná verze je **NekaraRPG 2.0.0**. Vestavěný
 updater ji rozpozná jako nový major release:
