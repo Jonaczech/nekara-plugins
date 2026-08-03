@@ -13,8 +13,8 @@ sitting:
 lying:
   enabled: true
   wake-on-damage: true
-  # Lying remains available near a lit campfire with other players online.
-  # Only the night skip requires this player to be alone on the whole server.
+  # Lying is available anywhere. Rested and night skipping still require a lit
+  # campfire nearby; the night skip also requires the player to be alone.
   skip-night-when-alone: true
   fall-asleep-seconds: 5
 healing:

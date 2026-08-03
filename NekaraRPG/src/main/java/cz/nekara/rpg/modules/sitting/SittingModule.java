@@ -4,6 +4,7 @@ import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.configuration.SittingConfig;
 import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.sitting.SitResult;
+import cz.nekara.rpg.sitting.LyingMovementPolicy;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -22,6 +23,7 @@ import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
@@ -238,9 +240,15 @@ public final class SittingModule implements Listener {
         }
         Location from = event.getFrom();
         Location to = event.getTo();
-        if (Double.compare(from.getX(), to.getX()) != 0
-                || Double.compare(from.getY(), to.getY()) != 0
-                || Double.compare(from.getZ(), to.getZ()) != 0) {
+        if (LyingMovementPolicy.changesPosition(
+                from.getX(), from.getY(), from.getZ(), to.getX(), to.getY(), to.getZ())) {
+            event.setTo(from);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onToggleSneak(PlayerToggleSneakEvent event) {
+        if (event.isSneaking()) {
             rise(event.getPlayer().getUniqueId(), false);
         }
     }

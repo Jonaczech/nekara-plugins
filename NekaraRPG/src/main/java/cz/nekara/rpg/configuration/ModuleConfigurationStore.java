@@ -27,7 +27,8 @@ final class ModuleConfigurationStore {
             new ModuleFile("mining/config.yml", null, List.of("echo-vein"),
                     List.of("echo-vein-pulse", "echo-vein-ore-reveal",
                             "echo-vein-success", "echo-vein-failure")),
-            new ModuleFile("mounts/config.yml", "mounts", List.of("mounts"), List.of())
+            new ModuleFile("mounts/config.yml", "mounts", List.of("mounts"), List.of()),
+            new ModuleFile("skills/config.yml", "skills", List.of("skills"), List.of())
     );
 
     private final JavaPlugin plugin;

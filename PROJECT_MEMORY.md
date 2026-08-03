@@ -11,8 +11,9 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
   jako samostatný plugin v tomto repozitáři.
 - Doménové moduly musí zůstat samostatně zapínatelné, i když se distribuují v
   jednom JARu. Sezení a ležení patří do Campfire, nejsou samostatným modulem.
-- Nevytvářej znovu vyspělé systémy, které už vlastní CMI, ValhallaMMO,
-  MythicMobs, Lands nebo jiný produkční plugin. Integruj se pouze úzce.
+- Nevytvářej znovu vyspělé systémy, které vlastní CMI, MythicMobs, Lands nebo
+  jiný produkční plugin. Výjimkou je výslovně schválená nativní skill platforma
+  NekaraRPG 2.0, která postupně a kontrolovaně nahradí ValhallaMMO.
 
 ## Kompatibilitní smlouvy
 
@@ -41,6 +42,9 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
 - Smoker řídí sníženou ztrátu hladu po opuštění tábora; samotný Rested hlad nezpomaluje.
 - Rested přidává nastavitelné bonusové XP ke všem ValhallaMMO skillům pro běžné
   skill akce a sdílené XP. Administrativní a obnovovací XP se nemění.
+- Po aktivaci nativních skillů musí Rested přejít na jediný Nekara Skills XP
+  adaptér. Během migrace nesmí stejnou akci násobit současně v NekaraRPG i
+  ValhallaMMO.
 - Odložené rybářské XP musí získat násobitel Rested právě jednou.
 - Bed řídí ochranu proti přirozenému spawnu nepřátel v širším radiusu tábora.
 - Skupinové škálování ovlivňuje léčení a doplňování hladu s nastaveným stropem;
@@ -95,14 +99,21 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
   WAL; starý YAML slouží jen k jednorázovému importu. Původní soubor i samostatná
   záloha zůstávají zachované. Modul při chybě selže uzavřeně.
 
-## Hranice BetonQuest a ValhallaMMO
+## Hranice BetonQuest a skill platformy
 
 - BetonQuest vlastní questy, podmínky, dialogy a příběhové odměny. NekaraRPG může
   nabídnout úzký bezpečný vstup pro existující funkci, ale nevytváří paralelní
   quest engine ani vlastní questová GUI.
-- ValhallaMMO vlastní skilly, jejich postup, statistiky a ekonomiku rozvoje.
-  NekaraRPG zachovává jeho odměny a může otevřít `/skills`, ale nekopíruje jeho
-  skill stromy ani vlastní nákup skillů.
+- NekaraRPG 2.0 bude vlastnit skilly, jejich postup, perk stromy, statistiky a
+  bezpečné aktivní schopnosti. Do dokončení migrace zůstává ValhallaMMO pouze
+  dočasným produkčním zdrojem postupu; nesmí se zapnout dvojí udělování XP ani
+  odměn.
+- Implementace je clean-room. Z ValhallaMMO, AuraSkills ani mcMMO se nepřebírá
+  zdrojový kód, konfigurace, texty, hodnoty, názvy perků nebo rozložení stromů.
+  Veřejné zdroje slouží pouze jako žánrová a integrační reference.
+- Powerlevel je odvozený průměr patnácti trénovaných dovedností. Poskytuje
+  společné perk pointy a obecné milníky; mount může být odemknutelný na Power 50,
+  zatímco příběhové podmínky a udělení nadále vlastní BetonQuest.
 - Změny Mounts statistik za economy a questové získávání nejsou aktuální rozsah.
 
 ## Pravidla NekaraAuth

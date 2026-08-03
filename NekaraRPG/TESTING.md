@@ -2,7 +2,13 @@
 
 ## Automatické kontroly
 
-Spusť ověřený release postup:
+Pro rychlé ověření zdrojů spusť:
+
+```text
+gradlew.bat clean test build
+```
+
+Před publikací spusť ověřený release postup:
 
 ```text
 scripts\build-release.cmd
@@ -19,6 +25,10 @@ verze, parsování GitHub release, důvěryhodný asset, SHA-256, identitu JARu 
 vloženou release verzi. NekaraMounts navíc testuje normalizaci offline identity,
 hranice a formát cooldownu, starý YAML round-trip, SQLite transakce, import a
 perzistenci combat okna.
+Nekara Skills testuje katalog 16 dovedností, celočíselnou XP křivku do úrovně
+100, odvozený Powerlevel, validaci perk DAG, skládání statistik, nerekurzivní
+bojové efekty, vzájemně výlučné dropy, bezpečnost aktivních schopností, XP policy,
+časovou deduplikaci a SQLite round-trip se zamítnutím zastaralé revision.
 NekaraAuth navíc ověřuje, že výměna hashe hesla zachová identitu a auditní údaje
 účtu. Campfire testuje pravidla přeskočení noci osamělým hráčem a migraci starého
 Sitting configu; resource test kontroluje zprávy a výchozí oprávnění menu.
@@ -33,7 +43,7 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 1. Nainstaluj jediný release artefakt `NekaraRPG.jar`.
 2. Spusť server a ověř vznik kořenového `plugins/NekaraRPG/config.yml` a souborů
    `auth/config.yml`, `fishing/config.yml`, `campfire/config.yml`,
-   `mining/config.yml` a `mounts/config.yml`.
+   `mining/config.yml`, `mounts/config.yml` a `skills/config.yml`.
 3. Ověř výchozí hodnotu true u `modules.fishing.enabled`,
    `modules.campfire.enabled`, `modules.mining.enabled` a `modules.mounts.enabled`.
 4. Ověř, že kořenový config neobsahuje detailní sekce modulů. Spusť
@@ -43,6 +53,23 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 7. Upgraduj kopii starého monolitického configu s několika změněnými hodnotami.
    První start je musí přenést do správných modulových souborů a odstranit staré
    detailní sekce až po úspěšném zápisu. Druhý start nesmí vlastní hodnoty přepsat.
+
+### 1aa. Vývojový náhled Nekara Skills 2.0
+
+1. Na odděleném staging serveru nastav `modules.skills.enabled: true` a spusť
+   `/nekararpg reload`. V produkci ponech modul vypnutý.
+2. Otevři `/nrpg`. Tlačítko Dovednosti musí otevřít vlastní 54slotový přehled,
+   nikoliv `/skills` z ValhallaMMO.
+3. Ověř Power 0, všech 15 přímých dovedností na úrovni 0 a bezpečný návrat do
+   hlavního menu. Kliknutí na výplň ani spodní inventář nesmí přesunout item.
+4. Ověř vznik `plugins/NekaraRPG/skills/data.db`. Reload a restart nesmí databázi
+   poškodit ani změnit revision existujícího testovacího profilu.
+5. Poškoď na kopii databáze schema version. Modul se musí uzamknout, nesmí vytvořit
+   náhradní profil a hráči ukáže pouze krátké RPG sdělení bez SQL detailů.
+6. Vypni modul během asynchronního otevírání GUI. Starý požadavek nesmí po reloadu
+   znovu otevřít obrazovku jiné generace modulu.
+7. Vypni `modules.skills.enabled`. Pokud je ValhallaMMO načtené, centrální tlačítko
+   se musí bezpečně vrátit k jeho `/skills`.
 
 ### 1a. Centrální menu a účet
 
@@ -64,15 +91,18 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
    znovu neotevře.
 10. Otevři Činnosti a ověř Rybaření, Táboření a Těžbu podle aktivních modulů.
     Z Táboření otevři Tábořiště a vyzkoušej tlačítka sednout/vstát a lehnout/vstát.
+11. Stejná tlačítka pro sezení a ležení musí být přímo na hlavní obrazovce
+    `/nrpg` a po použití hráče vrátit na stejnou obrazovku.
 
 ### 1b. Sezení, ležení a noční klid
 
-1. Ulehni přes Tábořiště bez zapáleného ohně v radiusu. Hráč musí zůstat stát a
-   dostat pouze stručnou action-bar informaci.
+1. Ulehni bez zapáleného ohně v radiusu. Spánková póza musí zůstat aktivní, ale
+   nesmí začít Rested session, léčení, ochrana hladu ani přeskočení noci.
 2. Zapal campfire nebo soul campfire, ulehni a ověř spánkovou pózu bez postele.
    Rested se musí nabíjet stejně jako při sezení.
-3. Pohni se, teleportuj, utrp poškození, zemři a odpoj se. Každý odpovídající
-   případ musí ležení bezpečně uklidit bez trvalé pózy po návratu.
+3. Zkus se pohnout: pozice musí zůstat stejná a ležení pokračovat. Otočení hlavy
+   je povolené. Přikrčení, teleport, poškození, smrt a odpojení musí ležení
+   bezpečně uklidit bez trvalé pózy po návratu.
 4. Se dvěma online hráči zůstaň ležet přes noc déle než nastavený čas. Noc se
    nesmí změnit. Druhý hráč se odpojí; pokud je stále noc a oheň hoří, jediný
    zbývající hráč může po nastaveném čekání přejít do rána.

@@ -1,5 +1,43 @@
 # Přehled změn
 
+## 2.0.0
+
+- Založeno nativní jádro Nekara Skills se 16 dovednostmi: patnáct dovedností
+  získává vlastní XP a šestnáctý Powerlevel se počítá jako zaokrouhlený průměr
+  jejich úrovní. Každá dovednost má pevný strop 100.
+- Přidána deterministická celočíselná XP křivka, neměnné profily a repository
+  hranice s verzí záznamu. První transakční SQLite adaptér používá WAL, cizí klíče
+  a optimistic revision; zastaralý souběžný zápis se celý vrátí zpět.
+- Přidán validovaný acyklický perk graf, sdílený systém statistik a katalog
+  aktivních mechanik. Power používá samostatné milníky, takže odměna mounta na
+  úrovni 50 nemusí spojovat skill jádro přímo s implementací NekaraMounts.
+- Bojové výpočty nyní mají čisté doménové jádro pro kritické zásahy, krvácení a
+  omráčení. Sekundární poškození nemůže znovu spouštět další efekty.
+- Dvojité a trojité dropy jsou vzájemně výlučný výsledek jedné odměnové cesty.
+  Aktivní schopnosti mají povinnou kontrolu odemčení, cooldownu, ochrany regionu,
+  nástroje a maximálního počtu zpracovaných bloků.
+- XP ochrana odmítá zrušené, kreativní, syntetické a automatizované události,
+  filtruje nepovolené hráčem položené zdroje, postupně tlumí opakované odměny v
+  jednom chunku a deduplikuje stejný zdrojový otisk v omezené časové paměti.
+- Atomická XP služba uplatní policy i deduplikaci před zápisem, zastropuje uložené
+  XP přesně na úrovni 100 a při souběžném zápisu bezpečně načte novou revision a
+  pokus zopakuje bez dvojí odměny.
+- První 2.0 release zpřístupňuje základ k řízenému testování. Paper XP listenery,
+  obsah všech perk stromů a živá migrace z ValhallaMMO budou následovat v dalších
+  feature verzích. Vypnutelný modul `skills` nabízí bezpečný read-only 54slotový
+  přehled a výchozím stavem zůstává vypnutý, takže stávající ValhallaMMO postup
+  nepřebírá ani nezdvojuje.
+
+## 1.10.1
+
+- Tlačítka pro sezení a ležení jsou znovu dostupná přímo na hlavní obrazovce
+  `/nrpg`; podnabídka Činnosti a Tábořiště zůstává zachovaná.
+- Hráč si může lehnout kdekoliv. Rested, táborové účinky a přeskočení noci se
+  nadále spustí pouze v radiusu zapáleného campfire nebo soul campfire.
+- Opravena drobná poziční korekce sleeping pózy, která hráče bezprostředně
+  postavila, ale ponechala běžet Campfire session. Pohyb je během ležení
+  zablokovaný, otočení zůstává možné a přikrčení hráče bezpečně zvedne.
+
 ## 1.10.0
 
 - Sezení je nově součástí modulu Campfire/Táboření; samostatný modul a jeho

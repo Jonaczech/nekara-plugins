@@ -12,6 +12,7 @@ import cz.nekara.rpg.modules.campfire.CampfireModule;
 import cz.nekara.rpg.modules.fishing.FishingModule;
 import cz.nekara.rpg.modules.mining.MiningModule;
 import cz.nekara.rpg.modules.mounts.MountsModule;
+import cz.nekara.rpg.modules.skills.SkillsModule;
 import cz.nekara.rpg.modules.sitting.SittingModule;
 import cz.nekara.rpg.sounds.SoundService;
 import cz.nekara.rpg.updater.UpdaterService;
@@ -31,6 +32,7 @@ public final class NekaraRPGPlugin extends JavaPlugin {
     private CampfireModule campfireModule;
     private MiningModule miningModule;
     private MountsModule mountsModule;
+    private SkillsModule skillsModule;
     private NekaraRPGMenu mainMenu;
 
     @Override
@@ -50,13 +52,15 @@ public final class NekaraRPGPlugin extends JavaPlugin {
         campfireModule = new CampfireModule(this, messages, sounds, sittingModule);
         miningModule = new MiningModule(this, messages, sounds, fishingModule);
         mountsModule = new MountsModule(this, messages);
+        skillsModule = new SkillsModule(this);
         modules.register(authModule);
         modules.register(fishingModule);
         modules.register(campfireModule);
         modules.register(miningModule);
         modules.register(mountsModule);
+        modules.register(skillsModule);
         mainMenu = new NekaraRPGMenu(this, messages, modules, authModule, fishingModule,
-                sittingModule, campfireModule, mountsModule);
+                sittingModule, campfireModule, mountsModule, skillsModule);
         fishingModule.registerCommand(new NekaraRPGCommand(
                 this, fishingModule, sittingModule, campfireModule, miningModule, mountsModule,
                 modules, messages, updater, mainMenu));
@@ -124,6 +128,10 @@ public final class NekaraRPGPlugin extends JavaPlugin {
 
     public MountsModule mountsModule() {
         return mountsModule;
+    }
+
+    public SkillsModule skillsModule() {
+        return skillsModule;
     }
 
     public UpdaterService updater() {

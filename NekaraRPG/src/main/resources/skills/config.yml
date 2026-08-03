@@ -1,0 +1,11 @@
+configuration-version: 1
+
+storage:
+  database-file: skills/data.db
+
+# Every directly trained skill uses the same deterministic integer curve.
+# The level cap is a system invariant fixed at 100.
+progression:
+  base-experience: 100
+  linear-growth: 35
+  quadratic-growth: 2

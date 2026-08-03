@@ -11,6 +11,26 @@ zůstávají v `PROJECT_MEMORY.md` a aktuální release stav v `HANDOFF.md`.
   ještě vyžadují živou Purpur akceptaci.
 - Modul zůstane součástí jediného `NekaraRPG.jar` a bude samostatně zapínatelný.
 
+## Nekara Skills 2.0 — aktuální priorita
+
+NekaraRPG se stává autoritativní RPG platformou se šestnácti dovednostmi,
+levelováním do 100, odvozeným Powerlevelem, původními perk stromy, statistikami,
+bojovými efekty a bezpečnými aktivními schopnostmi. Detailní fáze a blokátory
+plné aktivace jsou v `NekaraRPG/docs/SKILLS_2_0_ROADMAP.md`; architekturu a
+clean-room hranice určuje `NekaraRPG/docs/adr/0001-native-skills-platform.md`.
+
+Aktuálně je hotové čisté doménové jádro: XP křivka, Power, profily, validace perk
+grafu, statistiky, nerekurzivní bojové efekty, drop multiplier, bezpečnost aktivních
+schopností a XP deduplikace. Přibyl SQLite adaptér s optimistic revision a výchozím
+stavem vypnutý read-only 54slotový přehled. Následuje detail perk stromu, transakční
+nákup a první XP vertikála. Rozpracovaná oprava ležení z 1.10.1 zůstává zachovaná
+uvnitř 2.0 větve.
+
+ValhallaMMO zůstane na produkčním serveru až do ověřené migrace a nebude se
+odstraňovat ani paralelně odměňovat bez exportu, zálohy, rollback plánu a živé
+akceptace. Release 2.0.0 proto vydává modul `skills` vypnutý a ponechává
+ValhallaMMO jako autoritativní produkční systém.
+
 ## NekaraMounts — aktuální rozsah
 
 Cílem první verze je jeden důvěryhodný, trvalý vanilla kůň na hráče. Mount nemá
@@ -96,9 +116,10 @@ jehož stav přežije odvolání, restart i změnu chunku.
 
 ## Odložené rozšiřování
 
-Nové moduly, hráčská nastavení, questové získávání a vlastní skill či economy
-mechaniky nejsou aktuální priorita. Questy vlastní BetonQuest a skilly včetně
-jejich rozvoje ValhallaMMO. NekaraRPG tyto systémy nebude duplikovat.
+Nové moduly, hráčská nastavení a vlastní quest engine nejsou aktuální priorita.
+Questy, dialogy a příběhové udělení odměn nadále vlastní BetonQuest. Vlastní skill
+platforma je výslovně schválená priorita 2.0; economy zůstává pouze budoucím
+adaptérem pro konkrétní perk či službu, nikoliv novým ekonomickým systémem.
 
 ## Pozastavený backlog
 

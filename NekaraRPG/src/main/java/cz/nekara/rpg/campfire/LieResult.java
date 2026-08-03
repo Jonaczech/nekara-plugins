@@ -5,6 +5,5 @@ public enum LieResult {
     MODULE_DISABLED,
     LYING_DISABLED,
     ALREADY_RESTING,
-    NOT_NEAR_CAMPFIRE,
     INVALID_STATE
 }
