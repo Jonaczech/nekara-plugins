@@ -12,7 +12,7 @@ softdepend:
 commands:
   nekararpg:
     description: Manage NekaraRPG.
-    usage: /nekararpg <help|reload|status|update|sit|stand|mount|test [fishing|vein]|cancel [player]>
+    usage: /nekararpg [menu|help|reload|status|update|sit|stand|mount|test [fishing|vein]|cancel [player]]
     aliases: [nrpg, nekarafishing, nfishing]
   nekaraauth:
     description: Opens and administers NekaraAuth.
@@ -32,6 +32,9 @@ commands:
     description: Logs the current player out of NekaraAuth.
     usage: /logout
 permissions:
+  nekararpg.menu.use:
+    description: Opens the central NekaraRPG module menu.
+    default: true
   nekararpg.use:
     description: Allows the fishing minigame to start.
     default: true

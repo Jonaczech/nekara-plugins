@@ -18,6 +18,11 @@ Nejnovější vydaná verze je **NekaraRPG 1.5.1**:
 - velikost release assetu: `296565` bajtů
 - automatické ověření: 64 úspěšných testů
 
+Lokální pracovní strom připravuje nevydaného kandidáta **1.6.0** s centrálním
+GUI `/nekararpg` a změnou hesla v NekaraAuth. Dokud změny neprojdou živou Purpur
+akceptací, commitem a vydáním, výše uvedená verze 1.5.1 zůstává posledním stabilním
+releasem dostupným updateru.
+
 Verze 1.5.1 obsahuje NekaraMounts: virtuálně evidovaného vanilla koně, GUI pro
 jméno, barvu a výbavu, soulbound píšťalku, doběhnutí na místo volání, ochranu
 proti duplicitě a cizí manipulaci a atomické YAML úložiště. Smrt koně zachová
@@ -155,9 +160,11 @@ Nejdřív živě otestuj verzi 1.4.0 podle `NekaraRPG/TESTING.md` a
 - že +25 % XP vzniká právě jednou z označeného bloku,
 - že 50% řetězení a bonusový drop nejsou příliš štědré.
 
-Dalším krokem je živá akceptace kandidáta 1.5.0 podle `NekaraRPG/TESTING.md` a
-`NekaraRPG/LIVE_TESTING.md`, zejména GUI, píšťalka a pathfinding, restart, unload
-chunku, rychlé dvojí volání, smrt/cooldown, reconnect v PvP a cizí manipulace.
+Dalším krokem je živá akceptace kandidáta 1.6.0 podle `NekaraRPG/TESTING.md` a
+`NekaraRPG/LIVE_TESTING.md`: centrální menu, filtrování modulů a oprávnění a celý
+bezpečný průchod změny hesla. Současně zbývá živě ověřit Mounts GUI, píšťalku,
+pathfinding, restart, unload chunku, rychlé dvojí volání, smrt/cooldown, reconnect
+v PvP a cizí manipulace.
 
 Možná pozdější rozšíření Campfire:
 

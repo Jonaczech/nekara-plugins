@@ -18,6 +18,8 @@ výškové hranice rud, Badlands zlato a Nether rozsah. Updater testuje sémanti
 verze, parsování GitHub release, důvěryhodný asset, SHA-256, identitu JARu a
 vloženou release verzi. NekaraMounts navíc testuje normalizaci offline identity,
 hranice a formát cooldownu, atomický YAML round-trip a perzistenci combat okna.
+NekaraAuth navíc ověřuje, že výměna hashe hesla zachová identitu a auditní údaje
+účtu; resource test kontroluje zprávy a výchozí oprávnění centrálního menu.
 
 ## Ruční akceptace na Purpur 26.1.2
 
@@ -38,6 +40,22 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 7. Upgraduj kopii starého monolitického configu s několika změněnými hodnotami.
    První start je musí přenést do správných modulových souborů a odstranit staré
    detailní sekce až po úspěšném zápisu. Druhý start nesmí vlastní hodnoty přepsat.
+
+### 1a. Centrální menu a účet
+
+1. Jako běžný přihlášený hráč spusť `/nekararpg` a ověř otevření centrálního GUI.
+2. Vypínej jednotlivé moduly v `config.yml` a používej `/nekararpg reload`; vypnutá
+   dlaždice se po novém otevření nesmí zobrazit.
+3. Odeber hráči oprávnění k Sitting nebo Mounts. Příslušná dlaždice se nesmí
+   zobrazit ani být použitelná přes staré otevřené menu.
+4. Kliknutím na účet otevři NekaraAuth, klikni na změnu hesla a postupně zadej
+   současné heslo, nové heslo a stejné nové heslo znovu.
+5. Odhlas se. Staré heslo musí být odmítnuto a nové musí přihlášení povolit.
+6. Opakuj s chybným současným heslem a s neshodným potvrzením. Hash účtu se nesmí
+   změnit a chybné současné heslo se započítá do stejného lockoutu jako login.
+7. Během asynchronního ověření proveď logout nebo odpojení. Rozpracované GUI se
+   nesmí znovu otevřít a zápis změny se nesmí zahájit v neplatném autentizačním stavu.
+8. Ověř, že konzole, chat a `auth/accounts.yml` nikde neobsahují plaintext hesla.
 
 ### 2. Běžné úspěšné rybaření
 

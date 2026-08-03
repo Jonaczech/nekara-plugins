@@ -80,6 +80,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public final class AuthModule implements NekaraModule, Listener {
     public static final String ID = "auth";
+    private static final int CHANGE_PASSWORD_SLOT = 11;
     private static final int ACTION_SLOT = 13;
     private static final int LOGOUT_SLOT = 15;
 
@@ -237,6 +238,10 @@ public final class AuthModule implements NekaraModule, Listener {
             inventory.setItem(slot, filler);
         }
         if (loggedIn) {
+            inventory.setItem(CHANGE_PASSWORD_SLOT, item(Material.NAME_TAG,
+                    Component.text("Změnit heslo", NamedTextColor.GOLD),
+                    Component.text("Nejdřív ověříš současné heslo.", NamedTextColor.GRAY),
+                    Component.text("Nové heslo zadáš dvakrát.", NamedTextColor.DARK_GRAY)));
             inventory.setItem(ACTION_SLOT, playerHead(player,
                     Component.text("Účet je přihlášený", NamedTextColor.GREEN),
                     Component.text(player.getName(), NamedTextColor.GRAY)));
@@ -265,6 +270,27 @@ public final class AuthModule implements NekaraModule, Listener {
         Optional<AuthAccount> account = findAccount(player.getName());
         PromptStep step = account.isPresent() ? PromptStep.LOGIN : PromptStep.REGISTER_FIRST;
         openPasswordPrompt(player, new Prompt(step, null));
+    }
+
+    public void startPasswordChange(Player player) {
+        if (!enabled || accounts == null || storageFailure != null) {
+            messages.send(player, "auth-error");
+            return;
+        }
+        if (!isAuthenticated(player)) {
+            messages.send(player, "auth-required");
+            return;
+        }
+        if (processing.contains(player.getUniqueId()) || prompts.containsKey(player.getUniqueId())) {
+            messages.send(player, "auth-processing");
+            return;
+        }
+        if (findAccount(player.getName()).isEmpty()) {
+            messages.send(player, "auth-not-registered");
+            return;
+        }
+        messages.send(player, "auth-change-current-prompt");
+        openPasswordPrompt(player, new Prompt(PromptStep.CHANGE_CURRENT, null));
     }
 
     public void login(Player player, char[] password) {
@@ -435,6 +461,12 @@ public final class AuthModule implements NekaraModule, Listener {
         if (command.equals("/nekaraauth") || command.equals("/nauth")) {
             return;
         }
+        if (command.equals("/nekararpg") || command.equals("/nrpg")
+                || command.equals("/nekarafishing") || command.equals("/nfishing")
+                || command.equals("/nekararpg menu") || command.equals("/nrpg menu")
+                || command.equals("/nekarafishing menu") || command.equals("/nfishing menu")) {
+            return;
+        }
         boolean credentialCommand = isCredentialCommand(command);
         if (canUseFallbackCommands(event.getPlayer()) && credentialCommand) {
             return;
@@ -471,7 +503,9 @@ public final class AuthModule implements NekaraModule, Listener {
         UUID playerId = player.getUniqueId();
         if (event.getInventory().getHolder() instanceof AuthMenuHolder) {
             event.setCancelled(true);
-            if (event.getRawSlot() == ACTION_SLOT && !isAuthenticated(player)) {
+            if (event.getRawSlot() == CHANGE_PASSWORD_SLOT && isAuthenticated(player)) {
+                startPasswordChange(player);
+            } else if (event.getRawSlot() == ACTION_SLOT && !isAuthenticated(player)) {
                 startGuiAuthentication(player);
             } else if (event.getRawSlot() == LOGOUT_SLOT && isAuthenticated(player)) {
                 player.closeInventory();
@@ -516,16 +550,17 @@ public final class AuthModule implements NekaraModule, Listener {
 
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
-        if (!(event.getPlayer() instanceof Player player) || isAuthenticated(player)) {
+        if (!(event.getPlayer() instanceof Player player)) {
             return;
         }
         UUID playerId = player.getUniqueId();
+        Prompt closedPrompt = null;
         if (event.getView() instanceof AnvilView) {
             event.getInventory().clear();
-            prompts.remove(playerId);
+            closedPrompt = prompts.remove(playerId);
         }
-        if (enabled && !processing.contains(playerId)) {
-            reopenMenu(player);
+        if (closedPrompt != null && enabled && !processing.contains(playerId)) {
+            reopenRelevantMenu(player);
         }
     }
 
@@ -660,13 +695,37 @@ public final class AuthModule implements NekaraModule, Listener {
             login(player, password);
             return;
         }
+        if (prompt.step() == PromptStep.CHANGE_CURRENT) {
+            verifyCurrentPasswordForChange(player, password);
+            return;
+        }
         String validationMessage = validatePassword(password);
         if (validationMessage != null) {
             clear(password);
             messages.send(player, validationMessage, Map.of(
                     "min", config().passwordMinimumLength(),
                     "max", config().passwordMaximumLength()));
-            reopenMenu(player);
+            if (prompt.step() == PromptStep.CHANGE_NEW
+                    || prompt.step() == PromptStep.CHANGE_CONFIRM) {
+                reopenRelevantMenu(player);
+            } else {
+                reopenMenu(player);
+            }
+            return;
+        }
+        if (prompt.step() == PromptStep.CHANGE_NEW) {
+            setProcessing(player, true);
+            runAuthenticatedHashTask(player, password, () -> passwordHasher.hash(password), encoded -> {
+                if (!player.isOnline()) {
+                    return;
+                }
+                messages.send(player, "auth-change-confirm-prompt");
+                openPasswordPrompt(player, new Prompt(PromptStep.CHANGE_CONFIRM, encoded));
+            });
+            return;
+        }
+        if (prompt.step() == PromptStep.CHANGE_CONFIRM) {
+            confirmPasswordChange(player, password, prompt.pendingHash());
             return;
         }
         if (prompt.step() == PromptStep.REGISTER_FIRST) {
@@ -713,9 +772,104 @@ public final class AuthModule implements NekaraModule, Listener {
                 });
     }
 
+    private void verifyCurrentPasswordForChange(Player player, char[] password) {
+        Optional<AuthAccount> account = findAccount(player.getName());
+        if (account.isEmpty()) {
+            clear(password);
+            messages.send(player, "auth-not-registered");
+            reopenRelevantMenu(player);
+            return;
+        }
+        setProcessing(player, true);
+        runAuthenticatedHashTask(player, password,
+                () -> passwordHasher.verify(password, account.get().passwordHash()), matches -> {
+                    if (!player.isOnline()) {
+                        return;
+                    }
+                    if (!matches) {
+                        LoginThrottle.Failure failure = throttle.registerFailure(player.getName(), Instant.now());
+                        if (failure.locked()) {
+                            if (sessions != null) {
+                                sessions.invalidate(player.getName());
+                            }
+                            authenticated.remove(player.getUniqueId());
+                            player.kick(messages.component("auth-too-many-attempts", Map.of()));
+                        } else {
+                            messages.send(player, "auth-current-password-invalid",
+                                    Map.of("remaining", failure.remainingAttempts()));
+                            reopenRelevantMenu(player);
+                        }
+                        return;
+                    }
+                    throttle.registerSuccess(player.getName());
+                    messages.send(player, "auth-change-new-prompt");
+                    openPasswordPrompt(player, new Prompt(PromptStep.CHANGE_NEW, null));
+                });
+    }
+
+    private void confirmPasswordChange(Player player, char[] confirmation, String pendingHash) {
+        if (pendingHash == null || pendingHash.isBlank()) {
+            clear(confirmation);
+            messages.send(player, "auth-error");
+            reopenRelevantMenu(player);
+            return;
+        }
+        setProcessing(player, true);
+        runAuthenticatedHashTask(player, confirmation,
+                () -> passwordHasher.verify(confirmation, pendingHash), matches -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            if (!matches) {
+                messages.send(player, "auth-password-mismatch");
+                reopenRelevantMenu(player);
+                return;
+            }
+            persistPasswordChange(player, pendingHash);
+        });
+    }
+
+    private void persistPasswordChange(Player player, String pendingHash) {
+        setProcessing(player, true);
+        AccountRepository repository = accounts;
+        String username = player.getName();
+        runAuthenticatedHashTask(player, new char[0], () -> {
+            Optional<AuthAccount> current = repository.findByUsername(username);
+            if (current.isEmpty()) {
+                return PasswordChangeResult.ACCOUNT_MISSING;
+            }
+            repository.update(current.get().withPasswordHash(pendingHash));
+            return PasswordChangeResult.CHANGED;
+        }, result -> {
+            if (result == PasswordChangeResult.ACCOUNT_MISSING) {
+                messages.send(player, "auth-not-registered");
+                reopenRelevantMenu(player);
+                return;
+            }
+            if (sessions != null) {
+                sessions.invalidate(player.getName());
+            }
+            messages.send(player, "auth-password-changed");
+            reopenRelevantMenu(player);
+        });
+    }
+
     private <T> void runHashTask(Player player, char[] password,
                                  java.util.concurrent.Callable<T> operation,
                                  java.util.function.Consumer<T> completion) {
+        runHashTask(player, password, operation, completion, false);
+    }
+
+    private <T> void runAuthenticatedHashTask(Player player, char[] password,
+                                              java.util.concurrent.Callable<T> operation,
+                                              java.util.function.Consumer<T> completion) {
+        runHashTask(player, password, operation, completion, true);
+    }
+
+    private <T> void runHashTask(Player player, char[] password,
+                                 java.util.concurrent.Callable<T> operation,
+                                 java.util.function.Consumer<T> completion,
+                                 boolean expectedAuthenticated) {
         UUID playerId = player.getUniqueId();
         messages.send(player, "auth-processing");
         try {
@@ -730,7 +884,7 @@ public final class AuthModule implements NekaraModule, Listener {
                         processing.remove(playerId);
                         if (player.isOnline()) {
                             messages.send(player, "auth-error");
-                            reopenMenu(player);
+                            reopenRelevantMenu(player);
                         }
                     });
                     return;
@@ -739,7 +893,8 @@ public final class AuthModule implements NekaraModule, Listener {
                 }
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     processing.remove(playerId);
-                    if (enabled && requiresAuthentication(player)) {
+                    if (enabled && player.isOnline()
+                            && isAuthenticated(player) == expectedAuthenticated) {
                         completion.accept(result);
                     }
                 });
@@ -748,7 +903,7 @@ public final class AuthModule implements NekaraModule, Listener {
             clear(password);
             processing.remove(playerId);
             messages.send(player, "auth-busy");
-            reopenMenu(player);
+            reopenRelevantMenu(player);
         }
     }
 
@@ -859,6 +1014,23 @@ public final class AuthModule implements NekaraModule, Listener {
         }
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (enabled && player.isOnline() && requiresAuthentication(player)
+                    && !processing.contains(player.getUniqueId())
+                    && !prompts.containsKey(player.getUniqueId())) {
+                openMenu(player);
+            }
+        }, 2L);
+    }
+
+    private void reopenRelevantMenu(Player player) {
+        if (!enabled || !player.isOnline()) {
+            return;
+        }
+        if (!isAuthenticated(player)) {
+            reopenMenu(player);
+            return;
+        }
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (enabled && player.isOnline() && isAuthenticated(player)
                     && !processing.contains(player.getUniqueId())
                     && !prompts.containsKey(player.getUniqueId())) {
                 openMenu(player);
@@ -986,13 +1158,21 @@ public final class AuthModule implements NekaraModule, Listener {
     private enum PromptStep {
         LOGIN,
         REGISTER_FIRST,
-        REGISTER_CONFIRM
+        REGISTER_CONFIRM,
+        CHANGE_CURRENT,
+        CHANGE_NEW,
+        CHANGE_CONFIRM
     }
 
     private enum RegistrationResult {
         CREATED,
         ALREADY_EXISTS,
         PASSWORD_MISMATCH
+    }
+
+    private enum PasswordChangeResult {
+        CHANGED,
+        ACCOUNT_MISSING
     }
 
     private record Prompt(PromptStep step, String pendingHash) {
