@@ -130,4 +130,10 @@ public final class NekaraRPGPlugin extends JavaPlugin {
     public UpdaterService updater() {
         return updater;
     }
+
+    public void openMainMenu(org.bukkit.entity.Player player) {
+        if (mainMenu != null) {
+            mainMenu.open(player);
+        }
+    }
 }

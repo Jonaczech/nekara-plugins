@@ -23,7 +23,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class YamlMountRepository implements MountRepository {
-    private static final int SCHEMA_VERSION = 1;
+    private static final int SCHEMA_VERSION = 2;
+    private static final int MINIMUM_SCHEMA_VERSION = 1;
     static final String LEGACY_MOUNT_NAME = "Bezejmenný";
 
     private final File file;
@@ -90,6 +91,11 @@ public final class YamlMountRepository implements MountRepository {
     }
 
     @Override
+    public synchronized Map<String, Instant> combatWindows() {
+        return Map.copyOf(combatUntil);
+    }
+
+    @Override
     public synchronized void setCombatUntil(Map<String, Instant> combatWindows) throws IOException {
         Map<String, Instant> previous = new HashMap<>();
         for (Map.Entry<String, Instant> entry : combatWindows.entrySet()) {
@@ -125,15 +131,16 @@ public final class YamlMountRepository implements MountRepository {
         } catch (InvalidConfigurationException exception) {
             throw new IOException("Invalid NekaraMounts storage.", exception);
         }
-        if (yaml.getInt("schema-version", -1) != SCHEMA_VERSION) {
+        int loadedSchemaVersion = yaml.getInt("schema-version", -1);
+        if (loadedSchemaVersion < MINIMUM_SCHEMA_VERSION || loadedSchemaVersion > SCHEMA_VERSION) {
             throw new IOException("Unsupported or missing NekaraMounts storage schema version.");
         }
 
-        boolean migratedLegacyName = false;
+        boolean migrationRequired = loadedSchemaVersion < SCHEMA_VERSION;
         ConfigurationSection mounts = yaml.getConfigurationSection("mounts");
         if (mounts != null) {
             for (String ownerId : mounts.getKeys(false)) {
-                migratedLegacyName |= loadMount(yaml, ownerId);
+                migrationRequired |= loadMount(yaml, ownerId);
             }
         }
         ConfigurationSection combat = yaml.getConfigurationSection("combat");
@@ -147,7 +154,7 @@ public final class YamlMountRepository implements MountRepository {
                 }
             }
         }
-        if (migratedLegacyName) {
+        if (migrationRequired) {
             save();
         }
     }
@@ -182,6 +189,8 @@ public final class YamlMountRepository implements MountRepository {
                     Horse.Style.valueOf(required(yaml.getString(path + ".style"), "style")),
                     yaml.getItemStack(path + ".saddle"),
                     yaml.getItemStack(path + ".armor"),
+                    yaml.getItemStack(path + ".chest"),
+                    readStorage(yaml, path + ".storage"),
                     yaml.getInt(path + ".fire-ticks"),
                     yaml.getInt(path + ".freeze-ticks"),
                     yaml.getInt(path + ".remaining-air"),
@@ -199,6 +208,32 @@ public final class YamlMountRepository implements MountRepository {
         } catch (IllegalArgumentException | DateTimeParseException exception) {
             throw new IOException("Invalid NekaraMounts record '" + ownerId + "'.", exception);
         }
+    }
+
+    private List<ItemStack> readStorage(YamlConfiguration yaml, String path) {
+        List<ItemStack> storage = new ArrayList<>(java.util.Collections.nCopies(
+                MountRecord.STORAGE_SIZE, null));
+        ConfigurationSection section = yaml.getConfigurationSection(path);
+        if (section == null) {
+            return storage;
+        }
+        for (String key : section.getKeys(false)) {
+            int slot;
+            try {
+                slot = Integer.parseInt(key);
+            } catch (NumberFormatException exception) {
+                throw new IllegalArgumentException("Invalid mount storage slot '" + key + "'.", exception);
+            }
+            if (slot < 0 || slot >= MountRecord.STORAGE_SIZE) {
+                throw new IllegalArgumentException("Mount storage slot is outside the supported range: " + slot);
+            }
+            ItemStack item = yaml.getItemStack(path + "." + key);
+            if (item == null || item.isEmpty()) {
+                throw new IllegalArgumentException("Mount storage slot " + slot + " has no item.");
+            }
+            storage.set(slot, item);
+        }
+        return storage;
     }
 
     private List<PotionEffect> readPotionEffects(List<?> values) {
@@ -244,6 +279,15 @@ public final class YamlMountRepository implements MountRepository {
             yaml.set(path + ".style", mount.style().name());
             yaml.set(path + ".saddle", mount.saddle());
             yaml.set(path + ".armor", mount.armor());
+            yaml.set(path + ".chest", mount.chest());
+            yaml.set(path + ".storage", null);
+            List<ItemStack> storage = mount.storage();
+            for (int slot = 0; slot < storage.size(); slot++) {
+                ItemStack item = storage.get(slot);
+                if (item != null && !item.isEmpty()) {
+                    yaml.set(path + ".storage." + slot, item);
+                }
+            }
             yaml.set(path + ".fire-ticks", mount.fireTicks());
             yaml.set(path + ".freeze-ticks", mount.freezeTicks());
             yaml.set(path + ".remaining-air", mount.remainingAir());

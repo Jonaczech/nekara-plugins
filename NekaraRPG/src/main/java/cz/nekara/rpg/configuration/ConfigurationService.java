@@ -292,6 +292,9 @@ public final class ConfigurationService {
         String mountStorageFile = validateRelativeStoragePath(
                 config.getString("mounts.storage.file", "mounts/data.yml"),
                 "mounts.storage.file", "mounts/data.yml", warning);
+        String mountDatabaseFile = validateRelativeStoragePath(
+                config.getString("mounts.storage.database-file", "mounts/data.db"),
+                "mounts.storage.database-file", "mounts/data.db", warning);
         Set<String> mountWorlds = new HashSet<>();
         for (String world : config.getStringList("mounts.summoning.allowed-worlds")) {
             if (world != null && !world.isBlank()) {
@@ -309,18 +312,23 @@ public final class ConfigurationService {
         }
         MountConfig mounts = new MountConfig(
                 mountStorageFile,
+                mountDatabaseFile,
                 validateInt(config.getInt("mounts.death.cooldown-seconds", 60),
                         1, 2_592_000, 60, "mounts.death.cooldown-seconds", warning),
                 validateInt(config.getInt("mounts.combat.block-seconds", 15),
                         1, 600, 15, "mounts.combat.block-seconds", warning),
                 validateInt(config.getInt("mounts.summoning.cooldown-seconds", 30),
                         1, 3_600, 30, "mounts.summoning.cooldown-seconds", warning),
+                validateInt(config.getInt("mounts.summoning.active-recall-cooldown-seconds", 3),
+                        1, 60, 3, "mounts.summoning.active-recall-cooldown-seconds", warning),
                 validateInt(config.getInt("mounts.summoning.minimum-spawn-distance", 7),
                         2, 32, 7, "mounts.summoning.minimum-spawn-distance", warning),
                 validateInt(config.getInt("mounts.summoning.maximum-spawn-distance", 12),
                         3, 48, 12, "mounts.summoning.maximum-spawn-distance", warning),
                 validateDouble(config.getDouble("mounts.summoning.waiting-radius", 3.0),
                         1.0, 16.0, 3.0, "mounts.summoning.waiting-radius", warning),
+                validateDouble(config.getDouble("mounts.summoning.wandering-radius", 5.0),
+                        2.0, 16.0, 5.0, "mounts.summoning.wandering-radius", warning),
                 validateDouble(config.getDouble("mounts.summoning.pathfinding-speed", 1.35),
                         0.5, 3.0, 1.35, "mounts.summoning.pathfinding-speed", warning),
                 validateInt(config.getInt("mounts.persistence.autosave-period-ticks", 100),

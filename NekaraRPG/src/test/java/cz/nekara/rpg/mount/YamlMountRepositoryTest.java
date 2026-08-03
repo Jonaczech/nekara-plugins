@@ -30,7 +30,8 @@ class YamlMountRepositoryTest {
         MountRecord mount = new MountRecord(
                 "name:hrac", "Hrac", ownerUuid, mountId, entityUuid, "Stín",
                 17.5, 30.0, 0.225, 0.72, Horse.Color.BLACK, Horse.Style.WHITE_DOTS,
-                null, null, 40, 20, 200, List.of(), now.plusSeconds(30), null, null, now);
+                null, null, null, List.of(), 40, 20, 200, List.of(),
+                now.plusSeconds(30), null, null, now);
 
         assertTrue(repository.create(mount));
         assertFalse(repository.create(mount));
@@ -44,6 +45,7 @@ class YamlMountRepositoryTest {
         assertEquals(17.5, stored.health(), 0.0001);
         assertEquals(Horse.Color.BLACK, stored.color());
         assertEquals(Horse.Style.WHITE_DOTS, stored.style());
+        assertEquals(MountRecord.STORAGE_SIZE, stored.storage().size());
         assertEquals(now.plusSeconds(30), stored.summonAvailableAt());
         assertEquals(null, stored.activeEntityUuid());
         assertEquals(now.plusSeconds(15), reloaded.combatUntil(mount.ownerId()).orElseThrow());
@@ -57,11 +59,12 @@ class YamlMountRepositoryTest {
         MountRecord mount = new MountRecord(
                 "name:hrac", "Hrac", UUID.randomUUID(), UUID.randomUUID(), null, "Stín",
                 30.0, 30.0, 0.225, 0.72, Horse.Color.BLACK, Horse.Style.NONE,
-                null, null, 0, 0, 300, List.of(), null, null, null, now);
+                null, null, null, List.of(), 0, 0, 300, List.of(), null, null, null, now);
         assertTrue(repository.create(mount));
 
         YamlConfiguration legacy = new YamlConfiguration();
         legacy.load(storage);
+        legacy.set("schema-version", 1);
         legacy.set("mounts.name:hrac.custom-name", null);
         legacy.save(storage);
 
@@ -73,5 +76,6 @@ class YamlMountRepositoryTest {
         persisted.load(storage);
         assertEquals(YamlMountRepository.LEGACY_MOUNT_NAME,
                 persisted.getString("mounts.name:hrac.custom-name"));
+        assertEquals(2, persisted.getInt("schema-version"));
     }
 }

@@ -3,11 +3,13 @@ package cz.nekara.rpg.modules.mounts;
 import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.configuration.MountConfig;
 import cz.nekara.rpg.messages.MessageService;
+import cz.nekara.rpg.menu.GuiItems;
 import cz.nekara.rpg.modules.NekaraModule;
 import cz.nekara.rpg.mount.MountCooldown;
 import cz.nekara.rpg.mount.MountOwnerId;
 import cz.nekara.rpg.mount.MountRecord;
 import cz.nekara.rpg.mount.MountRepository;
+import cz.nekara.rpg.mount.SqliteMountRepository;
 import cz.nekara.rpg.mount.YamlMountRepository;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -65,6 +67,8 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -74,18 +78,27 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 public final class MountsModule implements NekaraModule, Listener {
     public static final String ID = "mounts";
 
+    private static final int MENU_STATUS_SLOT = 4;
     private static final int MENU_RENAME_SLOT = 10;
     private static final int MENU_COLOR_SLOT = 12;
     private static final int MENU_EQUIPMENT_SLOT = 14;
+    private static final int MENU_STORAGE_SLOT = 15;
     private static final int MENU_WHISTLE_SLOT = 16;
+    private static final int MENU_BACK_SLOT = 18;
     private static final int MENU_CALL_SLOT = 21;
     private static final int MENU_DISMISS_SLOT = 23;
     private static final int EQUIPMENT_SADDLE_SLOT = 11;
+    private static final int EQUIPMENT_CHEST_SLOT = 13;
     private static final int EQUIPMENT_ARMOR_SLOT = 15;
+    private static final int EQUIPMENT_BACK_SLOT = 22;
+    private static final int COLOR_BACK_SLOT = 22;
+    private static final int CONFIRM_YES_SLOT = 11;
+    private static final int CONFIRM_BACK_SLOT = 15;
     private static final Map<Integer, Horse.Color> COLOR_SLOTS = Map.of(
             10, Horse.Color.WHITE,
             11, Horse.Color.CREAMY,
@@ -105,6 +118,13 @@ public final class MountsModule implements NekaraModule, Listener {
     private final NamespacedKey whistleOwnerIdKey;
     private final Map<UUID, Horse> activeMounts = new HashMap<>();
     private final Map<UUID, Location> callAnchors = new HashMap<>();
+    private final Map<UUID, Location> wanderTargets = new HashMap<>();
+    private final Map<UUID, Instant> nextWanderAt = new HashMap<>();
+    private final Map<UUID, Instant> activeRecallAvailableAt = new HashMap<>();
+    private final Map<UUID, Location> approachTargets = new HashMap<>();
+    private final Map<UUID, Double> approachDistances = new HashMap<>();
+    private final Map<UUID, Instant> approachProgressAt = new HashMap<>();
+    private final Set<UUID> arrivedAtCall = new java.util.HashSet<>();
     private final Map<UUID, NamePrompt> namePrompts = new HashMap<>();
     private final Set<UUID> pendingWhistleReturns = new java.util.HashSet<>();
 
@@ -136,7 +156,7 @@ public final class MountsModule implements NekaraModule, Listener {
         }
         storageFailure = null;
         try {
-            repository = new YamlMountRepository(new File(plugin.getDataFolder(), config().storageFile()));
+            repository = openRepository();
         } catch (IOException | RuntimeException exception) {
             repository = null;
             storageFailure = exception.getMessage();
@@ -169,7 +189,15 @@ public final class MountsModule implements NekaraModule, Listener {
         }
         activeMounts.clear();
         callAnchors.clear();
+        wanderTargets.clear();
+        nextWanderAt.clear();
+        activeRecallAvailableAt.clear();
+        approachTargets.clear();
+        approachDistances.clear();
+        approachProgressAt.clear();
+        arrivedAtCall.clear();
         namePrompts.clear();
+        closeRepository();
         repository = null;
         enabled = false;
     }
@@ -181,6 +209,79 @@ public final class MountsModule implements NekaraModule, Listener {
 
     public int activeCount() {
         return (int) activeMounts.values().stream().filter(Entity::isValid).count();
+    }
+
+    public int registeredCount() {
+        if (repository == null) {
+            return 0;
+        }
+        try {
+            return repository.findAll().size();
+        } catch (RuntimeException exception) {
+            failStorage(exception);
+            return 0;
+        }
+    }
+
+    public String storageStatus() {
+        if (storageFailure != null) {
+            return "uzamčeno";
+        }
+        return repository instanceof SqliteMountRepository ? "SQLite" : "nedostupné";
+    }
+
+    public Optional<MountOverview> overview(Player player) {
+        Optional<MountRecord> found = findOwned(player);
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+        MountRecord record = found.get();
+        Horse active = resolveActive(record);
+        Instant now = Instant.now();
+        String state = record.isDead() && MountCooldown.isActive(record.reviveAt(), now)
+                ? "Odpočívá po pádu"
+                : active != null ? "Nablízku"
+                : record.activeEntityUuid() != null ? "Vzdálený"
+                : "V bezpečí";
+        long cooldown = record.isDead() && MountCooldown.isActive(record.reviveAt(), now)
+                ? MountCooldown.remainingSeconds(record.reviveAt(), now)
+                : MountCooldown.remainingSeconds(record.summonAvailableAt(), now);
+        return Optional.of(new MountOverview(record.customName(), state, record.health(), record.maxHealth(),
+                occupiedStorageSlots(record), record.hasChest(), cooldown));
+    }
+
+    private MountRepository openRepository() throws IOException {
+        File databaseFile = new File(plugin.getDataFolder(), config().databaseFile());
+        SqliteMountRepository sqlite = new SqliteMountRepository(databaseFile);
+        try {
+            File legacyFile = new File(plugin.getDataFolder(), config().storageFile());
+            if (!sqlite.isLegacyMigrationComplete() && sqlite.isEmpty() && legacyFile.isFile()) {
+                YamlMountRepository legacy = new YamlMountRepository(legacyFile);
+                File backup = new File(legacyFile.getParentFile(), legacyFile.getName() + ".pre-sqlite.bak");
+                if (!backup.exists()) {
+                    Files.copy(legacyFile.toPath(), backup.toPath(), StandardCopyOption.COPY_ATTRIBUTES);
+                }
+                sqlite.importAll(legacy.findAll(), legacy.combatWindows());
+                plugin.getLogger().info("Migrated " + legacy.findAll().size()
+                        + " NekaraMounts records from YAML to SQLite; legacy data and backup were retained.");
+            } else if (!sqlite.isLegacyMigrationComplete()) {
+                sqlite.markLegacyMigrationComplete();
+            }
+            return sqlite;
+        } catch (IOException | RuntimeException exception) {
+            sqlite.close();
+            throw exception;
+        }
+    }
+
+    private void closeRepository() {
+        if (repository instanceof AutoCloseable closeable) {
+            try {
+                closeable.close();
+            } catch (Exception exception) {
+                plugin.getLogger().severe("Could not close NekaraMounts storage: " + exception.getMessage());
+            }
+        }
     }
 
     public void openMenu(Player player) {
@@ -204,17 +305,26 @@ public final class MountsModule implements NekaraModule, Listener {
         inventory.setItem(MENU_COLOR_SLOT, colorItem(record.color(), "Změnit barvu"));
         inventory.setItem(MENU_EQUIPMENT_SLOT, item(Material.SADDLE,
                 Component.text("Sedlo a brnění", NamedTextColor.YELLOW),
-                Component.text("Bezpečná správa uloženého vybavení", NamedTextColor.GRAY)));
+                Component.text("Sedlo, truhla a koňské brnění", NamedTextColor.GRAY)));
+        inventory.setItem(MENU_STORAGE_SLOT, item(Material.CHEST,
+                Component.text("Brašny", NamedTextColor.GOLD),
+                Component.text(record.hasChest()
+                        ? "Uloženo " + occupiedStorageSlots(record) + "/" + MountRecord.STORAGE_SIZE
+                        : "Nejdřív koni nasaď truhlu", NamedTextColor.GRAY),
+                Component.text(record.hasChest()
+                        ? "Otevře velký inventář tvého koně"
+                        : "Truhlu vložíš do správy výbavy", NamedTextColor.DARK_GRAY)));
         boolean hasWhistle = hasAnyWhistle(player);
         inventory.setItem(MENU_WHISTLE_SLOT, item(config().whistleMaterial(),
                 Component.text(hasWhistle ? "Odebrat píšťalku" : "Obnovit píšťalku", NamedTextColor.AQUA),
                 Component.text(hasWhistle
-                        ? "Bezpečně odstraní všechny tvoje kopie"
-                        : "Vydá jedinou píšťalku svázanou s koněm", NamedTextColor.GRAY)));
+                        ? "Odloží ji, dokud si ji znovu nevyžádáš"
+                        : "Přivolá píšťalku spojenou s tvým koněm", NamedTextColor.GRAY)));
         inventory.setItem(MENU_CALL_SLOT, item(Material.LIME_DYE,
                 Component.text("Přivolat", NamedTextColor.GREEN)));
         inventory.setItem(MENU_DISMISS_SLOT, item(Material.GRAY_DYE,
                 Component.text("Odvolat", NamedTextColor.GRAY)));
+        inventory.setItem(MENU_BACK_SLOT, backItem("Zpět do NekaraRPG"));
         player.openInventory(inventory);
     }
 
@@ -242,23 +352,15 @@ public final class MountsModule implements NekaraModule, Listener {
         }
         MountRecord record = found.get();
         Instant now = Instant.now();
-        if (MountCooldown.isActive(record.summonAvailableAt(), now)) {
-            messages.send(player, "mount-summon-cooldown", Map.of("time", MountCooldown.format(
-                    MountCooldown.remainingSeconds(record.summonAvailableAt(), now))));
-            return;
-        }
-        if (record.isDead() && MountCooldown.isActive(record.reviveAt(), now)) {
-            messages.send(player, "mount-dead", Map.of("time", MountCooldown.format(
-                    MountCooldown.remainingSeconds(record.reviveAt(), now))));
-            return;
-        }
-        if (record.isDead()) {
-            record = record.revived(now);
-        }
         Location callLocation = player.getLocation().clone();
-        Instant nextCall = now.plusSeconds(config().summonCooldownSeconds());
 
         if (record.activeEntityUuid() != null) {
+            Instant activeRecallAt = activeRecallAvailableAt.get(record.mountId());
+            if (MountCooldown.isActive(activeRecallAt, now)) {
+                actionBar(player, "mount-recall-cooldown", Map.of("time", MountCooldown.format(
+                        MountCooldown.remainingSeconds(activeRecallAt, now))));
+                return;
+            }
             Horse active = resolveActive(record);
             if (active == null) {
                 messages.send(player, "mount-active-unloaded");
@@ -272,18 +374,32 @@ public final class MountsModule implements NekaraModule, Listener {
                 messages.send(player, "mount-being-ridden");
                 return;
             }
-            MountRecord updated = capture(record, active, active.getUniqueId(), now)
-                    .withSummonAvailableAt(nextCall, now);
+            MountRecord updated = capture(record, active, active.getUniqueId(), now);
             try {
                 repository.update(updated);
                 directToCall(updated.mountId(), active, callLocation);
-                messages.send(player, "mount-called", Map.of("name", updated.customName()));
+                actionBar(player, "mount-called", Map.of("name", updated.customName()));
             } catch (IOException exception) {
                 failStorage(exception);
                 messages.send(player, "mount-storage-error");
             }
             return;
         }
+
+        if (MountCooldown.isActive(record.summonAvailableAt(), now)) {
+            actionBar(player, "mount-summon-cooldown", Map.of("time", MountCooldown.format(
+                    MountCooldown.remainingSeconds(record.summonAvailableAt(), now))));
+            return;
+        }
+        if (record.isDead() && MountCooldown.isActive(record.reviveAt(), now)) {
+            actionBar(player, "mount-dead", Map.of("time", MountCooldown.format(
+                    MountCooldown.remainingSeconds(record.reviveAt(), now))));
+            return;
+        }
+        if (record.isDead()) {
+            record = record.revived(now);
+        }
+        Instant nextCall = now.plusSeconds(config().summonCooldownSeconds());
 
         Optional<Location> spawnLocation = findSafeSpawn(player);
         if (spawnLocation.isEmpty()) {
@@ -299,7 +415,7 @@ public final class MountsModule implements NekaraModule, Listener {
             repository.update(activeRecord);
             activeMounts.put(record.mountId(), horse);
             directToCall(record.mountId(), horse, callLocation);
-            messages.send(player, "mount-called", Map.of("name", activeRecord.customName()));
+            actionBar(player, "mount-called", Map.of("name", activeRecord.customName()));
         } catch (IOException exception) {
             horse.remove();
             failStorage(exception);
@@ -327,7 +443,7 @@ public final class MountsModule implements NekaraModule, Listener {
             return;
         }
         if (storeAndRemove(horse, "player dismissal")) {
-            messages.send(player, "mount-dismissed", Map.of("name", record.customName()));
+            actionBar(player, "mount-dismissed", Map.of("name", record.customName()));
         } else {
             messages.send(player, "mount-storage-error");
         }
@@ -400,16 +516,21 @@ public final class MountsModule implements NekaraModule, Listener {
         messages.send(player, removed > 0 ? "mount-whistle-removed" : "mount-whistle-not-found");
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onWhistle(PlayerInteractEvent event) {
-        if (event.getHand() == null || event.getItem() == null
-                || event.getAction() == Action.PHYSICAL || !isWhistle(event.getItem())) {
+        if (event.getHand() != EquipmentSlot.HAND || event.getItem() == null
+                || (event.getAction() != Action.RIGHT_CLICK_AIR
+                && event.getAction() != Action.RIGHT_CLICK_BLOCK)
+                || !isWhistle(event.getItem())) {
             return;
         }
         event.setCancelled(true);
         Player player = event.getPlayer();
+        if (plugin.authModule().isEnabled() && !plugin.authModule().isAuthenticated(player)) {
+            return;
+        }
         if (!isOwnedWhistle(player, event.getItem())) {
-            messages.send(player, "mount-whistle-foreign");
+            actionBar(player, "mount-whistle-foreign", Map.of());
             return;
         }
         call(player);
@@ -421,7 +542,7 @@ public final class MountsModule implements NekaraModule, Listener {
             return;
         }
         event.setCancelled(true);
-        messages.send(event.getPlayer(), "mount-whistle-bound");
+        actionBar(event.getPlayer(), "mount-whistle-bound", Map.of());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -459,7 +580,7 @@ public final class MountsModule implements NekaraModule, Listener {
         if (record != null && hasBoundWhistle(player, record)) {
             event.setCancelled(true);
             event.getItem().remove();
-            messages.send(player, "mount-whistle-duplicate-removed");
+            actionBar(player, "mount-whistle-duplicate-removed", Map.of());
         }
     }
 
@@ -500,7 +621,7 @@ public final class MountsModule implements NekaraModule, Listener {
         Player attacker = resolvePlayerDamager(event.getDamager());
         if (attacker != null && !isOwner(attacker, horse)) {
             event.setCancelled(true);
-            messages.send(attacker, "mount-foreign");
+            actionBar(attacker, "mount-foreign", Map.of());
         }
     }
 
@@ -512,12 +633,12 @@ public final class MountsModule implements NekaraModule, Listener {
         Player player = event.getPlayer();
         if (!isOwner(player, horse)) {
             event.setCancelled(true);
-            messages.send(player, "mount-foreign");
+            actionBar(player, "mount-foreign", Map.of());
             return;
         }
         if (player.getInventory().getItem(event.getHand()).getType() == Material.NAME_TAG) {
             event.setCancelled(true);
-            messages.send(player, "mount-use-gui-name");
+            actionBar(player, "mount-use-gui-name", Map.of());
             return;
         }
         if (player.isSneaking()) {
@@ -536,10 +657,10 @@ public final class MountsModule implements NekaraModule, Listener {
         }
         if (!isOwner(player, horse)) {
             event.setCancelled(true);
-            messages.send(player, "mount-foreign");
+            actionBar(player, "mount-foreign", Map.of());
             return;
         }
-        callAnchors.remove(readMountId(horse));
+        clearGuidance(readMountId(horse));
         horse.setAware(true);
         horse.getPathfinder().stopPathfinding();
     }
@@ -555,8 +676,10 @@ public final class MountsModule implements NekaraModule, Listener {
                 UUID mountId = readMountId(horse);
                 if (mountId != null) {
                     callAnchors.put(mountId, horse.getLocation().clone());
+                    arrivedAtCall.add(mountId);
+                    scheduleNextWander(mountId, Instant.now());
                     horse.getPathfinder().stopPathfinding();
-                    horse.setAware(false);
+                    horse.setAware(true);
                 }
             }
         });
@@ -570,7 +693,7 @@ public final class MountsModule implements NekaraModule, Listener {
         }
         event.setCancelled(true);
         if (!isOwner(player, horse)) {
-            messages.send(player, "mount-foreign");
+            actionBar(player, "mount-foreign", Map.of());
         } else {
             Bukkit.getScheduler().runTask(plugin, () -> openEquipmentMenu(player));
         }
@@ -583,12 +706,16 @@ public final class MountsModule implements NekaraModule, Listener {
         }
         if (shouldBlockWhistleClick(event)) {
             event.setCancelled(true);
-            messages.send(player, "mount-whistle-bound");
+            actionBar(player, "mount-whistle-bound", Map.of());
             return;
         }
         InventoryHolder holder = event.getView().getTopInventory().getHolder();
-        if (holder instanceof MountMenuHolder) {
+        if (holder instanceof MountMenuHolder mountMenu) {
             event.setCancelled(true);
+            if (!ownsHolder(player, mountMenu.ownerId)) {
+                player.closeInventory();
+                return;
+            }
             handleMenuClick(player, event.getRawSlot());
             return;
         }
@@ -597,9 +724,27 @@ public final class MountsModule implements NekaraModule, Listener {
             handleColorClick(player, colorMenu, event.getRawSlot());
             return;
         }
-        if (holder instanceof EquipmentMenuHolder) {
+        if (holder instanceof EquipmentMenuHolder equipmentMenu) {
             event.setCancelled(true);
+            if (!ownsHolder(player, equipmentMenu.ownerId)) {
+                player.closeInventory();
+                return;
+            }
             handleEquipmentClick(player, event.getRawSlot());
+            return;
+        }
+        if (holder instanceof StorageMenuHolder storageMenu) {
+            if (!ownsHolder(player, storageMenu.ownerId)) {
+                event.setCancelled(true);
+                player.closeInventory();
+                return;
+            }
+            handleStorageClick(player, event);
+            return;
+        }
+        if (holder instanceof ConfirmationMenuHolder confirmation) {
+            event.setCancelled(true);
+            handleConfirmationClick(player, confirmation, event.getRawSlot());
             return;
         }
         NamePrompt prompt = namePrompts.get(player.getUniqueId());
@@ -613,7 +758,7 @@ public final class MountsModule implements NekaraModule, Listener {
         Horse horse = managedHorse(event.getView().getTopInventory());
         if (horse != null) {
             event.setCancelled(true);
-            messages.send(player, "mount-use-gui-equipment");
+            actionBar(player, "mount-use-gui-equipment", Map.of());
         }
     }
 
@@ -624,13 +769,16 @@ public final class MountsModule implements NekaraModule, Listener {
                 || event.getRawSlots().stream().anyMatch(slot -> slot < event.getView().getTopInventory().getSize()))) {
             event.setCancelled(true);
             if (event.getWhoClicked() instanceof Player player) {
-                messages.send(player, "mount-whistle-bound");
+                actionBar(player, "mount-whistle-bound", Map.of());
             }
             return;
         }
         InventoryHolder holder = event.getView().getTopInventory().getHolder();
         if (holder instanceof MountMenuHolder || holder instanceof ColorMenuHolder
-                || holder instanceof EquipmentMenuHolder || managedHorse(event.getView().getTopInventory()) != null) {
+                || holder instanceof EquipmentMenuHolder || holder instanceof ConfirmationMenuHolder
+                || (holder instanceof StorageMenuHolder
+                && event.getRawSlots().stream().anyMatch(slot -> slot < event.getView().getTopInventory().getSize()))
+                || managedHorse(event.getView().getTopInventory()) != null) {
             event.setCancelled(true);
         }
     }
@@ -653,8 +801,19 @@ public final class MountsModule implements NekaraModule, Listener {
         if (!(event.getPlayer() instanceof Player player) || !(event.getView() instanceof AnvilView)) {
             return;
         }
-        if (namePrompts.remove(player.getUniqueId()) != null) {
+        NamePrompt closedPrompt = namePrompts.remove(player.getUniqueId());
+        if (closedPrompt != null) {
             event.getInventory().clear();
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (!player.isOnline() || !enabled) {
+                    return;
+                }
+                if (closedPrompt.mode == NamePromptMode.CREATE) {
+                    openColorMenu(player, true);
+                } else {
+                    openMenu(player);
+                }
+            });
         }
     }
 
@@ -670,7 +829,7 @@ public final class MountsModule implements NekaraModule, Listener {
             return;
         }
         UUID mountId = readMountId(horse);
-        Optional<MountRecord> found = mountId == null ? Optional.empty() : repository.findByMountId(mountId);
+        Optional<MountRecord> found = findByMountId(mountId);
         if (found.isEmpty()) {
             return;
         }
@@ -680,7 +839,7 @@ public final class MountsModule implements NekaraModule, Listener {
         try {
             repository.update(current);
             activeMounts.remove(current.mountId());
-            callAnchors.remove(current.mountId());
+            clearGuidance(current.mountId());
         } catch (IOException exception) {
             failStorage(exception);
         }
@@ -720,21 +879,29 @@ public final class MountsModule implements NekaraModule, Listener {
         if (isInCombat(ownerId, Instant.now())) {
             return;
         }
-        repository.findByOwnerId(ownerId).map(this::resolveActive)
+        findByOwnerId(ownerId).map(this::resolveActive)
                 .ifPresent(horse -> storeAndRemove(horse, "owner disconnect"));
     }
 
     private void handleMenuClick(Player player, int slot) {
-        player.closeInventory();
         switch (slot) {
             case MENU_RENAME_SLOT -> findOwned(player).ifPresent(record ->
                     openNamePrompt(player, new NamePrompt(NamePromptMode.RENAME, record.color()),
                             record.customName()));
             case MENU_COLOR_SLOT -> openColorMenu(player, false);
             case MENU_EQUIPMENT_SLOT -> openEquipmentMenu(player);
-            case MENU_WHISTLE_SLOT -> toggleWhistle(player);
+            case MENU_STORAGE_SLOT -> openStorageOrEquipment(player);
+            case MENU_WHISTLE_SLOT -> {
+                if (hasAnyWhistle(player)) {
+                    openConfirmation(player, ConfirmationAction.REMOVE_WHISTLE);
+                } else {
+                    toggleWhistle(player);
+                    openMenu(player);
+                }
+            }
             case MENU_CALL_SLOT -> call(player);
-            case MENU_DISMISS_SLOT -> dismiss(player);
+            case MENU_DISMISS_SLOT -> openConfirmation(player, ConfirmationAction.DISMISS);
+            case MENU_BACK_SLOT -> plugin.openMainMenu(player);
             default -> {
             }
         }
@@ -750,15 +917,22 @@ public final class MountsModule implements NekaraModule, Listener {
         for (Map.Entry<Integer, Horse.Color> entry : COLOR_SLOTS.entrySet()) {
             inventory.setItem(entry.getKey(), colorItem(entry.getValue(), colorDisplay(entry.getValue())));
         }
+        inventory.setItem(COLOR_BACK_SLOT, backItem(creation ? "Zpět" : "Zpět ke koni"));
         player.openInventory(inventory);
     }
 
     private void handleColorClick(Player player, ColorMenuHolder holder, int slot) {
         Horse.Color color = COLOR_SLOTS.get(slot);
         if (color == null) {
+            if (slot == COLOR_BACK_SLOT) {
+                if (holder.creation) {
+                    plugin.openMainMenu(player);
+                } else {
+                    openMenu(player);
+                }
+            }
             return;
         }
-        player.closeInventory();
         if (holder.creation) {
             openNamePrompt(player, new NamePrompt(NamePromptMode.CREATE, color), "");
             return;
@@ -774,7 +948,7 @@ public final class MountsModule implements NekaraModule, Listener {
             if (active != null) {
                 active.setColor(color);
             }
-            messages.send(player, "mount-color-updated");
+            openMenu(player);
         }
     }
 
@@ -797,7 +971,7 @@ public final class MountsModule implements NekaraModule, Listener {
     private void submitName(Player player, NamePrompt prompt, AnvilView anvilView) {
         String name = sanitizeName(anvilView.getRenameText());
         if (!isValidName(name)) {
-            messages.send(player, "mount-name-invalid", Map.of(
+            actionBar(player, "mount-name-invalid", Map.of(
                     "min", config().minimumNameLength(), "max", config().maximumNameLength()));
             return;
         }
@@ -819,7 +993,8 @@ public final class MountsModule implements NekaraModule, Listener {
             if (active != null) {
                 applyBoldName(active, name);
             }
-            messages.send(player, "mount-name-updated", Map.of("name", name));
+            actionBar(player, "mount-name-updated", Map.of("name", name));
+            openMenu(player);
         }
     }
 
@@ -828,7 +1003,7 @@ public final class MountsModule implements NekaraModule, Listener {
             return;
         }
         String ownerId = MountOwnerId.fromPlayerName(player.getName());
-        if (repository.findByOwnerId(ownerId).isPresent()) {
+        if (findByOwnerId(ownerId).isPresent()) {
             messages.send(player, "mount-already-owned");
             return;
         }
@@ -837,7 +1012,8 @@ public final class MountsModule implements NekaraModule, Listener {
                 ownerId, player.getName(), player.getUniqueId(), UUID.randomUUID(), null,
                 name, config().defaultMaxHealth(), config().defaultMaxHealth(),
                 config().defaultMovementSpeed(), config().defaultJumpStrength(), color,
-                Horse.Style.NONE, null, null, 0, 0, 300, List.of(),
+                Horse.Style.NONE, new ItemStack(Material.SADDLE), null, null, List.of(),
+                0, 0, 300, List.of(),
                 null, null, null, now);
         try {
             if (!repository.create(record)) {
@@ -848,7 +1024,8 @@ public final class MountsModule implements NekaraModule, Listener {
             if (!giveWhistle(player, record)) {
                 messages.send(player, "mount-whistle-no-space");
             }
-            messages.send(player, "mount-created", Map.of("name", name));
+            actionBar(player, "mount-created", Map.of("name", name));
+            openMenu(player);
         } catch (IOException exception) {
             failStorage(exception);
             messages.send(player, "mount-storage-error");
@@ -870,13 +1047,20 @@ public final class MountsModule implements NekaraModule, Listener {
                 Component.text("Výbava — " + record.customName(), NamedTextColor.DARK_AQUA));
         holder.inventory = inventory;
         fill(inventory);
-        inventory.setItem(EQUIPMENT_SADDLE_SLOT, equipmentDisplay(record.saddle(), true));
-        inventory.setItem(EQUIPMENT_ARMOR_SLOT, equipmentDisplay(record.armor(), false));
+        inventory.setItem(EQUIPMENT_SADDLE_SLOT, equipmentDisplay(record.saddle(), EquipmentKind.SADDLE));
+        inventory.setItem(EQUIPMENT_CHEST_SLOT, equipmentDisplay(record.chest(), EquipmentKind.CHEST));
+        inventory.setItem(EQUIPMENT_ARMOR_SLOT, equipmentDisplay(record.armor(), EquipmentKind.ARMOR));
+        inventory.setItem(EQUIPMENT_BACK_SLOT, backItem("Zpět ke koni"));
         player.openInventory(inventory);
     }
 
     private void handleEquipmentClick(Player player, int slot) {
-        if (slot != EQUIPMENT_SADDLE_SLOT && slot != EQUIPMENT_ARMOR_SLOT) {
+        if (slot == EQUIPMENT_BACK_SLOT) {
+            openMenu(player);
+            return;
+        }
+        if (slot != EQUIPMENT_SADDLE_SLOT && slot != EQUIPMENT_CHEST_SLOT
+                && slot != EQUIPMENT_ARMOR_SLOT) {
             return;
         }
         Optional<MountRecord> found = findOwned(player);
@@ -888,18 +1072,30 @@ public final class MountsModule implements NekaraModule, Listener {
         MountRecord record = found.get();
         ItemStack cursor = emptyToNull(player.getItemOnCursor());
         if (cursor != null && cursor.getAmount() != 1) {
-            messages.send(player, "mount-equipment-single-item");
+            actionBar(player, "mount-equipment-single-item", Map.of());
             return;
         }
-        boolean saddleSlot = slot == EQUIPMENT_SADDLE_SLOT;
-        if (cursor != null && !isValidEquipment(cursor, saddleSlot)) {
-            messages.send(player, saddleSlot ? "mount-equipment-saddle-only" : "mount-equipment-armor-only");
+        EquipmentKind kind = slot == EQUIPMENT_SADDLE_SLOT ? EquipmentKind.SADDLE
+                : slot == EQUIPMENT_CHEST_SLOT ? EquipmentKind.CHEST : EquipmentKind.ARMOR;
+        if (cursor != null && !isValidEquipment(cursor, kind)) {
+            actionBar(player, kind == EquipmentKind.SADDLE ? "mount-equipment-saddle-only"
+                    : kind == EquipmentKind.CHEST ? "mount-equipment-chest-only"
+                    : "mount-equipment-armor-only", Map.of());
             return;
         }
-        ItemStack previous = saddleSlot ? record.saddle() : record.armor();
-        ItemStack newSaddle = saddleSlot ? cursor : record.saddle();
-        ItemStack newArmor = saddleSlot ? record.armor() : cursor;
-        MountRecord updated = record.withEquipment(newSaddle, newArmor, Instant.now());
+        ItemStack previous = kind == EquipmentKind.SADDLE ? record.saddle()
+                : kind == EquipmentKind.CHEST ? record.chest() : record.armor();
+        if (sameItem(previous, cursor)) {
+            return;
+        }
+        if (kind == EquipmentKind.CHEST && cursor == null && hasStoredItems(record)) {
+            actionBar(player, "mount-storage-not-empty", Map.of());
+            return;
+        }
+        ItemStack newSaddle = kind == EquipmentKind.SADDLE ? cursor : record.saddle();
+        ItemStack newArmor = kind == EquipmentKind.ARMOR ? cursor : record.armor();
+        ItemStack newChest = kind == EquipmentKind.CHEST ? cursor : record.chest();
+        MountRecord updated = record.withEquipment(newSaddle, newArmor, newChest, Instant.now());
         if (!updateRecord(updated)) {
             return;
         }
@@ -910,8 +1106,148 @@ public final class MountsModule implements NekaraModule, Listener {
             active.getInventory().setArmor(updated.armor());
         }
         player.getOpenInventory().setItem(slot,
-                equipmentDisplay(saddleSlot ? updated.saddle() : updated.armor(), saddleSlot));
-        messages.send(player, "mount-equipment-updated");
+                equipmentDisplay(kind == EquipmentKind.SADDLE ? updated.saddle()
+                        : kind == EquipmentKind.CHEST ? updated.chest() : updated.armor(), kind));
+    }
+
+    private void openStorageOrEquipment(Player player) {
+        Optional<MountRecord> found = findOwned(player);
+        if (found.isEmpty()) {
+            actionBar(player, "mount-not-owned", Map.of());
+            return;
+        }
+        if (!found.get().hasChest()) {
+            openEquipmentMenu(player);
+            return;
+        }
+        openStorage(player, found.get());
+    }
+
+    private void openStorage(Player player, MountRecord record) {
+        StorageMenuHolder holder = new StorageMenuHolder(record.ownerId());
+        Inventory inventory = Bukkit.createInventory(holder, MountRecord.STORAGE_SIZE,
+                Component.text("Brašny — " + record.customName(), NamedTextColor.DARK_AQUA));
+        holder.inventory = inventory;
+        List<ItemStack> storage = record.storage();
+        for (int slot = 0; slot < storage.size(); slot++) {
+            inventory.setItem(slot, storage.get(slot));
+        }
+        player.openInventory(inventory);
+    }
+
+    private void handleStorageClick(Player player, InventoryClickEvent event) {
+        int topSize = event.getView().getTopInventory().getSize();
+        if (event.getRawSlot() < 0) {
+            event.setCancelled(true);
+            return;
+        }
+        if (event.getRawSlot() >= topSize) {
+            if (event.isShiftClick() || event.getAction() == InventoryAction.COLLECT_TO_CURSOR
+                    || event.getHotbarButton() >= 0) {
+                event.setCancelled(true);
+            }
+            return;
+        }
+        event.setCancelled(true);
+        Optional<MountRecord> found = findOwned(player);
+        if (found.isEmpty() || !found.get().hasChest()) {
+            player.closeInventory();
+            actionBar(player, "mount-storage-closed", Map.of());
+            return;
+        }
+        ItemStack current = emptyToNull(event.getCurrentItem());
+        ItemStack cursor = emptyToNull(event.getCursor());
+        if (isWhistle(current) || isWhistle(cursor)) {
+            actionBar(player, "mount-whistle-bound", Map.of());
+            return;
+        }
+
+        StorageChange change = event.isRightClick()
+                ? rightClickStorage(current, cursor)
+                : event.isLeftClick() ? new StorageChange(cursor, current) : null;
+        if (change == null || sameItem(current, change.slotItem()) && sameItem(cursor, change.cursorItem())) {
+            return;
+        }
+        List<ItemStack> updatedStorage = new ArrayList<>(found.get().storage());
+        updatedStorage.set(event.getRawSlot(), change.slotItem());
+        MountRecord updated = found.get().withStorage(updatedStorage, Instant.now());
+        if (!updateRecord(updated)) {
+            return;
+        }
+        event.getView().setItem(event.getRawSlot(), change.slotItem());
+        player.setItemOnCursor(change.cursorItem() == null
+                ? new ItemStack(Material.AIR) : change.cursorItem());
+    }
+
+    private StorageChange rightClickStorage(ItemStack current, ItemStack cursor) {
+        if (cursor == null && current != null) {
+            int takenAmount = (current.getAmount() + 1) / 2;
+            ItemStack taken = current.clone();
+            taken.setAmount(takenAmount);
+            ItemStack remaining = current.clone();
+            remaining.setAmount(current.getAmount() - takenAmount);
+            return new StorageChange(remaining.getAmount() == 0 ? null : remaining, taken);
+        }
+        if (cursor != null && current == null) {
+            ItemStack placed = cursor.clone();
+            placed.setAmount(1);
+            ItemStack remaining = cursor.clone();
+            remaining.setAmount(cursor.getAmount() - 1);
+            return new StorageChange(placed, remaining.getAmount() == 0 ? null : remaining);
+        }
+        if (cursor != null && current != null && current.isSimilar(cursor)
+                && current.getAmount() < current.getMaxStackSize()) {
+            ItemStack increased = current.clone();
+            increased.setAmount(current.getAmount() + 1);
+            ItemStack remaining = cursor.clone();
+            remaining.setAmount(cursor.getAmount() - 1);
+            return new StorageChange(increased, remaining.getAmount() == 0 ? null : remaining);
+        }
+        return null;
+    }
+
+    private void openConfirmation(Player player, ConfirmationAction action) {
+        ConfirmationMenuHolder holder = new ConfirmationMenuHolder(action);
+        Inventory inventory = Bukkit.createInventory(holder, 27,
+                Component.text(action == ConfirmationAction.DISMISS
+                        ? "Odvolat koně?" : "Odebrat píšťalku?", NamedTextColor.DARK_RED));
+        holder.inventory = inventory;
+        fill(inventory);
+        MountOverview overview = overview(player).orElseThrow();
+        inventory.setItem(MENU_STATUS_SLOT, GuiItems.info("Stav společníka",
+                Component.text(overview.state(), NamedTextColor.GRAY),
+                Component.text("Zdraví " + oneDecimal(overview.health()) + "/"
+                        + oneDecimal(overview.maxHealth()), NamedTextColor.DARK_GRAY),
+                Component.text(overview.hasChest()
+                        ? "Brašny " + overview.occupiedStorageSlots() + "/54" : "Bez brašen",
+                        NamedTextColor.DARK_GRAY),
+                Component.text(overview.cooldownSeconds() > 0
+                        ? "Připraven za " + MountCooldown.format(overview.cooldownSeconds())
+                        : "Píšťalka je připravená", NamedTextColor.DARK_GRAY)));
+        inventory.setItem(CONFIRM_YES_SLOT, item(Material.LIME_DYE,
+                Component.text("Ano", NamedTextColor.GREEN),
+                Component.text(action == ConfirmationAction.DISMISS
+                        ? "Kůň se vrátí do bezpečí" : "Píšťalku můžeš později obnovit",
+                        NamedTextColor.GRAY)));
+        inventory.setItem(CONFIRM_BACK_SLOT, backItem("Ještě ne"));
+        player.openInventory(inventory);
+    }
+
+    private void handleConfirmationClick(Player player, ConfirmationMenuHolder holder, int slot) {
+        if (slot == CONFIRM_BACK_SLOT) {
+            openMenu(player);
+            return;
+        }
+        if (slot != CONFIRM_YES_SLOT) {
+            return;
+        }
+        if (holder.action == ConfirmationAction.DISMISS) {
+            player.closeInventory();
+            dismiss(player);
+        } else {
+            toggleWhistle(player);
+            openMenu(player);
+        }
     }
 
     private void toggleWhistle(Player player) {
@@ -923,11 +1259,11 @@ public final class MountsModule implements NekaraModule, Listener {
         MountRecord record = found.get();
         if (hasAnyWhistle(player)) {
             removeAllWhistles(player);
-            messages.send(player, "mount-whistle-removed");
+            actionBar(player, "mount-whistle-removed", Map.of());
             return;
         }
         if (giveWhistle(player, record)) {
-            messages.send(player, "mount-whistle-restored");
+            actionBar(player, "mount-whistle-restored", Map.of());
         } else {
             messages.send(player, "mount-whistle-no-space");
         }
@@ -948,8 +1284,8 @@ public final class MountsModule implements NekaraModule, Listener {
         meta.displayName(Component.text("Píšťalka — " + record.customName(), NamedTextColor.GOLD)
                 .decorate(TextDecoration.BOLD));
         meta.lore(List.of(
-                Component.text("Pravým kliknutím přivoláš svého koně.", NamedTextColor.GRAY),
-                Component.text("Cooldown: " + config().summonCooldownSeconds() + " sekund", NamedTextColor.DARK_GRAY)));
+                Component.text("Pravým kliknutím zavoláš svého koně.", NamedTextColor.GRAY),
+                Component.text("Je-li nablízku, vyrazí k tvému novému místu.", NamedTextColor.DARK_GRAY)));
         meta.setCustomModelData(config().whistleCustomModelData());
         meta.getPersistentDataContainer().set(whistleKey, PersistentDataType.BYTE, (byte) 1);
         meta.getPersistentDataContainer().set(whistleMountIdKey, PersistentDataType.STRING,
@@ -1079,7 +1415,14 @@ public final class MountsModule implements NekaraModule, Listener {
         }
         String ownerId = MountOwnerId.fromPlayerName(player.getName());
         Instant now = Instant.now();
-        Optional<Instant> combatUntil = repository.combatUntil(ownerId);
+        Optional<Instant> combatUntil;
+        try {
+            combatUntil = repository.combatUntil(ownerId);
+        } catch (RuntimeException exception) {
+            failStorage(exception);
+            messages.send(player, "mount-storage-error");
+            return false;
+        }
         if (combatUntil.isPresent() && MountCooldown.isActive(combatUntil.get(), now)) {
             messages.send(player, "mount-combat-blocked", Map.of("time", MountCooldown.format(
                     MountCooldown.remainingSeconds(combatUntil.get(), now))));
@@ -1089,8 +1432,31 @@ public final class MountsModule implements NekaraModule, Listener {
     }
 
     private Optional<MountRecord> findOwned(Player player) {
-        return repository == null ? Optional.empty() : repository.findByOwnerId(
-                MountOwnerId.fromPlayerName(player.getName()));
+        return findByOwnerId(MountOwnerId.fromPlayerName(player.getName()));
+    }
+
+    private Optional<MountRecord> findByOwnerId(String ownerId) {
+        if (repository == null) {
+            return Optional.empty();
+        }
+        try {
+            return repository.findByOwnerId(ownerId);
+        } catch (RuntimeException exception) {
+            failStorage(exception);
+            return Optional.empty();
+        }
+    }
+
+    private Optional<MountRecord> findByMountId(UUID mountId) {
+        if (repository == null || mountId == null) {
+            return Optional.empty();
+        }
+        try {
+            return repository.findByMountId(mountId);
+        } catch (RuntimeException exception) {
+            failStorage(exception);
+            return Optional.empty();
+        }
     }
 
     private MountConfig config() {
@@ -1134,7 +1500,8 @@ public final class MountsModule implements NekaraModule, Listener {
         return new MountRecord(base.ownerId(), base.ownerName(), base.lastKnownOwnerUuid(), base.mountId(),
                 activeEntityUuid, base.customName(), health, maxHealth.getBaseValue(),
                 movementSpeed.getBaseValue(), horse.getJumpStrength(), horse.getColor(), horse.getStyle(),
-                horse.getInventory().getSaddle(), horse.getInventory().getArmor(), horse.getFireTicks(),
+                horse.getInventory().getSaddle(), horse.getInventory().getArmor(), base.chest(), base.storage(),
+                horse.getFireTicks(),
                 horse.getFreezeTicks(), horse.getRemainingAir(), List.copyOf(horse.getActivePotionEffects()),
                 base.summonAvailableAt(), base.diedAt(), base.reviveAt(), now);
     }
@@ -1152,7 +1519,8 @@ public final class MountsModule implements NekaraModule, Listener {
         horse.setDomestication(horse.getMaxDomestication());
         horse.setPersistent(true);
         horse.setAware(true);
-        horse.getInventory().setSaddle(record.saddle());
+        horse.getInventory().setSaddle(record.saddle() == null
+                ? new ItemStack(Material.SADDLE) : record.saddle());
         horse.getInventory().setArmor(record.armor());
         horse.setHealth(Math.max(0.01, Math.min(record.health(), record.maxHealth())));
         horse.setFireTicks(Math.max(0, record.fireTicks()));
@@ -1242,7 +1610,7 @@ public final class MountsModule implements NekaraModule, Listener {
 
     private void reconcile(Horse horse) {
         UUID mountId = readMountId(horse);
-        Optional<MountRecord> found = mountId == null ? Optional.empty() : repository.findByMountId(mountId);
+        Optional<MountRecord> found = findByMountId(mountId);
         if (found.isEmpty()) {
             horse.remove();
             return;
@@ -1263,9 +1631,14 @@ public final class MountsModule implements NekaraModule, Listener {
             activeMounts.put(mountId, horse);
         }
         applyBoldName(horse, record.customName());
+        if (horse.getInventory().getSaddle() == null) {
+            horse.getInventory().setSaddle(new ItemStack(Material.SADDLE));
+        }
         if (horse.getPassengers().isEmpty()) {
             callAnchors.put(mountId, horse.getLocation().clone());
-            horse.setAware(false);
+            arrivedAtCall.add(mountId);
+            scheduleNextWander(mountId, Instant.now());
+            horse.setAware(true);
         }
         saveActive(horse);
     }
@@ -1275,7 +1648,7 @@ public final class MountsModule implements NekaraModule, Listener {
             return false;
         }
         UUID mountId = readMountId(horse);
-        Optional<MountRecord> found = mountId == null ? Optional.empty() : repository.findByMountId(mountId);
+        Optional<MountRecord> found = findByMountId(mountId);
         if (found.isEmpty()) {
             return false;
         }
@@ -1283,7 +1656,7 @@ public final class MountsModule implements NekaraModule, Listener {
         try {
             repository.update(dormant);
             activeMounts.remove(dormant.mountId());
-            callAnchors.remove(dormant.mountId());
+            clearGuidance(dormant.mountId());
             horse.eject();
             horse.remove();
             return true;
@@ -1310,7 +1683,7 @@ public final class MountsModule implements NekaraModule, Listener {
             return;
         }
         UUID mountId = readMountId(horse);
-        Optional<MountRecord> found = mountId == null ? Optional.empty() : repository.findByMountId(mountId);
+        Optional<MountRecord> found = findByMountId(mountId);
         if (found.isEmpty()) {
             return;
         }
@@ -1327,36 +1700,143 @@ public final class MountsModule implements NekaraModule, Listener {
 
     private void directToCall(UUID mountId, Horse horse, Location callLocation) {
         callAnchors.put(mountId, callLocation.clone());
+        approachTargets.put(mountId, callLocation.clone());
+        approachDistances.put(mountId, horse.getLocation().distanceSquared(callLocation));
+        approachProgressAt.put(mountId, Instant.now());
+        arrivedAtCall.remove(mountId);
+        wanderTargets.remove(mountId);
+        nextWanderAt.remove(mountId);
+        activeRecallAvailableAt.put(mountId,
+                Instant.now().plusSeconds(config().activeRecallCooldownSeconds()));
         horse.setAware(true);
         horse.getPathfinder().moveTo(callLocation, config().pathfindingSpeed());
     }
 
+    private boolean ownsHolder(Player player, String ownerId) {
+        return MountOwnerId.fromPlayerName(player.getName()).equals(ownerId);
+    }
+
     private void guideActiveMounts() {
-        double waitingRadiusSquared = config().waitingRadius() * config().waitingRadius();
+        Instant now = Instant.now();
+        double arrivalRadiusSquared = config().waitingRadius() * config().waitingRadius();
+        double wanderingRadiusSquared = config().wanderingRadius() * config().wanderingRadius();
         for (Map.Entry<UUID, Location> entry : new ArrayList<>(callAnchors.entrySet())) {
-            Horse horse = activeMounts.get(entry.getKey());
+            UUID mountId = entry.getKey();
+            Horse horse = activeMounts.get(mountId);
             if (horse == null || !horse.isValid() || horse.isDead()) {
-                callAnchors.remove(entry.getKey());
+                clearGuidance(mountId);
                 continue;
             }
             if (!horse.getPassengers().isEmpty()) {
                 horse.setAware(true);
-                callAnchors.remove(entry.getKey());
+                clearGuidance(mountId);
                 continue;
             }
             Location anchor = entry.getValue();
             if (!horse.getWorld().equals(anchor.getWorld())) {
-                callAnchors.remove(entry.getKey());
+                clearGuidance(mountId);
                 continue;
             }
-            if (horse.getLocation().distanceSquared(anchor) <= waitingRadiusSquared) {
-                horse.getPathfinder().stopPathfinding();
-                horse.setAware(false);
-            } else {
-                horse.setAware(true);
+
+            double distanceFromAnchor = horse.getLocation().distanceSquared(anchor);
+            if (!arrivedAtCall.contains(mountId)) {
+                if (distanceFromAnchor <= arrivalRadiusSquared) {
+                    arrivedAtCall.add(mountId);
+                    horse.getPathfinder().stopPathfinding();
+                    scheduleNextWander(mountId, now);
+                } else {
+                    horse.setAware(true);
+                    double previousDistance = approachDistances.getOrDefault(mountId, distanceFromAnchor);
+                    if (distanceFromAnchor + 0.25 < previousDistance) {
+                        approachDistances.put(mountId, distanceFromAnchor);
+                        approachProgressAt.put(mountId, now);
+                    } else if (!now.isBefore(approachProgressAt.getOrDefault(mountId, now)
+                            .plusSeconds(6L))) {
+                        approachTargets.put(mountId, findWanderTarget(anchor).orElse(anchor));
+                        approachDistances.put(mountId, distanceFromAnchor);
+                        approachProgressAt.put(mountId, now);
+                    }
+                    horse.getPathfinder().moveTo(approachTargets.getOrDefault(mountId, anchor),
+                            config().pathfindingSpeed());
+                }
+                continue;
+            }
+
+            horse.setAware(true);
+            if (distanceFromAnchor > wanderingRadiusSquared) {
+                wanderTargets.remove(mountId);
                 horse.getPathfinder().moveTo(anchor, config().pathfindingSpeed());
+                continue;
+            }
+
+            Location target = wanderTargets.get(mountId);
+            if (target != null) {
+                if (!horse.getWorld().equals(target.getWorld())
+                        || horse.getLocation().distanceSquared(target) <= 1.5
+                        || !now.isBefore(nextWanderAt.getOrDefault(mountId, now))) {
+                    horse.getPathfinder().stopPathfinding();
+                    wanderTargets.remove(mountId);
+                    scheduleNextWander(mountId, now);
+                }
+                continue;
+            }
+            if (now.isBefore(nextWanderAt.getOrDefault(mountId, now))) {
+                continue;
+            }
+            Optional<Location> nextTarget = findWanderTarget(anchor);
+            if (nextTarget.isPresent()) {
+                wanderTargets.put(mountId, nextTarget.get());
+                nextWanderAt.put(mountId, now.plusSeconds(8L));
+                horse.getPathfinder().moveTo(nextTarget.get(), Math.max(0.6, config().pathfindingSpeed() * 0.65));
+            } else {
+                horse.getPathfinder().stopPathfinding();
+                scheduleNextWander(mountId, now);
             }
         }
+    }
+
+    private Optional<Location> findWanderTarget(Location anchor) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        for (int attempt = 0; attempt < 12; attempt++) {
+            double angle = random.nextDouble(Math.PI * 2.0);
+            double radius = random.nextDouble(1.5, config().wanderingRadius());
+            double x = Math.cos(angle) * radius;
+            double z = Math.sin(angle) * radius;
+            for (int y : new int[]{0, 1, -1, 2, -2}) {
+                Location candidate = anchor.clone().add(x, y, z);
+                candidate.setX(candidate.getBlockX() + 0.5);
+                candidate.setZ(candidate.getBlockZ() + 0.5);
+                if (isSafe(candidate)) {
+                    return Optional.of(candidate);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    private void scheduleNextWander(UUID mountId, Instant now) {
+        nextWanderAt.put(mountId, now.plusSeconds(ThreadLocalRandom.current().nextLong(3L, 9L)));
+    }
+
+    private void clearWandering(UUID mountId) {
+        if (mountId == null) {
+            return;
+        }
+        arrivedAtCall.remove(mountId);
+        wanderTargets.remove(mountId);
+        nextWanderAt.remove(mountId);
+        approachTargets.remove(mountId);
+        approachDistances.remove(mountId);
+        approachProgressAt.remove(mountId);
+    }
+
+    private void clearGuidance(UUID mountId) {
+        if (mountId == null) {
+            return;
+        }
+        callAnchors.remove(mountId);
+        clearWandering(mountId);
+        activeRecallAvailableAt.remove(mountId);
     }
 
     private boolean updateRecord(MountRecord record) {
@@ -1385,8 +1865,13 @@ public final class MountsModule implements NekaraModule, Listener {
     }
 
     private boolean isInCombat(String ownerId, Instant now) {
-        return repository.combatUntil(ownerId)
-                .map(until -> MountCooldown.isActive(until, now)).orElse(false);
+        try {
+            return repository.combatUntil(ownerId)
+                    .map(until -> MountCooldown.isActive(until, now)).orElse(false);
+        } catch (RuntimeException exception) {
+            failStorage(exception);
+            return true;
+        }
     }
 
     private Player resolvePlayerDamager(Entity damager) {
@@ -1400,7 +1885,7 @@ public final class MountsModule implements NekaraModule, Listener {
         return null;
     }
 
-    private ItemStack equipmentDisplay(ItemStack stored, boolean saddle) {
+    private ItemStack equipmentDisplay(ItemStack stored, EquipmentKind kind) {
         if (stored != null) {
             ItemStack display = stored.clone();
             ItemMeta meta = display.getItemMeta();
@@ -1411,15 +1896,18 @@ public final class MountsModule implements NekaraModule, Listener {
             return display;
         }
         return item(Material.LIGHT_GRAY_STAINED_GLASS_PANE,
-                Component.text(saddle ? "Prázdný slot sedla" : "Prázdný slot brnění", NamedTextColor.GRAY),
+                Component.text(kind == EquipmentKind.SADDLE ? "Prázdný slot sedla"
+                        : kind == EquipmentKind.CHEST ? "Prázdný slot truhly"
+                        : "Prázdný slot brnění", NamedTextColor.GRAY),
                 Component.text("Vlož jeden vhodný předmět na kurzoru.", NamedTextColor.DARK_GRAY));
     }
 
-    private boolean isValidEquipment(ItemStack item, boolean saddle) {
-        if (saddle) {
-            return item.getType() == Material.SADDLE;
-        }
-        return item.getType().name().endsWith("_HORSE_ARMOR");
+    private boolean isValidEquipment(ItemStack item, EquipmentKind kind) {
+        return switch (kind) {
+            case SADDLE -> item.getType() == Material.SADDLE;
+            case CHEST -> item.getType() == Material.CHEST;
+            case ARMOR -> item.getType().name().endsWith("_HORSE_ARMOR");
+        };
     }
 
     private ItemStack emptyToNull(ItemStack item) {
@@ -1452,22 +1940,39 @@ public final class MountsModule implements NekaraModule, Listener {
         };
     }
 
+    private String oneDecimal(double value) {
+        return String.format(Locale.ROOT, "%.1f", value);
+    }
+
     private ItemStack item(Material material, Component name, Component... lore) {
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        meta.displayName(name);
-        if (lore.length > 0) {
-            meta.lore(List.of(lore));
+        return GuiItems.item(material, name, lore);
+    }
+
+    private ItemStack backItem(String label) {
+        return GuiItems.back(label);
+    }
+
+    private int occupiedStorageSlots(MountRecord record) {
+        return (int) record.storage().stream().filter(java.util.Objects::nonNull).count();
+    }
+
+    private boolean hasStoredItems(MountRecord record) {
+        return record.storage().stream().anyMatch(java.util.Objects::nonNull);
+    }
+
+    private boolean sameItem(ItemStack first, ItemStack second) {
+        if (first == null || first.isEmpty()) {
+            return second == null || second.isEmpty();
         }
-        item.setItemMeta(meta);
-        return item;
+        return second != null && !second.isEmpty() && first.equals(second);
+    }
+
+    private void actionBar(Player player, String key, Map<String, ?> placeholders) {
+        player.sendActionBar(messages.component(key, placeholders));
     }
 
     private void fill(Inventory inventory) {
-        ItemStack filler = item(Material.BLACK_STAINED_GLASS_PANE, Component.text(" "));
-        for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, filler);
-        }
+        GuiItems.fill(inventory);
     }
 
     private String sanitizeName(String input) {
@@ -1487,7 +1992,8 @@ public final class MountsModule implements NekaraModule, Listener {
         for (Player player : Bukkit.getOnlinePlayers()) {
             InventoryHolder holder = player.getOpenInventory().getTopInventory().getHolder();
             if (holder instanceof MountMenuHolder || holder instanceof ColorMenuHolder
-                    || holder instanceof EquipmentMenuHolder
+                    || holder instanceof EquipmentMenuHolder || holder instanceof StorageMenuHolder
+                    || holder instanceof ConfirmationMenuHolder
                     || namePrompts.containsKey(player.getUniqueId())) {
                 player.getOpenInventory().getTopInventory().clear();
                 player.closeInventory();
@@ -1511,6 +2017,35 @@ public final class MountsModule implements NekaraModule, Listener {
     private enum NamePromptMode {
         CREATE,
         RENAME
+    }
+
+    private enum EquipmentKind {
+        SADDLE,
+        CHEST,
+        ARMOR
+    }
+
+    private enum ConfirmationAction {
+        DISMISS,
+        REMOVE_WHISTLE
+    }
+
+    public record MountOverview(
+            String name,
+            String state,
+            double health,
+            double maxHealth,
+            int occupiedStorageSlots,
+            boolean hasChest,
+            long cooldownSeconds
+    ) {
+    }
+
+    private record StorageChange(ItemStack slotItem, ItemStack cursorItem) {
+        private StorageChange {
+            slotItem = slotItem == null || slotItem.isEmpty() ? null : slotItem.clone();
+            cursorItem = cursorItem == null || cursorItem.isEmpty() ? null : cursorItem.clone();
+        }
     }
 
     private record NamePrompt(NamePromptMode mode, Horse.Color color) {
@@ -1550,6 +2085,34 @@ public final class MountsModule implements NekaraModule, Listener {
 
         private EquipmentMenuHolder(String ownerId) {
             this.ownerId = ownerId;
+        }
+
+        @Override
+        public Inventory getInventory() {
+            return inventory;
+        }
+    }
+
+    private static final class StorageMenuHolder implements InventoryHolder {
+        private final String ownerId;
+        private Inventory inventory;
+
+        private StorageMenuHolder(String ownerId) {
+            this.ownerId = ownerId;
+        }
+
+        @Override
+        public Inventory getInventory() {
+            return inventory;
+        }
+    }
+
+    private static final class ConfirmationMenuHolder implements InventoryHolder {
+        private final ConfirmationAction action;
+        private Inventory inventory;
+
+        private ConfirmationMenuHolder(ConfirmationAction action) {
+            this.action = action;
         }
 
         @Override

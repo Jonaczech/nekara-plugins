@@ -44,7 +44,7 @@ Aktuální moduly:
 | `sitting` | produkční | Sezení řízené příkazem a nastavitelná detekce externích sedadel. |
 | `campfire` | produkční | Léčení, ochrana hladu, Rested bonus, skupinové škálování a roleplay v action baru u zapáleného ohně. |
 | `mining` | testovací | Aktivity NekaraMining, aktuálně prostorová výzva Echo Vein s nativními ValhallaMMO odměnami. |
-| `mounts` | testovací | Jeden trvalý vanilla kůň na hráče s bezpečným odvoláním, cooldownem po smrti a ochranou proti duplikaci. |
+| `mounts` | testovací | Jeden trvalý vanilla kůň na hráče s píšťalkou, brašnami a ochranou proti duplikaci. |
 
 Campfire přijímá sedadla NekaraRPG i nakonfigurovaná externí vehicle sedadla.
 Interní Sitting proto může být vypnutý, pokud sezení poskytuje jiný plugin.
@@ -58,7 +58,14 @@ Hráč otevře hlavní nabídku příkazem `/nekararpg` nebo `/nekararpg menu`. 
 zobrazuje jen moduly, které jsou právě zapnuté v `config.yml` a ke kterým má hráč
 oprávnění. Umožňuje otevřít účet a NekaraMounts, sednout si nebo vstát a zobrazuje
 stav rybaření, odpočinku a těžby. Původní příkazy zůstávají dostupné jako fallback
-a pro administraci. Přístup k nabídce řídí oprávnění `nekararpg.menu.use`.
+a pro administraci. Pokud je načtený ValhallaMMO, menu nabízí také přímý vstup do
+jeho nabídky dovedností přes `/skills`. Přístup k nabídce řídí oprávnění
+`nekararpg.menu.use`.
+
+Ikona osobního přehledu spojuje stav účtu, Rested, právě probíhající činnost a
+koně bez vypisování technických zpráv do chatu. Hráči s administrátorským
+oprávněním pro status mají také diagnostické GUI se stavem modulů, integrací,
+updateru, paměti a úložiště Mounts.
 
 ## NekaraMounts
 
@@ -68,16 +75,21 @@ virtuální záznam jednoho koně a hráč dostane svázanou píšťalku. Admini
 stejný průchod otevřít online hráči přes `/nekararpg mount grant <hráč>`.
 
 Pravé kliknutí píšťalkou nebo `mount call` vytvoří odvolaného koně 7-12 bloků od
-hráče a pošle ho na přesné místo písknutí. Tam se zastaví a bez jezdce se od něj
-nevzdaluje. Aktivní kůň se pouze přesměruje, nikdy nevznikne druhá entita; stav v
-nenačteném chunku se odmítne kopírovat. Přivolání má výchozí cooldown 30 sekund.
+hráče a pošle ho na místo písknutí. Po doběhnutí se přirozeně prochází ve výchozím
+okruhu pěti bloků. Další písknutí už aktivního koně přesměruje k nové pozici hráče
+s krátkou třísekundovou ochranou proti spamu; nikdy nevznikne druhá entita. Stav v
+nenačteném chunku se odmítne kopírovat. Nové vyvolání odvolaného koně má výchozí
+cooldown 30 sekund.
 `dismiss` uloží celý stav před odstraněním entity, stejně jako bezpečný unload,
 reload a vypnutí modulu.
 
-Vlastní patnáctisekundové PvP okno se ukládá do `mounts/data.yml`, takže reconnect
+Vlastní patnáctisekundové PvP okno se ukládá do `mounts/data.db`, takže reconnect
 blokaci neobejde. Smrt zachová vybavení uvnitř záznamu a výchozím stavem spustí
 minutový cooldown. Odvolání neléčí ani nemaže oheň, zamrznutí či potion efekty.
-Přejmenování, barva, sedlo, brnění a obnova píšťalky jsou v management GUI.
+Nový kůň dostane sedlo. Přejmenování, barva, sedlo, brnění, truhla a obnova
+píšťalky jsou v management GUI. Nasazená obyčejná truhla zpřístupní pouze přes
+toto GUI trvalé brašny o 54 slotech; plnou truhlu nelze z koně sundat. Každá změna
+brašen se nejprve atomicky uloží a při chybě se v inventáři neprovede.
 Píšťalka je svázaná s hráčem: nelze ji zahodit, uložit do cizího inventáře ani
 sebrat jiným hráčem. `/nekararpg mount whistle <restore|remove>` odstraní všechny
 hráčovy nalezené kopie nebo vydá právě jednu novou.
@@ -85,6 +97,11 @@ Jméno aktivní entity je vždy tučné. Smrt nic nedropuje a uložená výbava 
 po death cooldownu. Povolené světy, prostor, pathfinding, autosave, recall a oba
 cooldowny se nastavují v `mounts/config.yml`. První verze nemá přímou Lands API
 integraci; omezení regionů lze vynutit kontextovým oprávněním nebo seznamem světů.
+
+Mounts používá transakční SQLite s WAL. Při prvním startu databáze se existující
+`mounts/data.yml` jednorázově importuje, ponechá na místě a zkopíruje do
+`mounts/data.yml.pre-sqlite.bak`. Selhání migrace nebo zápisu modul uzamkne a
+nepokračuje operací, která by mohla duplikovat koně, výbavu nebo obsah brašen.
 
 ## NekaraAuth
 

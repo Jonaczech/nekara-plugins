@@ -17,7 +17,8 @@ Echo Vein testuje hody šance, XP bonus, vážený výběr dropu, vanilla-kompat
 výškové hranice rud, Badlands zlato a Nether rozsah. Updater testuje sémantické
 verze, parsování GitHub release, důvěryhodný asset, SHA-256, identitu JARu a
 vloženou release verzi. NekaraMounts navíc testuje normalizaci offline identity,
-hranice a formát cooldownu, atomický YAML round-trip a perzistenci combat okna.
+hranice a formát cooldownu, starý YAML round-trip, SQLite transakce, import a
+perzistenci combat okna.
 NekaraAuth navíc ověřuje, že výměna hashe hesla zachová identitu a auditní údaje
 účtu; resource test kontroluje zprávy a výchozí oprávnění centrálního menu.
 
@@ -118,9 +119,11 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 1. Spusť `/nekararpg mount`, vyber barvu a platné jméno. Musí vzniknout virtuální
    záznam a svázaná píšťalka; druhé vytvoření musí být odmítnuto.
 2. Pravým kliknutím píšťalkou přivolej koně. Musí se objevit 7-12 bloků daleko,
-   doběhnout na místo písknutí a tam čekat. Jméno nad entitou musí být tučné.
-3. Použij píšťalku dvakrát rychle. Druhé použití musí oznámit 30sekundový cooldown
-   a na serveru smí existovat právě jedna entita se stejným mount ID.
+   doběhnout na místo písknutí a poté přirozeně putovat v okruhu pěti bloků.
+   Jméno nad entitou musí být tučné a nový kůň musí mít sedlo.
+3. Změň polohu a znovu pískni. Aktivní kůň musí vyrazit k novému místu; rychlé
+   opakování zastaví třísekundová ochrana proti spamu. Po odvolání platí pro nové
+   vytvoření 30 sekund a na serveru je vždy právě jedna entita stejného mount ID.
 4. Zkus píšťalku zahodit, shift-clicknout do truhly, vložit do Ender Chest a sebrat
    druhým hráčem. Vše musí být odmítnuto. `mount whistle remove` ji odebere a
    `mount whistle restore` vydá právě jednu; při plném inventáři nic nesmí spadnout.
@@ -128,16 +131,32 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
    maximální zdraví, rychlost, skok, barvu, styl, sedlo a brnění.
 6. Nech aktivnímu koni unloadnout chunk a vrať se. Starý záznam entity nesmí vydat
    vybavení ani vytvořit kopii; odvolaný mount se musí dát bezpečně přivolat.
-7. Přes GUI změň jméno, barvu, sedlo a brnění. Nech cizího hráče zkusit nasednout,
-   otevřít inventář, přejmenovat a měnit výbavu. Vše musí být bezpečně odmítnuto.
-8. Způsob PvP zásah mezi dvěma hráči. `create`, `grant`, `call` i `dismiss` musí být
+7. Přes GUI změň jméno, barvu, sedlo a brnění. Kliknutí na prázdný slot výbavy
+   nesmí nic uložit ani ohlásit. Ověř návratová tlačítka, potvrzení odvolání a
+   odebrání píšťalky a to, že kliknutí na výplň GUI menu nezavře.
+8. Nasaď obyčejnou truhlu, otevři 54slotové brašny přes GUI koně a naplň několik
+   krajních slotů různými stacky a itemy s metadaty. Odvolej, zabij koně, reloaduj
+   a restartuj server; obsah musí zůstat beze změny. Plnou truhlu nelze sundat,
+   píšťalku vložit ani shift-clickem obejít kontrolovaný přesun.
+9. Nech cizího hráče zkusit nasednout, otevřít inventář, přejmenovat, měnit výbavu
+   a brašny. Vše musí být bezpečně odmítnuto.
+10. Způsob PvP zásah mezi dvěma hráči. `create`, `grant`, `call` i `dismiss` musí být
    15 sekund blokované. Odpoj a připoj hráče; zbývající blokace musí pokračovat.
-9. Zabij mounta a ověř minutový cooldown i návrat stejné výbavy. Opakuj se smrtí
+11. Zabij mounta a ověř minutový cooldown i návrat stejné výbavy. Opakuj se smrtí
    hráče: píšťalka nesmí dropnout a po respawnu se musí vrátit do inventáře.
-10. Vypni `modules.mounts.enabled` a reloaduj. Aktivní entita zmizí až po úspěšném
-   uložení, `mounts/data.yml` zůstane a ostatní modulové configy se nezmění.
-11. Znepřístupni kopii storage pouze na stagingu. Operace musí selhat uzavřeně,
+12. Vypni `modules.mounts.enabled` a reloaduj. Aktivní entita zmizí až po úspěšném
+   uložení, `mounts/data.db` zůstane a ostatní modulové configy se nezmění.
+13. Znepřístupni kopii storage pouze na stagingu. Operace musí selhat uzavřeně,
     aktivní entita se nesmí smazat a konzole musí ohlásit uzamčení modulu.
+14. Otevři centrální `/nrpg`, zkus prázdná místa a informační dlaždice a ověř, že
+    menu zůstane otevřené bez informačního spamu v chatu. S ValhallaMMO musí
+    tlačítko dovedností otevřít stejné GUI jako `/skills`.
+15. Před prvním startem nové verze ponech pouze platné `mounts/data.yml`. Ověř
+    vznik `mounts/data.db` a `data.yml.pre-sqlite.bak`, shodu koní i combat oken a
+    to, že další restart import neopakuje. Po migraci otestuj brašny přes restart.
+16. V osobním přehledu porovnej účet, Rested, rybaření, Echo Vein a stav koně se
+    skutečností. Jako operátor otevři diagnostiku a ověř moduly, integrace, počty
+    koní, SQLite, updater a návrat do hlavního menu.
 
 ### 4. Neúspěšná minihra
 

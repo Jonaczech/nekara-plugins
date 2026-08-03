@@ -26,7 +26,8 @@ class ModuleConfigurationStoreTest {
         configuration.set("death.cooldown-seconds", 86_400);
 
         assertTrue(ModuleConfigurationStore.migrateMountsPreReleaseDefaults(configuration));
-        assertEquals(2, configuration.getInt("configuration-version"));
+        assertEquals(3, configuration.getInt("configuration-version"));
+        assertEquals("mounts/data.db", configuration.getString("storage.database-file"));
         assertEquals(60, configuration.getInt("death.cooldown-seconds"));
         assertFalse(ModuleConfigurationStore.migrateMountsPreReleaseDefaults(configuration));
     }
@@ -37,7 +38,20 @@ class ModuleConfigurationStoreTest {
         configuration.set("death.cooldown-seconds", 300);
 
         assertTrue(ModuleConfigurationStore.migrateMountsPreReleaseDefaults(configuration));
-        assertEquals(2, configuration.getInt("configuration-version"));
+        assertEquals(3, configuration.getInt("configuration-version"));
         assertEquals(300, configuration.getInt("death.cooldown-seconds"));
+    }
+
+    @Test
+    void versionTwoMountConfigurationGainsSqlitePathWithoutChangingCustomValues() {
+        YamlConfiguration configuration = new YamlConfiguration();
+        configuration.set("configuration-version", 2);
+        configuration.set("storage.file", "custom/legacy.yml");
+
+        assertTrue(ModuleConfigurationStore.migrateMountsPreReleaseDefaults(configuration));
+        assertEquals(3, configuration.getInt("configuration-version"));
+        assertEquals("custom/legacy.yml", configuration.getString("storage.file"));
+        assertEquals("mounts/data.db", configuration.getString("storage.database-file"));
+        assertFalse(ModuleConfigurationStore.migrateMountsPreReleaseDefaults(configuration));
     }
 }

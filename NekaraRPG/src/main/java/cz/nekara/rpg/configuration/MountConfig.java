@@ -6,12 +6,15 @@ import java.util.Set;
 
 public record MountConfig(
         String storageFile,
+        String databaseFile,
         long deathCooldownSeconds,
         long combatTagSeconds,
         long summonCooldownSeconds,
+        long activeRecallCooldownSeconds,
         int minimumSpawnDistance,
         int maximumSpawnDistance,
         double waitingRadius,
+        double wanderingRadius,
         double pathfindingSpeed,
         long autosavePeriodTicks,
         boolean recallOnQuit,

@@ -9,6 +9,7 @@ import cz.nekara.rpg.auth.PasswordHasher;
 import cz.nekara.rpg.auth.YamlAccountRepository;
 import cz.nekara.rpg.configuration.AuthConfig;
 import cz.nekara.rpg.messages.MessageService;
+import cz.nekara.rpg.menu.GuiItems;
 import cz.nekara.rpg.modules.NekaraModule;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
@@ -83,6 +84,7 @@ public final class AuthModule implements NekaraModule, Listener {
     private static final int CHANGE_PASSWORD_SLOT = 11;
     private static final int ACTION_SLOT = 13;
     private static final int LOGOUT_SLOT = 15;
+    private static final int BACK_SLOT = 18;
 
     private final NekaraRPGPlugin plugin;
     private final MessageService messages;
@@ -238,6 +240,8 @@ public final class AuthModule implements NekaraModule, Listener {
             inventory.setItem(slot, filler);
         }
         if (loggedIn) {
+            inventory.setItem(BACK_SLOT, item(Material.ARROW,
+                    Component.text("Zpět do NekaraRPG", NamedTextColor.YELLOW)));
             inventory.setItem(CHANGE_PASSWORD_SLOT, item(Material.NAME_TAG,
                     Component.text("Změnit heslo", NamedTextColor.GOLD),
                     Component.text("Nejdřív ověříš současné heslo.", NamedTextColor.GRAY),
@@ -505,6 +509,8 @@ public final class AuthModule implements NekaraModule, Listener {
             event.setCancelled(true);
             if (event.getRawSlot() == CHANGE_PASSWORD_SLOT && isAuthenticated(player)) {
                 startPasswordChange(player);
+            } else if (event.getRawSlot() == BACK_SLOT && isAuthenticated(player)) {
+                plugin.openMainMenu(player);
             } else if (event.getRawSlot() == ACTION_SLOT && !isAuthenticated(player)) {
                 startGuiAuthentication(player);
             } else if (event.getRawSlot() == LOGOUT_SLOT && isAuthenticated(player)) {
@@ -1112,14 +1118,7 @@ public final class AuthModule implements NekaraModule, Listener {
     }
 
     private ItemStack item(Material material, Component name, Component... lore) {
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        meta.displayName(name);
-        if (lore.length > 0) {
-            meta.lore(List.of(lore));
-        }
-        item.setItemMeta(meta);
-        return item;
+        return GuiItems.item(material, name, lore);
     }
 
     private ItemStack playerHead(Player player, Component name, Component... lore) {

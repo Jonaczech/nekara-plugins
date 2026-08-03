@@ -94,17 +94,21 @@ final class ModuleConfigurationStore {
             return;
         }
         save(configuration, file);
-        plugin.getLogger().info("Migrated NekaraMounts pre-release defaults to configuration version 2.");
+        plugin.getLogger().info("Migrated NekaraMounts configuration to version 3.");
     }
 
     static boolean migrateMountsPreReleaseDefaults(YamlConfiguration configuration) {
-        if (configuration.contains("configuration-version", true)) {
+        int version = configuration.getInt("configuration-version", 0);
+        if (version >= 3) {
             return false;
         }
-        if (configuration.getInt("death.cooldown-seconds", 86_400) == 86_400) {
+        if (version == 0 && configuration.getInt("death.cooldown-seconds", 86_400) == 86_400) {
             configuration.set("death.cooldown-seconds", 60);
         }
-        configuration.set("configuration-version", 2);
+        if (!configuration.contains("storage.database-file", true)) {
+            configuration.set("storage.database-file", "mounts/data.db");
+        }
+        configuration.set("configuration-version", 3);
         return true;
     }
 

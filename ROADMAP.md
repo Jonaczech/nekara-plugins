@@ -5,18 +5,19 @@ zůstávají v `PROJECT_MEMORY.md` a aktuální release stav v `HANDOFF.md`.
 
 ## Aktuální stav
 
-- Nejnovější stabilní release: **NekaraRPG 1.6.0** s dynamickým GUI `/nekararpg`,
-  změnou hesla v NekaraAuth a modulem **NekaraMounts** (`mounts`).
-- Release je dostupný updateru; nové GUI a změna hesla ještě vyžadují živou Purpur akceptaci.
+- Připravovaný release: **NekaraRPG 1.8.0** s osobním přehledem, administrátorskou
+  diagnostikou a rozšířeným modulem **NekaraMounts** (`mounts`).
+- Po publikaci bude release dostupný updateru; migrace SQLite, brašny a pathfinding
+  ještě vyžadují živou Purpur akceptaci.
 - Modul zůstane součástí jediného `NekaraRPG.jar` a bude samostatně zapínatelný.
 
-## NekaraMounts — první vydání
+## NekaraMounts — aktuální rozsah
 
 Cílem první verze je jeden důvěryhodný, trvalý vanilla kůň na hráče. Mount nemá
 být jednorázový teleport ani nový bojový systém; má působit jako skutečný společník,
 jehož stav přežije odvolání, restart i změnu chunku.
 
-### Rozsah MVP
+### Implementovaný rozsah
 
 - modul ID `mounts` a přepínač `modules.mounts.enabled` v kořenovém `config.yml`,
 - vlastní `mounts/config.yml`,
@@ -27,8 +28,10 @@ jehož stav přežije odvolání, restart i změnu chunku.
   sedlo, koňské brnění, vlastník, stav smrti a cooldown,
 - nejvýše jedna aktivní entita stejného mounta na celém serveru,
 - bezpečné obnovení po restartu, odpojení hráče a načtení či odložení chunku,
-- lokální YAML úložiště za samostatným repository rozhraním, aby šlo později
-  přejít na databázi bez přepsání herní logiky,
+- transakční SQLite úložiště za samostatným repository rozhraním a jednorázová
+  migrace starého YAML se zachovanou zálohou,
+- výchozí sedlo, volitelná truhla a virtuální brašny o 54 slotech,
+- přirozené putování v okolí místa volání a bezpečný nový pokus při zaseknutí,
 - typovaná konfigurace, české zprávy, unit testy a ruční Purpur akceptace.
 
 ### Bezpečnostní pravidla
@@ -45,9 +48,8 @@ jehož stav přežije odvolání, restart i změnu chunku.
 - Nevznikne hlavní příkaz `/mount`; všechny příkazy zůstanou pod `/nekararpg` a
   `/nrpg`, aby se předešlo konfliktům s jinými pluginy.
 
-### Záměrně mimo první verzi
+### Záměrně mimo aktuální rozsah
 
-- nákladní inventář,
 - létající, vodní nebo bojoví mounti,
 - hoglin nebo vlastní resource-pack model,
 - breeding a obchodování mountů mezi hráči,
@@ -58,11 +60,12 @@ jehož stav přežije odvolání, restart i změnu chunku.
 ### Uzavřená rozhodnutí první implementace
 
 1. Kůň vzniká virtuální evidencí přes hráčské GUI; ochočování neexistuje. Admin grant
-   otevře tentýž výběr cílovému online hráči a později jej může nahradit quest.
+   otevře tentýž výběr cílovému online hráči. Questovou logiku vlastní BetonQuest.
 2. Smrt používá perzistentní minutový cooldown bez ceny a bez trvalé ztráty.
 3. Píšťalka má 30sekundový perzistentní cooldown. Odvolaný kůň vznikne 7-12 bloků
-   daleko a doběhne na místo písknutí; aktivní entita se přesměruje bez teleportu.
-   Píšťalka je svázaná s hráčem, nedropuje a správa udržuje jedinou nalezenou kopii.
+   daleko a doběhne na místo písknutí; aktivní entita se přesměruje bez teleportu
+   a používá krátkou ochranu proti spamu. Po doběhnutí se pohybuje v omezeném okolí.
+   Píšťalka je svázaná s hráčem a správa udržuje jedinou nalezenou kopii.
 4. PvP blokace používá vlastní jednoduché combat okno ukládané na disk.
 5. Vlastník se váže na normalizovaný nick chráněný NekaraAuth; poslední známé UUID
    se ukládá jako doplňkový údaj a storage zůstává za repository rozhraním.
@@ -70,21 +73,23 @@ jehož stav přežije odvolání, restart i změnu chunku.
 ### Akceptační minimum
 
 - Stejný mount se po odvolání a restartu vrátí se stejným zdravím, atributy,
-  jménem, sedlem a brněním.
+  jménem, sedlem, brněním a obsahem brašen.
 - Opakované nebo souběžné přivolání nikdy nevytvoří druhou entitu.
 - PvP blokace funguje pro přivolání i odvolání a nelze ji obejít reconnectem.
 - Smrt a cooldown přežijí restart serveru.
 - Jiný hráč nemůže změnit vlastnictví ani získat uložené vybavení.
 - Vypnutí `modules.mounts.enabled` odstraní runtime stav bez ztráty persistence.
 - Upgrade vytvoří `mounts/config.yml` bez změny ostatních modulových configů.
+- Upgrade jednou převede starý `mounts/data.yml` do `mounts/data.db`, ponechá
+  původní data a vytvoří zálohu bez opakovaného importu.
 
-## Pozdější rozšíření NekaraMounts
+## Odložené rozšiřování
 
-Po stabilizaci MVP lze zvážit questové získání, stáje, kosmetiku, důvěru mounta,
-krmení, více plemen a nákup statistik za economy. Každé rozšíření musí
-nejdřív zachovat jednoznačné vlastnictví a ochranu proti duplikaci.
+Nové moduly, hráčská nastavení, questové získávání a vlastní skill či economy
+mechaniky nejsou aktuální priorita. Questy vlastní BetonQuest a skilly včetně
+jejich rozvoje ValhallaMMO. NekaraRPG tyto systémy nebude duplikovat.
 
-## Další backlog po NekaraMounts
+## Pozastavený backlog
 
 1. `lockpicking` — interaktivní zámky pouze na pluginem označených objektech.
 2. `world-events` a `rumors` — objevování krátkých událostí bez přesných quest šipek.
@@ -92,5 +97,5 @@ nejdřív zachovat jednoznačné vlastnictví a ochranu proti duplikaci.
 4. `foraging` — sběr bylin podle biomu, počasí a denní doby.
 5. `reputation` — reakce osad a frakcí, služby, ceny a pozdější webové propojení.
 
-Tyto položky nejsou schválené k implementaci, dokud se výslovně nestanou novou
-prioritou.
+Tyto položky se nyní neřeší a nejsou schválené k implementaci, dokud se výslovně
+nestanou novou prioritou.

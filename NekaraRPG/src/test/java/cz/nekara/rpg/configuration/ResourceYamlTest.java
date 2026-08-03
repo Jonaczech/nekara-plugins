@@ -134,14 +134,17 @@ class ResourceYamlTest {
             assertTrue((Boolean) oreSound.get("enabled"));
             assertFalse(veinSound.get("sound").equals(oreSound.get("sound")));
             assertEquals("mounts/data.yml", mountStorage.get("file"));
-            assertEquals(2, ((Number) mountsConfig.get("configuration-version")).intValue());
+            assertEquals("mounts/data.db", mountStorage.get("database-file"));
+            assertEquals(3, ((Number) mountsConfig.get("configuration-version")).intValue());
             assertEquals(60, ((Number) mountDeath.get("cooldown-seconds")).intValue());
             assertEquals(15, ((Number) mountCombat.get("block-seconds")).intValue());
             assertEquals(List.of(), mountSummoning.get("allowed-worlds"));
             assertEquals(30, ((Number) mountSummoning.get("cooldown-seconds")).intValue());
+            assertEquals(3, ((Number) mountSummoning.get("active-recall-cooldown-seconds")).intValue());
             assertEquals(7, ((Number) mountSummoning.get("minimum-spawn-distance")).intValue());
             assertEquals(12, ((Number) mountSummoning.get("maximum-spawn-distance")).intValue());
             assertEquals(3.0, ((Number) mountSummoning.get("waiting-radius")).doubleValue(), 0.0001);
+            assertEquals(5.0, ((Number) mountSummoning.get("wandering-radius")).doubleValue(), 0.0001);
             assertEquals(100, ((Number) mountPersistence.get("autosave-period-ticks")).intValue());
             assertTrue((Boolean) mountPersistence.get("recall-on-quit"));
             assertEquals(2, ((Number) mountNaming.get("minimum-length")).intValue());
@@ -181,9 +184,12 @@ class ResourceYamlTest {
             assertNotNull(messages.get("mount-combat-blocked"));
             assertNotNull(messages.get("mount-created"));
             assertNotNull(messages.get("mount-summon-cooldown"));
+            assertNotNull(messages.get("mount-recall-cooldown"));
             assertNotNull(messages.get("mount-whistle-foreign"));
             assertNotNull(messages.get("mount-whistle-bound"));
             assertNotNull(messages.get("mount-whistle-restored"));
+            assertNotNull(messages.get("mount-equipment-chest-only"));
+            assertNotNull(messages.get("mount-storage-not-empty"));
             assertEquals(
                     "<green>Odpočatý</green> <dark_gray>|</dark_gray> <white>%remaining_text%</white>",
                     messages.get("campfire-rested-timer")

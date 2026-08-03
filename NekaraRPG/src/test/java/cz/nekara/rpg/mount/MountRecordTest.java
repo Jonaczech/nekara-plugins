@@ -4,6 +4,7 @@ import org.bukkit.entity.Horse;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -53,14 +54,29 @@ class MountRecordTest {
         assertThrows(NullPointerException.class, () -> new MountRecord(
                 valid.ownerId(), valid.ownerName(), valid.lastKnownOwnerUuid(), valid.mountId(), null,
                 null, valid.health(), valid.maxHealth(), valid.movementSpeed(), valid.jumpStrength(),
-                valid.color(), valid.style(), null, null, 0, 0, 300, List.of(),
+                valid.color(), valid.style(), null, null, null, List.of(), 0, 0, 300, List.of(),
                 null, null, null, NOW));
+    }
+
+    @Test
+    void virtualStorageAlwaysHasLargeChestSizeAndCannotBeMutatedThroughAccessor() {
+        List<org.bukkit.inventory.ItemStack> supplied = new ArrayList<>();
+        supplied.add(null);
+        MountRecord record = new MountRecord("name:hrac", "Hrac", UUID.randomUUID(), UUID.randomUUID(),
+                null, "Stín", 30.0, 30.0, 0.225, 0.72,
+                Horse.Color.BLACK, Horse.Style.NONE, null, null, null, supplied,
+                0, 0, 300, List.of(), null, null, null, NOW);
+
+        supplied.clear();
+
+        assertEquals(MountRecord.STORAGE_SIZE, record.storage().size());
+        assertThrows(UnsupportedOperationException.class, () -> record.storage().set(0, null));
     }
 
     private MountRecord record(double health, double maxHealth, UUID entityUuid) {
         return new MountRecord("name:hrac", "Hrac", UUID.randomUUID(), UUID.randomUUID(),
                 entityUuid, "Stín", health, maxHealth, 0.225, 0.72,
-                Horse.Color.BLACK, Horse.Style.WHITE_DOTS, null, null,
+                Horse.Color.BLACK, Horse.Style.WHITE_DOTS, null, null, null, List.of(),
                 80, 20, 200, List.of(), null, null, null, NOW);
     }
 }

@@ -1,7 +1,9 @@
 # NekaraMounts owns one persistent vanilla horse per player.
-configuration-version: 2
+configuration-version: 3
 storage:
-  # Local YAML backend behind MountRepository; keep this path inside the plugin data folder.
+  # SQLite is the active transactional backend. The old YAML is imported once and retained.
+  database-file: mounts/data.db
+  # Legacy YAML source used only for the automatic first migration.
   file: mounts/data.yml
 death:
   # A dead companion returns after this persisted cooldown (one minute by default).
@@ -13,10 +15,14 @@ summoning:
   # Empty means every world. Add exact world names to restrict creation and summoning.
   allowed-worlds: []
   cooldown-seconds: 30
+  # An active horse can be redirected quickly without allowing click spam.
+  active-recall-cooldown-seconds: 3
   # The horse appears out of arm's reach, then pathfinds to the exact call location.
   minimum-spawn-distance: 7
   maximum-spawn-distance: 12
   waiting-radius: 3.0
+  # After arriving, the horse calmly wanders within this distance from the call.
+  wandering-radius: 5.0
   pathfinding-speed: 1.35
 persistence:
   # Captures health, attributes, equipment, name, appearance, and negative effects.

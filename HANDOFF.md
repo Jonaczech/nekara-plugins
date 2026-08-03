@@ -6,50 +6,48 @@ Repozitář je publikovaný jako
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 Výchozí větev je `main`.
 
-Nejnovější vydaná verze je **NekaraRPG 1.6.0**:
+Připravovaná a lokálně ověřená verze je **NekaraRPG 1.8.0**. Po publikaci ji
+vestavěný updater rozpozná jako nástupce vydané verze 1.6.0:
 
-- tag: `v1.6.0`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.6.0>
+- tag: `v1.8.0`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.8.0>
 - nasazovaný soubor: `NekaraRPG.jar`
-- zdrojové PR: <https://github.com/Jonaczech/nekara-plugins/pull/27>
-- release merge commit: `d577890ce58a0f9b581fc7ed502900a59bf9fb4f`
-- SHA-256 vydaného JARu:
-  `2F5105C191E639C985281EC864D0B494DECA5EB055AB5D6250CA22A18CCA5B05`
-- velikost release assetu: `308187` bajtů
-- automatické ověření: 66 úspěšných testů
+- SHA-256 připraveného JARu:
+  `2BC4FB04B736B0338B67FDA3855535A45607E551AA3019B72CAC6F638C05AEC8`
+- velikost připraveného release assetu: `12302405` bajtů
+- automatické ověření: 70 úspěšných testů
 
-Verze 1.6.0 přidává centrální dynamické GUI `/nekararpg`, které ukazuje pouze
-zapnuté moduly dostupné podle oprávnění, a bezpečnou změnu hesla v NekaraAuth.
-Součástí zůstává NekaraMounts s virtuálně evidovaným koněm, soulbound píšťalkou,
-minutovým cooldownem po smrti a ochranou proti duplicitě a cizí manipulaci.
+Verze 1.8.0 rozšiřuje centrální GUI o osobní přehled a administrátorskou
+diagnostiku. NekaraMounts přidává přirozené putování, přesměrování aktivního koně,
+výchozí sedlo, truhlu a 54slotové virtuální brašny. Mounts persistence přechází
+z YAML na SQLite s jednorázovým importem a zálohou původních dat.
 
-Metadata GitHub release, hash zpětně staženého JARu, stabilní stav, jediný asset
-i cíl tagu byly ověřeny. Zbývá živě ověřit zvuky, pořadí událostí a vyvážení na
-Purpur serveru s ValhallaMMO a celý NekaraAuth průchod z `TESTING.md`.
+Po publikaci je nutné ověřit metadata GitHub release, hash zpětně staženého JARu,
+stabilní stav, jediný asset a cíl tagu. Potom zbývá živě ověřit pořadí událostí,
+migraci a chování na Purpur serveru s ValhallaMMO.
 
 Čísla verzí patří do metadat pluginu, changelogu a Git tagů. Název JARu zůstává
 záměrně stabilní, aby při nasazení nevznikla druhá verzovaná kopie vedle
 aktivního pluginu.
 
-## NekaraRPG 1.6.0
+## NekaraRPG 1.8.0
 
 Centrální menu propojuje NekaraAuth, NekaraMounts, Fishing, Sitting, Campfire a
-Mining bez přesunu doménové logiky z jednotlivých modulů. NekaraAuth mění heslo
-po ověření současného hesla, zadání nového hesla a jeho potvrzení; výpočty zůstávají
-mimo hlavní serverové vlákno a úspěch ruší dřívější relog session.
+Mining bez přesunu doménové logiky. Hráčský přehled ukazuje účet, Rested, aktivní
+činnost a koně. Oprávněná diagnostika ukazuje moduly, integrace, updater, paměť a
+stav Mounts úložiště. Při načteném ValhallaMMO lze otevřít jeho vlastní `/skills`.
 
 Vydaný modul NekaraMounts přidává virtuální
 vytvoření jednoho vanilla koně přes GUI pro barvu a jméno, svázanou píšťalku,
-management výbavy, atomický YAML backend za `MountRepository`, perzistentní PvP
-okno, cooldown po smrti a ochranu proti duplicitní entitě i vybavení. Zbývající
-živé Purpur scénáře jsou vedené v `TESTING.md` a `LIVE_TESTING.md`.
+management výbavy, virtuální 54slotové brašny a transakční SQLite backend za
+`MountRepository`. Staré `mounts/data.yml` se importuje jednou a zůstane zachované
+i jako `data.yml.pre-sqlite.bak`. Selhání zápisu modul uzamkne proti ztrátě nebo
+duplikaci. Zbývající živé Purpur scénáře jsou v `TESTING.md` a `LIVE_TESTING.md`.
 
-Release postup prošel se 66 testy. Vydaný asset má velikost `308187` bajtů a
-SHA-256 `2F5105C191E639C985281EC864D0B494DECA5EB055AB5D6250CA22A18CCA5B05`.
-Hash byl ověřen stažením assetu z GitHub release.
-Hotfix migruje starší mount záznam bez `custom-name` na jméno `Bezejmenný`.
-Smrt koně má minutový cooldown a píšťalka je soulbound: nedropuje, nejde uložit do
-cizího inventáře, po smrti hráče se vrací a správa odstraňuje nalezené kopie.
+Release postup prošel se 70 testy. Připravený asset má velikost `12302405` bajtů
+a SHA-256 `2BC4FB04B736B0338B67FDA3855535A45607E551AA3019B72CAC6F638C05AEC8`.
+Release build ověřuje verzi, manifest a přítomnost zabaleného SQLite JDBC
+ovladače. Smrt koně má minutový cooldown a píšťalka zůstává soulbound.
 
 Rozhodnutí MVP jsou uzavřená v `ROADMAP.md`: žádné ochočování, GUI plus admin grant,
 30sekundová píšťalka, vzdálený spawn s doběhnutím na místo volání, vlastní
@@ -149,7 +147,7 @@ provést úplný restart a zkontrolovat startovací logy.
 
 ## Další práce
 
-Nejdřív živě otestuj vydanou verzi 1.6.0 podle `NekaraRPG/TESTING.md` a
+Nejdřív živě otestuj vydanou verzi 1.8.0 podle `NekaraRPG/TESTING.md` a
 `NekaraRPG/LIVE_TESTING.md`, zejména:
 
 - registraci, login, lockout, přesný zápis nicku a blokaci akcí NekaraAuth,
@@ -159,10 +157,9 @@ Nejdřív živě otestuj vydanou verzi 1.6.0 podle `NekaraRPG/TESTING.md` a
 - že +25 % XP vzniká právě jednou z označeného bloku,
 - že 50% řetězení a bonusový drop nejsou příliš štědré.
 
-Součástí akceptace je centrální menu, filtrování modulů a oprávnění a celý
-bezpečný průchod změny hesla. Současně zbývá živě ověřit Mounts GUI, píšťalku,
-pathfinding, restart, unload chunku, rychlé dvojí volání, smrt/cooldown, reconnect
-v PvP a cizí manipulace.
+Součástí akceptace je osobní přehled, administrátorská diagnostika a celý bezpečný
+průchod změny hesla. U Mounts ověř migraci YAML do SQLite, zachování brašen přes
+restart a smrt, putování, zotavení pathfindingu, dvojí volání, PvP a cizí manipulaci.
 
 Možná pozdější rozšíření Campfire:
 

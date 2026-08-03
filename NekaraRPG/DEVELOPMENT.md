@@ -54,7 +54,9 @@ herních listenerů ostatních modulů.
 
 NekaraMounts musí před odstraněním aktivní entity atomicky uložit její úplný stav.
 Pokud storage selže, operaci odmítne a entitu ponechá. `MountRepository` zůstává
-hranice budoucího databázového backendu; herní logika nesmí záviset na YAML cestách.
+hranice úložiště; herní logika nesmí záviset na SQLite ani na cestách starého YAML.
+Aktivní backend Mounts je SQLite. `YamlMountRepository` zůstává pouze jako čtečka
+pro jednorázovou migraci a jako historicky kompatibilní testovací implementace.
 
 Konfigurace patří do typovaného recordu pod `configuration`. Kořenový `config.yml`
 smí obsahovat jen nastavení jádra, updater a přepínače `modules.*.enabled`;

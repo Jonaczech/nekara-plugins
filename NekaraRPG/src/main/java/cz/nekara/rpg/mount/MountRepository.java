@@ -20,5 +20,7 @@ public interface MountRepository {
 
     Optional<Instant> combatUntil(String ownerId);
 
+    Map<String, Instant> combatWindows();
+
     void setCombatUntil(Map<String, Instant> combatWindows) throws IOException;
 }

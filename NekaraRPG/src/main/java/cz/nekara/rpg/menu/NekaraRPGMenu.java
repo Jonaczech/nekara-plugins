@@ -36,6 +36,10 @@ public final class NekaraRPGMenu implements Listener {
     private static final int CAMPFIRE_SLOT = 14;
     private static final int MINING_SLOT = 15;
     private static final int MOUNTS_SLOT = 16;
+    private static final int SKILLS_SLOT = 22;
+    private static final int OVERVIEW_SLOT = 4;
+    private static final int DIAGNOSTICS_SLOT = 26;
+    private static final int BACK_SLOT = 18;
 
     private final NekaraRPGPlugin plugin;
     private final MessageService messages;
@@ -73,27 +77,31 @@ public final class NekaraRPGMenu implements Listener {
             return;
         }
 
-        MainMenuHolder holder = new MainMenuHolder(player.getUniqueId());
+        MainMenuHolder holder = new MainMenuHolder(player.getUniqueId(), Screen.MAIN);
         Inventory inventory = Bukkit.createInventory(holder, 27,
                 Component.text("NekaraRPG — hlavní menu", NamedTextColor.DARK_AQUA));
         holder.inventory = inventory;
         fill(inventory);
+        inventory.setItem(OVERVIEW_SLOT, item(Material.COMPASS,
+                Component.text("Můj přehled", NamedTextColor.AQUA),
+                Component.text("To nejdůležitější na jednom místě", NamedTextColor.GRAY),
+                Component.text("Odpočinek, činnost a tvůj kůň", NamedTextColor.DARK_GRAY)));
 
         int visibleModules = 0;
         if (canShow(player, AuthModule.ID, null)) {
             inventory.setItem(AUTH_SLOT, item(Material.PLAYER_HEAD,
                     Component.text("Účet", NamedTextColor.AQUA),
                     Component.text("Přihlášen jako " + player.getName(), NamedTextColor.GRAY),
-                    Component.text("Heslo, relace a odhlášení", NamedTextColor.DARK_GRAY)));
+                    Component.text("Tvé jméno, heslo a bezpečný návrat", NamedTextColor.DARK_GRAY)));
             visibleModules++;
         }
         if (canShow(player, FishingModule.ID, "nekararpg.use")) {
             boolean active = fishing.minigames().isMinigameActive(player.getUniqueId());
             inventory.setItem(FISHING_SLOT, item(Material.FISHING_ROD,
                     Component.text("Rybaření", NamedTextColor.BLUE),
-                    Component.text(active ? "Minihra právě probíhá" : "Rybářská minihra je připravená",
+                    Component.text(active ? "Vlasec je napjatý" : "Voda tiše čeká",
                             active ? NamedTextColor.YELLOW : NamedTextColor.GRAY),
-                    Component.text("Spouští se přirozeným záběrem", NamedTextColor.DARK_GRAY)));
+                    Component.text("Záběr odhalí správný okamžik", NamedTextColor.DARK_GRAY)));
             visibleModules++;
         }
         if (canShow(player, SittingModule.ID, "nekararpg.sitting.use")) {
@@ -117,21 +125,33 @@ public final class NekaraRPGMenu implements Listener {
         if (canShow(player, MiningModule.ID, "nekararpg.echo-vein.use")) {
             inventory.setItem(MINING_SLOT, item(Material.IRON_PICKAXE,
                     Component.text("Těžba", NamedTextColor.GRAY),
-                    Component.text("Echo Vein odhaluje skryté žíly", NamedTextColor.WHITE),
-                    Component.text("Spouští se při těžbě s ValhallaMMO", NamedTextColor.DARK_GRAY)));
+                    Component.text("Kámen někdy prozradí skrytou žílu", NamedTextColor.WHITE),
+                    Component.text("Při těžbě naslouchej jeho ozvěně", NamedTextColor.DARK_GRAY)));
             visibleModules++;
         }
         if (canShow(player, MountsModule.ID, "nekararpg.mount.use")) {
             inventory.setItem(MOUNTS_SLOT, item(Material.SADDLE,
                     Component.text("Můj kůň", NamedTextColor.GOLD),
-                    Component.text("Založení, přivolání, výbava a píšťalka", NamedTextColor.GRAY),
-                    Component.text("Kliknutím otevřeš NekaraMounts", NamedTextColor.DARK_GRAY)));
+                    Component.text("Pouto, výbava, brašny a píšťalka", NamedTextColor.GRAY),
+                    Component.text("Postarej se o svého společníka", NamedTextColor.DARK_GRAY)));
+            visibleModules++;
+        }
+        if (Bukkit.getPluginManager().isPluginEnabled("ValhallaMMO")) {
+            inventory.setItem(SKILLS_SLOT, item(Material.EXPERIENCE_BOTTLE,
+                    Component.text("Dovednosti", NamedTextColor.LIGHT_PURPLE),
+                    Component.text("Otevře přehled tvých schopností", NamedTextColor.GRAY),
+                    Component.text("Tady uvidíš cestu svého rozvoje", NamedTextColor.DARK_GRAY)));
             visibleModules++;
         }
         if (visibleModules == 0) {
             inventory.setItem(13, item(Material.BARRIER,
                     Component.text("Žádné dostupné moduly", NamedTextColor.RED),
                     Component.text("Aktivní moduly nemáš povolené.", NamedTextColor.GRAY)));
+        }
+        if (player.hasPermission("nekararpg.command.status")) {
+            inventory.setItem(DIAGNOSTICS_SLOT, item(Material.COMPARATOR,
+                    Component.text("Správa NekaraRPG", NamedTextColor.RED),
+                    Component.text("Stav modulů, úložiště a updateru", NamedTextColor.GRAY)));
         }
         player.openInventory(inventory);
     }
@@ -161,7 +181,6 @@ public final class NekaraRPGMenu implements Listener {
             return;
         }
         int slot = event.getRawSlot();
-        player.closeInventory();
         Bukkit.getScheduler().runTask(plugin, () -> handle(player, slot));
     }
 
@@ -176,33 +195,52 @@ public final class NekaraRPGMenu implements Listener {
         if (!player.isOnline()) {
             return;
         }
+        MainMenuHolder holder = player.getOpenInventory().getTopInventory().getHolder() instanceof MainMenuHolder open
+                ? open : null;
+        if (holder == null) {
+            return;
+        }
+        if (holder.screen == Screen.OVERVIEW) {
+            if (slot == BACK_SLOT) open(player);
+            else if (slot == DIAGNOSTICS_SLOT) openOverview(player);
+            return;
+        }
+        if (holder.screen == Screen.DIAGNOSTICS) {
+            if (slot == BACK_SLOT) open(player);
+            else if (slot == DIAGNOSTICS_SLOT) openDiagnostics(player);
+            return;
+        }
         switch (slot) {
+            case OVERVIEW_SLOT -> openOverview(player);
             case AUTH_SLOT -> {
                 if (canShow(player, AuthModule.ID, null)) {
                     auth.openMenu(player);
                 }
             }
             case FISHING_SLOT -> {
-                if (canShow(player, FishingModule.ID, "nekararpg.use")) {
-                    messages.send(player, "menu-fishing-info");
-                }
+                // The tile lore contains the complete player-facing explanation.
             }
             case SITTING_SLOT -> toggleSitting(player);
             case CAMPFIRE_SLOT -> {
-                if (canShow(player, CampfireModule.ID, "nekararpg.campfire.use")) {
-                    long remaining = campfire.restedSecondsRemaining(player.getUniqueId());
-                    messages.send(player, remaining > 0 ? "menu-campfire-rested" : "menu-campfire-info",
-                            Map.of("time", formatDuration(remaining)));
-                }
+                // Status and instructions are intentionally kept in the tile lore.
             }
             case MINING_SLOT -> {
-                if (canShow(player, MiningModule.ID, "nekararpg.echo-vein.use")) {
-                    messages.send(player, "menu-mining-info");
-                }
+                // Status and instructions are intentionally kept in the tile lore.
             }
             case MOUNTS_SLOT -> {
                 if (canShow(player, MountsModule.ID, "nekararpg.mount.use")) {
                     mounts.openMenu(player);
+                }
+            }
+            case SKILLS_SLOT -> {
+                if (Bukkit.getPluginManager().isPluginEnabled("ValhallaMMO")) {
+                    player.closeInventory();
+                    player.performCommand("skills");
+                }
+            }
+            case DIAGNOSTICS_SLOT -> {
+                if (player.hasPermission("nekararpg.command.status")) {
+                    openDiagnostics(player);
                 }
             }
             default -> {
@@ -210,24 +248,138 @@ public final class NekaraRPGMenu implements Listener {
         }
     }
 
+    private void openOverview(Player player) {
+        MainMenuHolder holder = new MainMenuHolder(player.getUniqueId(), Screen.OVERVIEW);
+        Inventory inventory = Bukkit.createInventory(holder, 27,
+                Component.text("NekaraRPG — můj přehled", NamedTextColor.DARK_AQUA));
+        holder.inventory = inventory;
+        fill(inventory);
+        inventory.setItem(4, item(Material.PLAYER_HEAD,
+                Component.text(player.getName(), NamedTextColor.AQUA),
+                Component.text(auth.isEnabled() && auth.isAuthenticated(player)
+                        ? "Totožnost je ověřená" : "Účet není ověřený", NamedTextColor.GRAY)));
+
+        long rested = campfire.restedSecondsRemaining(player.getUniqueId());
+        inventory.setItem(11, item(Material.CAMPFIRE,
+                Component.text("Odpočinek", NamedTextColor.GOLD),
+                Component.text(rested > 0 ? "Zbývá " + formatDuration(rested) : "Síly čekají na doplnění",
+                        rested > 0 ? NamedTextColor.GREEN : NamedTextColor.GRAY)));
+
+        boolean fishingActive = fishing.minigames().isMinigameActive(player.getUniqueId());
+        boolean miningActive = plugin.miningModule().isActive(player.getUniqueId());
+        inventory.setItem(13, item(fishingActive ? Material.FISHING_ROD
+                        : miningActive ? Material.IRON_PICKAXE : Material.CLOCK,
+                Component.text("Právě teď", NamedTextColor.YELLOW),
+                Component.text(fishingActive ? "Soustředíš se na úlovek"
+                        : miningActive ? "Nasloucháš ozvěně kamene" : "Nic tě právě nezdržuje",
+                        NamedTextColor.GRAY)));
+
+        MountsModule.MountOverview mount = mounts.overview(player).orElse(null);
+        inventory.setItem(15, mount == null
+                ? item(Material.LEAD, Component.text("Kůň", NamedTextColor.GOLD),
+                Component.text("Zatím nemáš stálého společníka", NamedTextColor.GRAY))
+                : item(Material.SADDLE, Component.text(mount.name(), NamedTextColor.GOLD),
+                Component.text(mount.state(), NamedTextColor.GRAY),
+                Component.text("Zdraví " + oneDecimal(mount.health()) + "/" + oneDecimal(mount.maxHealth()),
+                        NamedTextColor.DARK_GRAY),
+                Component.text(mount.hasChest()
+                        ? "Brašny " + mount.occupiedStorageSlots() + "/54"
+                        : "Bez brašen", NamedTextColor.DARK_GRAY),
+                Component.text(mount.cooldownSeconds() > 0
+                        ? "Připraven za " + formatDuration(mount.cooldownSeconds()) : "Píšťalka je připravená",
+                        mount.cooldownSeconds() > 0 ? NamedTextColor.YELLOW : NamedTextColor.GREEN)));
+        inventory.setItem(BACK_SLOT, GuiItems.back("Zpět do NekaraRPG"));
+        inventory.setItem(DIAGNOSTICS_SLOT, item(Material.SUNFLOWER,
+                Component.text("Obnovit", NamedTextColor.YELLOW)));
+        player.openInventory(inventory);
+    }
+
+    private void openDiagnostics(Player player) {
+        if (!player.hasPermission("nekararpg.command.status")) {
+            open(player);
+            return;
+        }
+        MainMenuHolder holder = new MainMenuHolder(player.getUniqueId(), Screen.DIAGNOSTICS);
+        Inventory inventory = Bukkit.createInventory(holder, 27,
+                Component.text("NekaraRPG — správa", NamedTextColor.DARK_RED));
+        holder.inventory = inventory;
+        fill(inventory);
+        inventory.setItem(4, item(Material.REDSTONE_TORCH,
+                Component.text("NekaraRPG " + plugin.getDescription().getVersion(), NamedTextColor.RED),
+                Component.text("Aktivní moduly: " + String.join(", ", modules.enabledModuleIds()),
+                        NamedTextColor.GRAY)));
+        inventory.setItem(10, item(Material.CHEST,
+                Component.text("NekaraMounts", NamedTextColor.GOLD),
+                Component.text("Úložiště: " + mounts.storageStatus(), NamedTextColor.GRAY),
+                Component.text("Evidováno " + mounts.registeredCount() + " | ve světě " + mounts.activeCount(),
+                        NamedTextColor.DARK_GRAY)));
+        inventory.setItem(12, item(Material.EXPERIENCE_BOTTLE,
+                Component.text("Napojení", NamedTextColor.LIGHT_PURPLE),
+                Component.text("ValhallaMMO: " + enabledPlugin("ValhallaMMO"), NamedTextColor.GRAY),
+                Component.text("MythicMobs: " + enabledPlugin("MythicMobs"), NamedTextColor.GRAY)));
+        long usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1_048_576L;
+        long maxMemory = Runtime.getRuntime().maxMemory() / 1_048_576L;
+        inventory.setItem(14, item(Material.REPEATER,
+                Component.text("Server", NamedTextColor.AQUA),
+                Component.text("Online hráči: " + Bukkit.getOnlinePlayers().size(), NamedTextColor.GRAY),
+                Component.text("Paměť JVM: " + usedMemory + "/" + maxMemory + " MiB", NamedTextColor.DARK_GRAY)));
+        var update = plugin.updater().snapshot();
+        inventory.setItem(16, item(Material.CLOCK,
+                Component.text("Updater", NamedTextColor.YELLOW),
+                Component.text(updaterLabel(update.state()), NamedTextColor.GRAY),
+                Component.text(update.latestVersion() == null
+                        ? "Zatím bez vzdálené verze" : "Nejnovější " + update.latestVersion(),
+                        NamedTextColor.DARK_GRAY)));
+        inventory.setItem(BACK_SLOT, GuiItems.back("Zpět do NekaraRPG"));
+        inventory.setItem(DIAGNOSTICS_SLOT, item(Material.SUNFLOWER,
+                Component.text("Obnovit", NamedTextColor.YELLOW)));
+        player.openInventory(inventory);
+    }
+
+    private String enabledPlugin(String name) {
+        return Bukkit.getPluginManager().isPluginEnabled(name) ? "připraveno" : "nenačteno";
+    }
+
+    private String updaterLabel(cz.nekara.rpg.updater.UpdaterState state) {
+        return switch (state) {
+            case DISABLED -> "Vypnutý";
+            case IDLE -> "Čeká na kontrolu";
+            case CHECKING -> "Právě kontroluje";
+            case CURRENT -> "Plugin je aktuální";
+            case AVAILABLE -> "Je dostupná nová verze";
+            case STAGED -> "Nová verze čeká na restart";
+            case FAILED -> "Poslední kontrola selhala";
+        };
+    }
+
+    private String oneDecimal(double value) {
+        return String.format(java.util.Locale.ROOT, "%.1f", value);
+    }
+
     private void toggleSitting(Player player) {
         if (!canShow(player, SittingModule.ID, "nekararpg.sitting.use")) {
             return;
         }
         if (sitting.isSeated(player)) {
-            messages.send(player, sitting.stand(player) ? "sitting-stopped" : "sitting-not-seated");
+            if (!sitting.stand(player)) {
+                messages.sendActionBar(player, "sitting-not-seated", Map.of());
+            }
+            open(player);
             return;
         }
         SitResult result = sitting.sit(player);
-        messages.send(player, switch (result) {
-            case SUCCESS -> "sitting-started";
+        if (result != SitResult.SUCCESS) {
+            messages.sendActionBar(player, switch (result) {
             case ALREADY_SITTING -> "sitting-already";
             case ALREADY_RIDING -> "sitting-riding";
             case NOT_ON_GROUND -> "sitting-ground-required";
             case INVALID_STATE -> "sitting-invalid-state";
             case MODULE_DISABLED -> "sitting-disabled";
             case FAILED -> "sitting-failed";
-        });
+            case SUCCESS -> "sitting-started";
+            }, Map.of());
+        }
+        open(player);
     }
 
     private boolean canShow(Player player, String moduleId, String permission) {
@@ -240,29 +392,27 @@ public final class NekaraRPGMenu implements Listener {
     }
 
     private void fill(Inventory inventory) {
-        ItemStack filler = item(Material.BLACK_STAINED_GLASS_PANE, Component.text(" "));
-        for (int slot = 0; slot < inventory.getSize(); slot++) {
-            inventory.setItem(slot, filler);
-        }
+        GuiItems.fill(inventory);
     }
 
     private ItemStack item(Material material, Component name, Component... lore) {
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        meta.displayName(name);
-        if (lore.length > 0) {
-            meta.lore(List.of(lore));
-        }
-        item.setItemMeta(meta);
-        return item;
+        return GuiItems.item(material, name, lore);
+    }
+
+    private enum Screen {
+        MAIN,
+        OVERVIEW,
+        DIAGNOSTICS
     }
 
     private static final class MainMenuHolder implements InventoryHolder {
         private final UUID ownerId;
+        private final Screen screen;
         private Inventory inventory;
 
-        private MainMenuHolder(UUID ownerId) {
+        private MainMenuHolder(UUID ownerId, Screen screen) {
             this.ownerId = ownerId;
+            this.screen = screen;
         }
 
         @Override

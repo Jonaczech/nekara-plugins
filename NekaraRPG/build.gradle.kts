@@ -11,6 +11,9 @@ java {
 }
 
 dependencies {
+    implementation("org.xerial:sqlite-jdbc:3.53.0.0") {
+        isTransitive = false
+    }
     compileOnly("org.purpurmc.purpur:purpur-api:${providers.gradleProperty("purpur_api_version").get()}")
     compileOnly("io.lumine:Mythic-Dist:5.12.1") {
         isTransitive = false
@@ -39,6 +42,9 @@ tasks.processResources {
 
 tasks.jar {
     archiveFileName.set("NekaraRPG.jar")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
     manifest {
         attributes(
             "Implementation-Title" to "NekaraRPG",

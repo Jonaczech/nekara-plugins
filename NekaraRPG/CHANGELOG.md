@@ -1,5 +1,43 @@
 # Přehled změn
 
+## 1.8.0
+
+- NekaraMounts používá transakční SQLite úložiště. První start bezpečně importuje
+  staré `mounts/data.yml`, původní soubor ponechá a vytvoří také
+  `data.yml.pre-sqlite.bak`.
+- Databázové zápisy brašen již nepřepisují celý YAML soubor. SQLite používá WAL,
+  transakce, krátký busy timeout a při chybě dál uzamkne Mounts proti
+  duplicitám nebo ztrátě obsahu.
+- Přidány sdílené GUI položky, výplně a návratová tlačítka používaná centrálním
+  menu, NekaraAuth a NekaraMounts.
+- Centrální `/nrpg` nabízí osobní přehled účtu, odpočinku, právě probíhající
+  činnosti a stavu koně. Oprávnění administrátoři mají samostatnou diagnostiku
+  modulů, Mounts úložiště, integrací, paměti a updateru.
+- Správa koně zobrazuje zdraví, stav, brašny a připravenost píšťalky přímo v GUI.
+  Pokud cesta k hráči nepostupuje, kůň po šesti sekundách zvolí nový bezpečný
+  přístupový bod bez teleportování nebo vytvoření další entity.
+- Běžná odmítnutí interakcí s koněm a píšťalkou se přesunula z chatu do action
+  baru. Delší vysvětlení zůstávají v popisech GUI.
+
+## 1.7.0
+
+- Aktivní kůň po doběhnutí přirozeně putuje v nastavitelném okruhu kolem místa
+  písknutí. Opakované písknutí jej přesměruje k nové poloze hráče bez vytvoření
+  další entity a používá samostatnou krátkou ochranu proti spamu.
+- Nový kůň dostává sedlo. Do správy výbavy přibyl slot pro obyčejnou truhlu, která
+  zpřístupní trvalé virtuální brašny o 54 slotech pouze přes GUI koně.
+- Obsah brašen používá novou verzi datového schématu, ukládá se atomicky před
+  každou změnou inventáře a přežije odvolání, smrt, reload i restart. Plnou truhlu
+  nelze sundat a píšťalku do brašen nelze vložit.
+- Opraveno nereagující písknutí při zrušení interakce jiným pluginem a falešná
+  zpráva o uložení výbavy po kliknutí na prázdný slot.
+- Menu mají návratová tlačítka a potvrzení citlivých akcí. Kliknutí na prázdné
+  místo hráče z GUI nevyhodí a běžné vysvětlivky se zobrazují v popisu položek
+  místo chatu.
+- Centrální `/nekararpg` menu nabízí při načteném ValhallaMMO tlačítko pro
+  otevření `/skills`. Hráčské texty Mounts a centrálního menu jsou kratší a více
+  laděné do světa Nekary.
+
 ## 1.6.0
 
 - Přidáno centrální hráčské GUI `/nekararpg` (také `/nekararpg menu`), které

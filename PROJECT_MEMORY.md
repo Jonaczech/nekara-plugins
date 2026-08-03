@@ -73,21 +73,33 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
 
 ## Směr modulu Mounts
 
-- NekaraMounts je implementovaný kandidát verze 1.5.0. Konkrétní rozsah,
+- NekaraMounts je implementovaná součást NekaraRPG 1.8.0. Konkrétní rozsah,
   bezpečnostní pravidla, uzavřená rozhodnutí a akceptace jsou v `ROADMAP.md`.
-- Modul `mounts` začíná vanilla koněm, jedním mountem na hráče, bez
-  nákladního inventáře a bez modelu hoglina.
+- Modul `mounts` používá vanilla koně, jednoho mounta na hráče, výchozí sedlo a
+  volitelnou obyčejnou truhlu s virtuálními 54slotovými brašnami.
 - Sedlo, brnění, jméno, zdraví, cooldown po smrti a vlastnictví musí být trvalé.
   Přivolání a odvolání nesmí sloužit jako únik nebo léčení v PvP.
 - Kůň vzniká virtuálně přes GUI pro barvu a jméno, bez hledání a ochočování.
-  Administrátorský grant otevře stejný průchod; questové získání je budoucí práce.
+  Administrátorský grant otevře stejný průchod. NekaraRPG nebude vytvářet vlastní
+  questovou mechaniku; případné udělení v příběhu vlastní BetonQuest.
 - Svázaná píšťalka má perzistentní cooldown, spawn 7-12 bloků od hráče a navede
   koně k místu písknutí. Je soulbound, nedropuje a obnova udržuje jedinou nalezenou
   kopii. Smrt koně používá minutový cooldown bez ceny a bez dropu výbavy.
 - PvP používá vlastní perzistentní combat okno. Stabilní identita vlastníka je
   normalizovaný nick chráněný NekaraAuth; poslední známé UUID je doplňkové.
-- `MountRepository` je hranice storage. YAML backend zapisuje atomickým replace a
-  modul při chybě selže uzavřeně bez odstranění aktivní entity.
+- `MountRepository` je hranice storage. Aktivní backend je transakční SQLite s
+  WAL; starý YAML slouží jen k jednorázovému importu. Původní soubor i samostatná
+  záloha zůstávají zachované. Modul při chybě selže uzavřeně.
+
+## Hranice BetonQuest a ValhallaMMO
+
+- BetonQuest vlastní questy, podmínky, dialogy a příběhové odměny. NekaraRPG může
+  nabídnout úzký bezpečný vstup pro existující funkci, ale nevytváří paralelní
+  quest engine ani vlastní questová GUI.
+- ValhallaMMO vlastní skilly, jejich postup, statistiky a ekonomiku rozvoje.
+  NekaraRPG zachovává jeho odměny a může otevřít `/skills`, ale nekopíruje jeho
+  skill stromy ani vlastní nákup skillů.
+- Změny Mounts statistik za economy a questové získávání nejsou aktuální rozsah.
 
 ## Pravidla NekaraAuth
 
@@ -120,7 +132,10 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
 - Centrální hráčské GUI `/nekararpg` zobrazuje pouze zapnuté moduly dostupné podle
   oprávnění. Modulová GUI a příkazy zůstávají vlastníky své doménové logiky.
   Podrobné hodnoty patří do `<module>/config.yml`; současné moduly používají
-  složky `auth`, `fishing`, `sitting`, `campfire` a `mining`.
+  složky `auth`, `fishing`, `sitting`, `campfire`, `mining` a `mounts`.
+- Centrální GUI poskytuje osobní přehled a oprávněnou administrátorskou
+  diagnostiku. Běžná krátká zpětná vazba patří do action baru a delší vysvětlení
+  do lore GUI; technické detaily patří do konzole.
 - Přechod ze starého monolitického configu musí nejprve úspěšně uložit vlastní
   hodnoty do modulových souborů a teprve potom odstranit staré sekce. Existující
   modulový config má při opakovaném startu přednost a nesmí se přepsat.
@@ -142,6 +157,8 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
   release build, úspěšné testy, ověření verze uvnitř pluginu, Git tag a GitHub release.
 - GitHub release obsahuje pouze stabilně pojmenovaný plugin JAR, pokud není
   výslovně schválený další asset.
+- Každý release musí současně aktualizovat kořenové `HANDOFF.md`,
+  `PROJECT_MEMORY.md` a `ROADMAP.md` podle skutečně vydaného stavu.
 - Plugin se na serveru nahrazuje při vypnutém serveru a v `plugins` musí být
   právě jeden NekaraRPG JAR. Bukkit `/reload` není způsob nasazení.
 - NekaraRPG 1.2.0 a novější mohou připravit ověřený stabilní GitHub release do

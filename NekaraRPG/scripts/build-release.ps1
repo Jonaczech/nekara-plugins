@@ -82,6 +82,9 @@ try {
     if ($null -eq $manifestEntry) {
         throw "META-INF/MANIFEST.MF is missing from $stableJar."
     }
+    if ($null -eq $archive.GetEntry("org/sqlite/JDBC.class")) {
+        throw "Bundled SQLite JDBC driver is missing from $stableJar."
+    }
     $manifestReader = [System.IO.StreamReader]::new($manifestEntry.Open())
     try {
         $manifestText = $manifestReader.ReadToEnd()

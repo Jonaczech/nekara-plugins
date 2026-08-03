@@ -53,9 +53,12 @@ radius 24 bloků, jeden bod zdraví za pět sekund a jeden bod jídla za deset s
    oprávnění. Konzole bez argumentu dál dostane textovou nápovědu.
 2. Otevři NekaraMounts a NekaraAuth z centrálního menu a ověř návrat do jejich
    existujících bezpečných GUI bez duplikace mounta nebo píšťalky.
-3. V NekaraAuth změň heslo přes současné heslo, nové heslo a potvrzení. Po logoutu
+3. Klikni na prázdné výplně a informační dlaždice. Menu musí zůstat otevřené a
+   chat nesmí zaplavit technickými vysvětlivkami. S ValhallaMMO ověř tlačítko
+   dovedností proti přímému `/skills`.
+4. V NekaraAuth změň heslo přes současné heslo, nové heslo a potvrzení. Po logoutu
    ověř odmítnutí starého a přijetí nového hesla.
-4. Ověř chybný současný údaj, neshodné potvrzení, zavření každého kroku a odpojení
+5. Ověř chybný současný údaj, neshodné potvrzení, zavření každého kroku a odpojení
    během výpočtu. Účet musí zůstat použitelný a plaintext se nesmí objevit v logu.
 
 ## Akceptace sezení
@@ -132,19 +135,32 @@ pro každý oheň a přidat okolní struktury bez změny smlouvy sezení.
    stav před a po a ověř tučné jméno.
 2. Opakuj po plném restartu a po unloadu chunku. Vždy spočítej entity a ověř jediný
    mount ID bez duplicitního sedla nebo brnění.
-3. Zkus dvě rychlá písknutí a call ve chvíli, kdy persistence ukazuje aktivní
-   entitu v nenačteném chunku. Cooldown musí platit a druhá entita nesmí vzniknout.
+3. Po doběhnutí sleduj přirozené putování v pětiblokovém okruhu. Přesuň se a znovu
+   pískni: aktivní kůň má změnit cíl, třísekundová ochrana má brzdit spam a druhá
+   entita nesmí vzniknout. Zopakuj s aktivní entitou v nenačteném chunku.
 4. Ověř cizí interakce a vstup do horse inventory druhým hráčem.
    Píšťalku zkus zahodit, uložit do truhly a sebrat druhým hráčem; nesmí opustit
    vlastníka. Ověř také `mount whistle remove` a `mount whistle restore`.
 5. Způsob PvP zásah, reconnect a restart v průběhu combat okna. Summon i dismiss
    zůstávají blokované do uloženého času.
-6. Zabij koně se sedlem a brněním. Gear nesmí vypadnout a po minutě se vrátí právě
-   jedna uložená sada. Po smrti hráče se píšťalka vrátí až do jeho inventáře.
+6. Nový kůň musí mít sedlo. Nasaď brnění a obyčejnou truhlu, naplň 54slotové
+   brašny přes GUI a zabij koně. Gear ani obsah nesmí vypadnout a po minutě se
+   vrátí právě jedna uložená sada. Po smrti hráče se píšťalka vrátí do inventáře.
 7. Ověř spawn 7-12 bloků daleko, doběhnutí a čekání u místa písknutí. Opakuj v
    úzkém interiéru, na hraně, ve vodě a v povoleném i zakázaném světě.
 8. Vypni modul a simuluj selhání zápisu pouze na kopii serveru. Při úspěchu se stav
    uloží a entita uklidí; při chybě se entita ponechá a další operace uzamknou.
+9. Ověř persistence brašen přes odvolání, reload a restart, zákaz vyjmutí plné
+   truhly, zákaz píšťalky a shift-clicku a odmítnutí přístupu cizímu hráči.
+10. V menu klikni na prázdný armor slot, výplně a citlivé akce. Prázdný slot nesmí
+    hlásit uložení, výplně nezavírají GUI a odvolání i odebrání píšťalky vyžaduje
+    potvrzení.
+11. Na kopii serveru spusť upgrade s původním `mounts/data.yml`. Zkontroluj
+    databázi i zálohu, stejné vlastníky, mount ID, výbavu, brašny a combat okna.
+    Druhý restart nesmí nic znovu importovat ani duplikovat.
+12. Zablokuj koni přímou trasu vhodnou překážkou. Po zhruba šesti sekundách musí
+    zkusit bezpečný vedlejší přístup, ale nesmí se teleportovat ani vzniknout
+    druhá entita.
 
 ## Akceptace updateru
 
