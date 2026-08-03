@@ -1,5 +1,6 @@
 package cz.nekara.rpg.configuration;
 
+import cz.nekara.rpg.skills.SkillId;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
@@ -53,6 +54,33 @@ class ModuleConfigurationStoreTest {
         assertEquals("custom/legacy.yml", configuration.getString("storage.file"));
         assertEquals("mounts/data.db", configuration.getString("storage.database-file"));
         assertFalse(ModuleConfigurationStore.migrateMountsPreReleaseDefaults(configuration));
+    }
+
+    @Test
+    void legacyMiningValuesMoveIntoTheMiningFolder() {
+        YamlConfiguration shared = new YamlConfiguration();
+        shared.set("mining.experience.chunk-soft-limit", 77);
+        shared.set("abilities.vein-mining.maximum-blocks", 42);
+        YamlConfiguration mining = new YamlConfiguration();
+
+        assertTrue(ModuleConfigurationStore.migrateLegacySkillValues(
+                shared, mining, SkillId.MINING));
+        assertEquals(77, mining.getInt("experience.chunk-soft-limit"));
+        assertEquals(42, mining.getInt("abilities.vein-mining.maximum-blocks"));
+        assertFalse(shared.contains("mining", true));
+        assertFalse(shared.contains("abilities.vein-mining", true));
+    }
+
+    @Test
+    void legacyActivityExperienceMovesIntoItsSkillFolder() {
+        YamlConfiguration shared = new YamlConfiguration();
+        shared.set("activities.experience.archery", 19);
+        YamlConfiguration archery = new YamlConfiguration();
+
+        assertTrue(ModuleConfigurationStore.migrateLegacySkillValues(
+                shared, archery, SkillId.ARCHERY));
+        assertEquals(19, archery.getInt("experience.amount"));
+        assertFalse(shared.contains("activities.experience.archery", true));
     }
 
     @Test

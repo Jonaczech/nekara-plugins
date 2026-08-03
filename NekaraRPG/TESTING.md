@@ -25,10 +25,13 @@ verze, parsování GitHub release, důvěryhodný asset, SHA-256, identitu JARu 
 vloženou release verzi. NekaraMounts navíc testuje normalizaci offline identity,
 hranice a formát cooldownu, starý YAML round-trip, SQLite transakce, import a
 perzistenci combat okna.
-Nekara Skills testuje katalog 16 dovedností, celočíselnou XP křivku do úrovně
-100, odvozený Powerlevel, validaci perk DAG, skládání statistik, nerekurzivní
+Nekara Skills testuje katalog 16 dovedností a 90 prezentovaných perků,
+celočíselnou XP křivku do úrovně 100, odvozený Powerlevel, validaci perk DAG,
+transakční nákup a nepřečerpání bodů, skládání statistik, nerekurzivní
 bojové efekty, vzájemně výlučné dropy, bezpečnost aktivních schopností, XP policy,
-časovou deduplikaci a SQLite round-trip se zamítnutím zastaralé revision.
+časovou deduplikaci, časové chunk počítadlo, škálování perk statů, kódování
+perzistentního původu bloku, migraci SQLite v1 → v2 a atomický admin audit se
+zamítnutím zastaralé revision.
 NekaraAuth navíc ověřuje, že výměna hashe hesla zachová identitu a auditní údaje
 účtu. Campfire testuje pravidla přeskočení noci osamělým hráčem a migraci starého
 Sitting configu; resource test kontroluje zprávy a výchozí oprávnění menu.
@@ -60,16 +63,87 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
    `/nekararpg reload`. V produkci ponech modul vypnutý.
 2. Otevři `/nrpg`. Tlačítko Dovednosti musí otevřít vlastní 54slotový přehled,
    nikoliv `/skills` z ValhallaMMO.
-3. Ověř Power 0, všech 15 přímých dovedností na úrovni 0 a bezpečný návrat do
-   hlavního menu. Kliknutí na výplň ani spodní inventář nesmí přesunout item.
-4. Ověř vznik `plugins/NekaraRPG/skills/data.db`. Reload a restart nesmí databázi
+3. Ověř hlavní úroveň 0, všech 15 přímých dovedností na úrovni 0 a schválené
+   české názvy včetně `Obchodování`. Kliknutí na výplň ani spodní inventář nesmí
+   přesunout item nebo zavřít GUI.
+4. Klikni na každou dovednost. Stezka musí obsahovat šest uzlů, přepínání
+   předchozí/další dovednosti a návrat na přehled. Zamčený uzel musí vysvětlit
+   chybějící úroveň, body nebo předchůdce.
+5. Na kopii profilu s hlavní úrovní a volnými body otevři dostupný perk, zruš
+   potvrzení a ověř beze změny databáze. Potom nákup potvrď: přibude právě jeden
+   rank a odečte se přesná cena. Rychlý dvojklik nesmí přečerpat body.
+6. Ověř vznik `plugins/NekaraRPG/skills/data.db`. Reload a restart nesmí databázi
    poškodit ani změnit revision existujícího testovacího profilu.
-5. Poškoď na kopii databáze schema version. Modul se musí uzamknout, nesmí vytvořit
+7. Poškoď na kopii databáze schema version. Modul se musí uzamknout, nesmí vytvořit
    náhradní profil a hráči ukáže pouze krátké RPG sdělení bez SQL detailů.
-6. Vypni modul během asynchronního otevírání GUI. Starý požadavek nesmí po reloadu
+8. Vypni modul během asynchronního otevírání GUI. Starý požadavek nesmí po reloadu
    znovu otevřít obrazovku jiné generace modulu.
-7. Vypni `modules.skills.enabled`. Pokud je ValhallaMMO načtené, centrální tlačítko
+9. Vypni `modules.skills.enabled`. Pokud je ValhallaMMO načtené, centrální tlačítko
    se musí bezpečně vrátit k jeho `/skills`.
+10. Jako hráč bez `nekararpg.skills.admin` ověř odmítnutí i skryté admin
+    našeptávání. Jako op spusť `inspect`, `grant-xp`, `grant-perk` a všechny tři
+    varianty `reset`; konzole musí fungovat stejně.
+11. Zkontroluj, že každá skutečná změna zvýší revision právě o jednu a `inspect`
+    ukáže správce, operaci, čas, detail a revision před/po. Opakovaná no-op změna
+    revision ani audit nepřidá.
+12. Na kopii databáze v1 proveď start do 2.1.0. Profil, XP a perky musí zůstat
+    stejné a metadata přejít na schéma v2. Neznámá budoucí verze se dál odmítne.
+13. Spusť současně těžební XP a admin reset stejného profilu. Výsledek musí být
+    jedna konzistentní posloupnost revisions bez částečného profilu nebo auditu.
+14. V čisté staging oblasti vytěž krumpáčem každý blok uvedený pod
+    `skills.mining.experience.blocks`. Ověř odpovídající růst Hornictví v
+    `skills/data.db`, jediný revision krok za odměnu a žádné přímé XP pro Power.
+15. Polož a znovu vytěž stejný typ bloku. XP ani výtěžkový bonus nesmí vzniknout;
+    opakuj po restartu, výbuchu a přesunu pístem. Bloky položené před prvním
+    zapnutím trackeru testuj odděleně jako známou přechodovou hranici.
+16. Ověř odmítnutí v Creative, Spectator, zakázaném světě, se zrušeným breakem a
+    po ručně vyvolaném eventu bez skutečné změny bloku. Dvojí dispatch stejného
+    zdroje nesmí vytvořit druhý zápis.
+17. Překroč soft a hard limit v jednom chunku. Mezi limity musí XP klesat až k
+    nastavenému floor multiplikátoru a za hard limitem nevzniknout; sousední chunk
+    zůstává nezávislý a časové okno staré záznamy uvolní.
+18. Na profilu s `mining.yield` a `mining.triple` ověř vzájemně výlučný dvojitý
+    nebo trojitý výtěžek. Bonus musí zachovat metadata skutečných finálních itemů,
+    Silk Touch a Fortune nesmí házet znovu a ValhallaMMO extra odměna se nesmí
+    násobit druhým průchodem.
+19. Ověř Mining rychlost s krumpáčem, `Žhavou směnu` při otevřené peci a vlastní TNT
+    s `mining.blast`. Silnější cizí zrychlení pece se nesmí přepsat, odstřel nesmí
+    zapálit bloky a seznam zasažených bloků musí zůstat pod nastaveným limitem.
+20. S `mining.vein` se při plížení dotkni přirozené propojené žíly. Ověř cooldown,
+    blokový limit, dávkování po ticku, spotřebu krumpáče, zastavení po teleportu a
+    zachování bloků zrušených Lands nebo jinou ochranou.
+21. Stejnou matici XP, položených bloků, chunk limitů, restartu, Creative/Spectator
+    a duplicitního eventu zopakuj se sekerou pro Rubačinu a lopatou pro
+    Zeměrytectví.
+22. Ověř výtěžkové perky obou dovedností. `woodcutting.recipes` smí změnit pouze
+    vanilla recept jednoho kmene na pět prken; `woodcutting.leaves` smí přidat
+    nejvýše jeden vážený nález pouze z přírodního listí.
+23. S `woodcutting.feller` poraz při plížení přírodní strom. Stavba z položených
+    kmenů, strom bez koruny, cizí chunk a blok zrušený ochranou musí zůstat beze
+    změny. Ověř cooldown, limit, dávkování a vanilla durability sekery.
+24. U Zeměrytectví ověř vážené nálezy z přirozené zeminy. `digging.archaeology`
+    rozšíří tabulku, ale suspicious sand/gravel se samotným rozbitím neodměňuje.
+25. Sklízej jen plně zralé plodiny. Nezralá plodina, Creative/Spectator a zrušený
+    break nesmí dát Farming XP. `instant` znovu zasadí jen po úspěšném
+    `Player.breakBlock`; `field` zasáhne nejvýše 3×3 načtených bloků.
+26. Dokonči běžný i deferred NekaraFishing úlovek. Každý dá Fishing XP právě
+    jednou; neúspěšná minihra, reel bez itemu a zrušený catch nedají nic.
+27. Proveď trade, craft výbavy, smithing a enchant. Ověř jednu nakonfigurovanou XP
+    odměnu, slevový refund až po obchodu, úsporu až po craftu a žádnou odměnu za
+    zrušenou událost nebo přejmenovaný nesouvisející item.
+28. Ručně vlož ingredienci do brewing standu a dokonči var. Potom opakuj pouze
+    hopperem bez otevření stojanu; druhý var nesmí dostat vlastníka ani Alchemy XP.
+29. Každou bojovou dovednost testuj proti nepřátelské entitě. PvP alt, armor stand
+    a pasivní zvíře nesmí udělit combat XP. Armor XP vzniká jen v plné lehké nebo
+    těžké sadě po skutečném zásahu nepřítelem.
+30. Ověř parry, dodge, reflection, charged shot, coating, uppercut/dropkick/grapple
+    a adrenalin/rage. Reflection nesmí rekurzivně spouštět další reflection ani XP.
+31. Proveď burst alespoň 1000 způsobilých akcí. Konzole nesmí hlásit zaplnění XP
+    fronty, hlavní tick se nesmí blokovat SQLite zápisem a revision profilu musí
+    zůstat monotónní.
+32. Po prvním lehnutí ověř log o nativním mannequin vizuálu, vlastní third-person
+    pohled i pohled druhého hráče. Vstání, teleport, poškození a odpojení musí
+    odstranit mannequin, obnovit viditelnost hráče a nezměnit skutečný svět.
 
 ### 1a. Centrální menu a účet
 

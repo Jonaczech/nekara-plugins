@@ -1,5 +1,6 @@
 package cz.nekara.rpg.configuration;
 
+import cz.nekara.rpg.skills.SkillId;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -15,7 +16,14 @@ import java.util.List;
 import java.util.Map;
 
 final class ModuleConfigurationStore {
-    private static final List<ModuleFile> MODULE_FILES = List.of(
+    private static final List<ModuleFile> MODULE_FILES = moduleFiles();
+    private static final Map<SkillId, List<String>> SKILL_ABILITIES = Map.of(
+            SkillId.MINING, List.of("vein-mining", "drilling"),
+            SkillId.WOODCUTTING, List.of("tree-feller")
+    );
+
+    private static List<ModuleFile> moduleFiles() {
+        List<ModuleFile> files = new java.util.ArrayList<>(List.of(
             new ModuleFile("auth/config.yml", "auth", List.of("auth"), List.of()),
             new ModuleFile("fishing/config.yml",
                     null,
@@ -29,7 +37,18 @@ final class ModuleConfigurationStore {
                             "echo-vein-success", "echo-vein-failure")),
             new ModuleFile("mounts/config.yml", "mounts", List.of("mounts"), List.of()),
             new ModuleFile("skills/config.yml", "skills", List.of("skills"), List.of())
-    );
+        ));
+        for (SkillId skill : SkillId.gameplaySkills()) {
+            files.add(new ModuleFile(
+                    "skills/" + skill.id() + "/config.yml",
+                    "skills." + skill.id(), List.of(), List.of()));
+        }
+        files.add(new ModuleFile("skills/woodcutting/loot-tables.yml",
+                "skills.woodcutting.rewards", List.of(), List.of()));
+        files.add(new ModuleFile("skills/digging/loot-tables.yml",
+                "skills.digging.rewards", List.of(), List.of()));
+        return List.copyOf(files);
+    }
 
     private final JavaPlugin plugin;
 
@@ -53,6 +72,8 @@ final class ModuleConfigurationStore {
             loaded.put(definition, module);
         }
 
+        migrateLegacySkillLayout(loaded);
+
         if (migrateLegacy) {
             for (ModuleFile definition : MODULE_FILES) {
                 removeLegacyValues(root, definition);
@@ -69,6 +90,88 @@ final class ModuleConfigurationStore {
             copyModuleValues(entry.getValue().configuration(), merged, entry.getKey().mountPath(), true);
         }
         return merged;
+    }
+
+    private void migrateLegacySkillLayout(Map<ModuleFile, LoadedModule> loaded) {
+        LoadedModule shared = loaded.entrySet().stream()
+                .filter(entry -> "skills/config.yml".equals(entry.getKey().resourcePath()))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElseThrow();
+        boolean sharedChanged = false;
+
+        for (SkillId skill : SkillId.gameplaySkills()) {
+            LoadedModule target = findLoaded(loaded, "skills/" + skill.id() + "/config.yml");
+            if (!target.existedBeforeLoad()) {
+                sharedChanged |= migrateLegacySkillValues(
+                        shared.configuration(), target.configuration(), skill);
+                save(target.configuration(), target.file());
+            }
+        }
+
+        sharedChanged |= migrateLootTable(loaded, SkillId.WOODCUTTING);
+        sharedChanged |= migrateLootTable(loaded, SkillId.DIGGING);
+        if (sharedChanged) {
+            save(shared.configuration(), shared.file());
+            plugin.getLogger().info("Migrated Nekara Skills configuration to per-skill folders.");
+        }
+    }
+
+    static boolean migrateLegacySkillValues(
+            YamlConfiguration shared,
+            YamlConfiguration target,
+            SkillId skill
+    ) {
+        boolean changed = copyAndRemoveSection(shared, target, skill.id(), "");
+        String legacyExperience = "activities.experience." + skill.id();
+        if (shared.contains(legacyExperience, true)) {
+            target.set("experience.amount", shared.get(legacyExperience));
+            shared.set(legacyExperience, null);
+            changed = true;
+        }
+        for (String ability : SKILL_ABILITIES.getOrDefault(skill, List.of())) {
+            changed |= copyAndRemoveSection(
+                    shared, target, "abilities." + ability, "abilities." + ability);
+        }
+        return changed;
+    }
+
+    private boolean migrateLootTable(Map<ModuleFile, LoadedModule> loaded, SkillId skill) {
+        LoadedModule config = findLoaded(loaded, "skills/" + skill.id() + "/config.yml");
+        LoadedModule loot = findLoaded(loaded, "skills/" + skill.id() + "/loot-tables.yml");
+        if (loot.existedBeforeLoad()
+                || !config.configuration().contains("rewards.rare-drops", true)) {
+            return false;
+        }
+        copyPath(config.configuration(), loot.configuration(),
+                "rewards.rare-drops", "rare-drops");
+        config.configuration().set("rewards.rare-drops", null);
+        save(config.configuration(), config.file());
+        save(loot.configuration(), loot.file());
+        return true;
+    }
+
+    private static boolean copyAndRemoveSection(
+            YamlConfiguration source,
+            YamlConfiguration target,
+            String sourcePath,
+            String targetPath
+    ) {
+        if (!source.contains(sourcePath, true)) {
+            return false;
+        }
+        copyPath(source, target, sourcePath, targetPath);
+        source.set(sourcePath, null);
+        return true;
+    }
+
+    private LoadedModule findLoaded(Map<ModuleFile, LoadedModule> loaded, String resourcePath) {
+        return loaded.entrySet().stream()
+                .filter(entry -> resourcePath.equals(entry.getKey().resourcePath()))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "Missing loaded module configuration: " + resourcePath));
     }
 
     private LoadedModule load(ModuleFile definition) {
@@ -188,7 +291,7 @@ final class ModuleConfigurationStore {
         }
     }
 
-    private void copyPath(FileConfiguration source, YamlConfiguration target,
+    private static void copyPath(FileConfiguration source, YamlConfiguration target,
                           String sourcePath, String targetPath) {
         ConfigurationSection section = source.getConfigurationSection(sourcePath);
         if (section == null) {

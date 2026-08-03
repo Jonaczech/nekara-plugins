@@ -17,29 +17,25 @@ Tento repozitář obsahuje serverové Minecraft pluginy pro ekosystém Nekara.
 
 | Plugin | Stav | Popis |
 | --- | --- | --- |
-| `NekaraRPG` | aktivní | Centrální modulární plugin s NekaraAuth, rybařením, sezením, odpočinkem u ohně, NekaraMining a NekaraMounts. |
+| `NekaraRPG` | aktivní | Centrální modulární plugin s NekaraAuth, činnostmi, Tábořením, NekaraMining, NekaraMounts a vývojovou platformou Nekara Skills. |
 
 ## Aktuální směr
 
-`NekaraRPG` se má stát centrálním pluginem pro propojené RPG a imerzivní
-systémy Nekary. Každá herní oblast je samostatný modul, který lze zapnout nebo
-vypnout v konfiguraci. Release 1.5.1 obsahuje moduly `auth`, `fishing`, `sitting`,
-`campfire`, `mining` a `mounts`; Campfire používá Sitting jako základ stavu hráče.
+`NekaraRPG` je centrální plugin pro propojené RPG a imerzivní systémy Nekary.
+Každá herní oblast zůstává samostatně zapínatelným modulem uvnitř jednoho JARu.
+Nejnovější stabilní release je 2.1.0. Přidává 16 českých dovedností, původní
+katalog 90 perků, detailní GUI, transakční nákup za body hlavní úrovně, runtime
+vertikály všech 15 trénovaných skillů, eventové perk efekty, omezenou XP frontu a
+rozdělené konfigurace jednotlivých dovedností. Oprava ležení používá nativní
+Paper/Purpur mannequin namísto ručně sestavovaných packetových metadat.
+Součástí releasu je také operátorská staging správa s transakčním auditem v
+SQLite schématu v2.
 
-NekaraMounts je vydaný ve verzi 1.5.1; rozsah a zbývající živá akceptace jsou v
-`ROADMAP.md` a `NekaraRPG/LIVE_TESTING.md`.
-Možné pozdější moduly:
-
-- `lockpicking`
-- `wounds`
-- `world-events`
-- `rumors`
-- `territory`
-- `reputation`
-
-Plugin nemá duplikovat systémy, které už dobře řeší ValhallaMMO. Integrace s
-ValhallaMMO musí zůstat volitelná a zachovat vanilla i ValhallaMMO odměny místo
-jejich nahrazování.
+Všech 15 skillů je připraveno pro postupnou živou akceptaci, ale nativní modul
+zůstává výchozím stavem vypnutý. ValhallaMMO je produkční autoritou až do ověřené
+migrace, měření MSPT a rollbacku bez dvojího udělování XP nebo odměn. Aktuální rozsah a přesný další krok
+jsou v `HANDOFF.md`, `ROADMAP.md` a
+`NekaraRPG/docs/SKILLS_2_0_ROADMAP.md`.
 
 ## Vydání NekaraRPG
 

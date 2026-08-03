@@ -1,0 +1,5 @@
+# Weighted entries are rolled only after the rare-drop perk succeeds.
+rare-drops:
+  STICK: 12
+  APPLE: 4
+  HONEYCOMB: 1

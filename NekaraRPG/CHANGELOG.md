@@ -1,5 +1,76 @@
 # Přehled změn
 
+## 2.1.0
+
+- Všech 15 trénovaných dovedností má nativní runtime zdroj XP. Nové eventové
+  listenery pokrývají Farming, Fishing, Trading, Smithing, Enchanting, Alchemy,
+  Martial Arts, Light/Heavy Weapons, Archery a Light/Heavy Armor; Creative,
+  Spectator, PvP/alt cíle, pasivní combat farmy a nepřiřazený automatický var jsou
+  odmítnuté.
+- Zakoupené perky jsou zapojené do sběru, výroby, obchodu, alchymie, rybaření,
+  boje a armor setů. Aktivní techniky mají cooldown a bounded zásah; sekundární
+  reflection damage je označený proti rekurzi a nepřidává XP.
+- Zápisy XP používají omezenou frontu 8192 požadavků, jednoho asynchronního
+  konzumenta a dávky po 256 místo samostatné scheduler úlohy pro každou akci.
+  Přepočítané staty/mechaniky se cachují do změny revision profilu a žádná nová
+  vertikála neskenuje svět po ticku.
+- Po živém pádu packet encoderu byla odstraněna nebezpečná ProtocolLib metadata
+  větev ležení. Vizuál nyní používá nativní Purpur/Paper mannequin se skinem a
+  výbavou hráče v podporované sleeping póze; při nepodporované póze nebo chybě
+  zůstane bezpečný serverový fallback. Kontrola sedadel byla snížena z každého
+  ticku na dvakrát za sekundu.
+- Každá z 15 trénovaných dovedností má vlastní složku s `config.yml` a
+  `messages.yml`; Rubačina a Zeměrytectví mají navíc samostatné loot tabulky.
+  Starý monolitický skill config se při prvním startu migruje bez přepsání již
+  existujících modulárních souborů.
+- Perk GUI používá rozpoznatelné ikony podle dominantního atributu nebo mechaniky.
+  Kritický zásah, omráčení, krvácení, úhyb, odraz, výtěžek i ostatní definované
+  statistiky tak nejsou schované pod obecnou barvou stavu.
+- Krvácení lehkých zbraní je zapojené do ostrého combat listeneru. Aktivní efekty
+  obsluhuje jedna fronta s limitem 2048 cílů a třemi sekundovými tiky; sekundární
+  damage je označený proti rekurzi a nemůže znovu spustit perky ani XP.
+
+- Schváleny české názvy všech šestnácti dovedností včetně `Obchodování` a
+  `Hlavní úroveň`; názvy jsou nyní na jednom místě a používá je celé GUI.
+- Přidán původní clean-room katalog 90 perků: každá z patnácti trénovaných
+  dovedností má šest uzlů ve dvou větvích a vrcholový perk na úrovni 100.
+  Typované efekty pokrývají veřejně popsané rodiny statistik a schopností, ale
+  nepřebírají cizí názvy, texty, hodnoty ani rozložení.
+- Kliknutí na dovednost otevře vlastní 54slotovou stezku. GUI rozlišuje naučené,
+  dostupné a zamčené perky, ukazuje cenu, hodnost, potřebnou úroveň a předchůdce,
+  dovoluje přepínat sousední stezky a při kliknutí na výplň zůstává otevřené.
+- Nákup perku používá potvrzovací obrazovku a server znovu ověří rank, úroveň,
+  předchůdce i společné Power body. SQLite compare-and-save zabraňuje přečerpání
+  při souběhu a hráčský zámek tlumí dvojklik během probíhajícího zápisu.
+- Přidána první nativní XP vertikála pro Hornictví. XP vznikají jen z fyzicky
+  dokončeného `BlockBreakEvent` s krumpáčem, používají konfigurovatelnou tabulku
+  bloků, časové limity aktivity v chunku, deduplikaci a atomický zápis profilu.
+- Hráčem položené bloky se při zapnutém modulu značí v perzistentních datech
+  chunku a Mining XP ani výtěžkový bonus za ně nevzniknou. Značky se čistí při
+  vytěžení, výbuchu a přesunu pístem.
+- `Hlas kamene` a `Srdce hory` jsou první živé perk efekty. Dvojitý a trojitý
+  výtěžek se vzájemně vylučují a klonují pouze skutečné finální itemy z
+  `BlockDropItemEvent`; loot tabulka, Fortune ani ValhallaMMO odměny se nehází
+  znovu.
+- Přidána auditovaná staging správa přes `/nrpg skills admin`: bezpečně umí
+  profil prohlédnout, přidat zastropovaná XP, udělit validovaný rank perku a
+  resetovat skill, perky nebo celý profil. SQLite schéma v2 migruje v1 data a
+  zapisuje změnu profilu i identitu správce do jedné transakce.
+- Dokončena nativní sběrná pipeline pro Hornictví, Rubačinu a Zeměrytectví. Všechny
+  tři dovednosti získávají XP jen z fyzicky zahájeného a dokončeného hráčského
+  rozbití správným nástrojem, sdílejí ochranu původu bloků, chunk limity, otisky
+  akcí a atomický zápis profilu.
+- Hornické perky nyní řídí násobné finální dropy, rychlost těžení, rychlost pece,
+  `Žilobití` při plížení a omezený `Řízený odstřel` vlastním TNT. Rubačina přidává
+  bezpečný `Pád velikána`, pět prken z vanilla receptu, vzácné nálezy v listí a
+  výtěžkové perky. Zeměrytectví přidává XP, rychlost, násobné dropy a vážené
+  nálezy včetně rozšíření perkem `Paměť střepů`.
+- Hromadné schopnosti nikdy nenačítají cizí chunky, mají blokový rozpočet, dávku
+  na tick a cooldown. Každý sekundární blok rozbíjejí přes `Player.breakBlock`,
+  takže regionové pluginy mohou jednotlivé bloky zrušit a vanilla durability i
+  loot proběhnou pouze jednou. Modul zůstává do živé akceptace výchozím stavem
+  vypnutý a ValhallaMMO autoritou produkčního serveru.
+
 ## 2.0.0
 
 - Založeno nativní jádro Nekara Skills se 16 dovednostmi: patnáct dovedností

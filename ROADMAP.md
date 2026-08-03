@@ -5,9 +5,10 @@ zůstávají v `PROJECT_MEMORY.md` a aktuální release stav v `HANDOFF.md`.
 
 ## Aktuální stav
 
-- Nejnovější stabilní release: **NekaraRPG 2.0.0** s vypnutým základem Nekara
-  Skills, opravou výbavy koně, obrazovkou Činnosti a rozšířeným Tábořením.
-- Release je dostupný updateru; migrace SQLite, brašny, pathfinding
+- Nejnovější stabilní release: **NekaraRPG 2.1.0** s 90 původními perky,
+  chráněnými runtime vertikálami všech 15 trénovaných dovedností, rozdělenými
+  konfiguracemi skillů a bezpečným mannequin vizuálem ležení.
+- Release je dostupný updateru; živá akceptace skillů, migrace SQLite, brašny a pathfinding
   ještě vyžadují živou Purpur akceptaci.
 - Modul zůstane součástí jediného `NekaraRPG.jar` a bude samostatně zapínatelný.
 
@@ -19,16 +20,37 @@ bojovými efekty a bezpečnými aktivními schopnostmi. Detailní fáze a bloká
 plné aktivace jsou v `NekaraRPG/docs/SKILLS_2_0_ROADMAP.md`; architekturu a
 clean-room hranice určuje `NekaraRPG/docs/adr/0001-native-skills-platform.md`.
 
-Aktuálně je hotové čisté doménové jádro: XP křivka, Power, profily, validace perk
-grafu, statistiky, nerekurzivní bojové efekty, drop multiplier, bezpečnost aktivních
-schopností a XP deduplikace. Přibyl SQLite adaptér s optimistic revision a výchozím
-stavem vypnutý read-only 54slotový přehled. Následuje detail perk stromu, transakční
-nákup a první XP vertikála. Rozpracovaná oprava ležení z 1.10.1 zůstává zachovaná
-uvnitř 2.0 větve.
+Aktuálně je hotové čisté doménové jádro, SQLite adaptér s optimistic revision,
+český katalog 90 původních perků, detailní 54slotové stezky a potvrzený
+transakční nákup za Power body. Všech 15 trénovaných dovedností zapisuje nativní
+XP z validovaných událostí a provádí vlastní runtime efekty. Sběrné vertikály
+sledují původ bloků, používají omezené grafové průchody a chrání vanilla i custom
+loot před druhým odměnovým průchodem. Auditovaná staging správa používá SQLite
+schéma v2 a bezpečnou migraci profilů z v1. Verze 2.1.0 je publikovaná, ale modul
+zůstává ve výchozím stavu vypnutý.
+
+### Bezprostřední další krok po release 2.1.0
+
+1. Hotovo v kódu: všech 15 trénovaných dovedností používá validované eventové
+   zdroje XP napojené na společný `SkillExperienceService`.
+2. Hotovo v kódu: perzistentní původ hráčem položených bloků, chunk heat,
+   deduplikace a výtěžkové staty nad skutečnými finálními dropy.
+3. Hotovo v kódu: operátorský staging nástroj pro inspect, grant XP/perku a
+   reset se společnou transakcí profilu a auditního záznamu.
+4. Hotovo v kódu: Žilobití, Řízený odstřel a Pád velikána respektují regionové
+   eventy, limit bloků, dávkování, durability, cooldown a jediný odměnový průchod;
+   rychlost nástroje a pece nepřepisuje silnější externí efekt. Bojové efekty mají
+   ochranu před syntetickou rekurzí, krvácení má centrální kapacitu a perk GUI
+   zobrazuje ikonku podle dominantního efektu.
+5. Živě ověřit restart, migraci schématu i rozdělených configů, souběžné XP/admin
+   změny, dvojklik, mannequin ležení, položené bloky, Fortune, Silk Touch, custom
+   itemy, aktivní schopnosti a kompatibilitu s ValhallaMMO bez druhého loot
+   průchodu. Potom na kopii stagingu provést čistě nativní test všech 15 vertikál
+   bez ValhallaMMO a měřit MSPT.
 
 ValhallaMMO zůstane na produkčním serveru až do ověřené migrace a nebude se
 odstraňovat ani paralelně odměňovat bez exportu, zálohy, rollback plánu a živé
-akceptace. Release 2.0.0 proto vydává modul `skills` vypnutý a ponechává
+akceptace. Release 2.1.0 proto vydává modul `skills` vypnutý a ponechává
 ValhallaMMO jako autoritativní produkční systém.
 
 ## NekaraMounts — aktuální rozsah

@@ -1,0 +1,29 @@
+configuration-version: 1
+experience:
+  enabled: true
+  chunk-window-seconds: 300
+  chunk-soft-limit: 32
+  chunk-hard-limit: 128
+  farm-floor-multiplier: 0.10
+  blocks:
+    OAK_LOG: 4
+    SPRUCE_LOG: 4
+    BIRCH_LOG: 4
+    JUNGLE_LOG: 4
+    ACACIA_LOG: 4
+    DARK_OAK_LOG: 4
+    MANGROVE_LOG: 4
+    CHERRY_LOG: 4
+    PALE_OAK_LOG: 4
+    CRIMSON_STEM: 4
+    WARPED_STEM: 4
+    BAMBOO_BLOCK: 2
+rewards:
+  final-drop-multiplier-enabled: true
+  rare-drops-enabled: true
+abilities:
+  tree-feller:
+    enabled: true
+    maximum-blocks: 64
+    blocks-per-tick: 8
+    cooldown-seconds: 12

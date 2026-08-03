@@ -1,5 +1,7 @@
 package cz.nekara.rpg.sitting;
 
+import org.bukkit.entity.Pose;
+
 public final class LyingMovementPolicy {
     private LyingMovementPolicy() {
     }
@@ -15,5 +17,9 @@ public final class LyingMovementPolicy {
         return Double.compare(fromX, toX) != 0
                 || Double.compare(fromY, toY) != 0
                 || Double.compare(fromZ, toZ) != 0;
+    }
+
+    public static boolean shouldRefreshPose(Pose pose) {
+        return pose != Pose.SLEEPING;
     }
 }

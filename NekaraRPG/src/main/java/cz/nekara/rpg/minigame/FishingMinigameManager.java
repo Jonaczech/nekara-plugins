@@ -4,6 +4,7 @@ import cz.nekara.rpg.configuration.FishingConfig;
 import cz.nekara.rpg.configuration.HookParticleConfig;
 import cz.nekara.rpg.configuration.MinigameConfig;
 import cz.nekara.rpg.configuration.OutcomeEffectConfig;
+import cz.nekara.rpg.fishing.FishingCatchDeliveredEvent;
 import cz.nekara.rpg.configuration.PluginConfig;
 import cz.nekara.rpg.configuration.ValhallaFishingConfig;
 import cz.nekara.rpg.compatibility.ValhallaExperienceBridge;
@@ -502,6 +503,8 @@ public final class FishingMinigameManager {
             if (valhallaExperienceBridge != null) {
                 valhallaExperienceBridge.deliver(player, session);
             }
+            Bukkit.getPluginManager().callEvent(new FishingCatchDeliveredEvent(
+                    player, originalCatch, session.vanillaExpToDrop(), UUID.randomUUID()));
             debug("Delivered original deferred catch to " + player.getName()
                     + "; item=" + originalCatch.getType()
                     + ", exp=" + session.vanillaExpToDrop()

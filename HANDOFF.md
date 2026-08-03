@@ -6,27 +6,43 @@ Repozitář je publikovaný jako
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 Výchozí větev je `main`.
 
-Nejnovější stabilní a publikovaná verze je **NekaraRPG 2.0.0**. Vestavěný
-updater ji rozpozná jako nový major release:
+Vývoj verze **2.1.0** proběhl na větvi
+`codex/nekararpg-2.1.0-perk-trees` a byl zkontrolován v
+[pull requestu #31](https://github.com/Jonaczech/nekara-plugins/pull/31). Nejnovější
+stabilní a publikovaná verze je **NekaraRPG 2.1.0**:
 
-- tag: `v2.0.0`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v2.0.0>
+- tag: `v2.1.0`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v2.1.0>
 - nasazovaný soubor: `NekaraRPG.jar`
-- release commit: `0eeb2bea2d1f61e5c40ec81df9b3c6c4a1f39fab`
 - SHA-256 vydaného JARu:
-  `C768215E7ED08F7F2ED99F0359597ECFB0B18552A9D5AEEE4EAAB53A4A889514`
-- velikost release assetu: `12399790` bajtů
-- automatické ověření: 116 úspěšných testů
+  `AC1946D319F46BB977C1B64F81FE17EE6B5E98F5693FD5854A50A294FDB70654`
+- velikost release assetu: `12618184` bajtů
+- automatické ověření: 159 úspěšných testů
 
-Verze 2.0.0 zakládá clean-room platformu Nekara Skills: 16 dovedností, strop 100,
-odvozený Powerlevel, validované perky a statistiky, bezpečnostní jádro bojových a
-sběrných mechanik, transakční SQLite profily a atomické XP zpracování. Nativní
-modul `skills` je výchozím stavem vypnutý a nabízí pouze read-only 54slotový
-přehled; ValhallaMMO zatím zůstává autoritativní a nesmí se vypínat.
+Release 2.1.0 rozšiřuje clean-room platformu Nekara Skills o schválené české názvy, původní
+katalog 90 perků, detailní 54slotovou stezku každé dovednosti, navigaci,
+potvrzovací dialog a atomický nákup za společné body hlavní úrovně. Všech 15
+trénovaných skillů má validovaný eventový zdroj XP; sběrné, výrobní, obchodní,
+rybářské, bojové a armor perky používají sdílenou cache a exploit pojistky.
+SQLite schéma v2 přidává transakční migraci v1 a auditovanou staging správu
+profilů přes `/nrpg skills admin`. XP zápisy procházejí omezenou frontou o kapacitě
+8192 a dávkách nejvýše 256; hromadné schopnosti mají pevné rozpočty bloků a
+nenačítají cizí chunky. Každý skill má vlastní `config.yml` a `messages.yml`,
+Rubačina a Zeměrytectví navíc vlastní `loot-tables.yml`; migrace zachovává známé
+hodnoty ze starého monolitického configu.
 
 Release současně obsahuje opravy připravené původně pro 1.10.1: sezení i ležení
 jsou znovu přímo v `/nrpg`, lehnout lze kdekoliv, Rested funguje jen u ohně a
-pohyb už sleeping pózu bezprostředně neruší.
+pohyb už sleeping pózu bezprostředně neruší. Nebezpečná packetová metadata přes
+ProtocolLib byla po chybě v živém logu odstraněna. Vizuál ležení nyní používá
+nativní Paper/Purpur `Mannequin` se skinem a výbavou hráče; při nepodporované póze
+nebo runtime chybě se aktivuje bezpečný serverový fallback.
+
+Nativní modul `skills` zůstává ve výchozím stavu vypnutý. ValhallaMMO je nadále
+produkční autoritou, dokud neproběhne živá akceptace všech 15 vertikál, migrace
+profilů, měření MSPT a ověření rollbacku bez dvojího udělování XP nebo odměn.
+Release artefakt je sestavený a automaticky ověřený; živá Purpur akceptace včetně
+mannequin vizuálu po restartu serveru stále zbývá.
 
 Metadata GitHub release, hash zpětně staženého JARu, verze uvnitř `plugin.yml`,
 přítomnost SQLite ovladače, stabilní `latest` stav, jediný asset, cíl tagu a hash
@@ -36,18 +52,29 @@ zpětně staženého JARu byly ověřeny. Zbývá živě ověřit chování na P
 záměrně stabilní, aby při nasazení nevznikla druhá verzovaná kopie vedle
 aktivního pluginu.
 
-## NekaraRPG 2.0.0
+## NekaraRPG 2.1.0
 
 Centrální menu propojuje NekaraAuth, NekaraMounts, Činnosti a dovednosti.
 Při vypnutém `modules.skills.enabled` vede tlačítko dál do ValhallaMMO `/skills`.
-Po ručním zapnutí nativního modulu otevře read-only přehled Nekara Skills, ale
-neuděluje XP, perky ani herní bonusy. Správa NekaraRPG je viditelná a
+Po ručním zapnutí nativního modulu lze otevřít šest perků každé dovednosti a
+dostupný perk po potvrzení atomicky koupit. Všech 15 trénovaných dovedností má
+nativní zdroj XP a provádí zakoupené runtime efekty. Správa NekaraRPG je viditelná a
 otevíratelná pouze s `nekararpg.command.status`, které má výchozí hodnotu `op`.
 
+Schválené názvy jsou: Hlavní úroveň, Řemeslo, Runotepectví, Alchymie, Hornictví,
+Rubačina, Zeměrytectví, Sedlačení, Sekání a bodání, Brutální boj, Umění dlaně,
+Obchodování, Udičkářství, Umění střelby, Stínový oděv a Plátová ochrana.
+
 Nekara Skills ukládá profily do `skills/data.db` za `SkillProfileRepository`.
-SQLite používá WAL, cizí klíče a optimistic revision; neznámou budoucí verzi
+SQLite schéma v2 používá WAL, cizí klíče a optimistic revision, migruje v1 v
+jedné transakci a ukládá admin změnu společně s identitou správce; neznámou budoucí verzi
 schématu odmítne před vytvořením starších tabulek. XP policy a fingerprint guard
-jsou připravené, ale Paper listenery zatím nejsou zapojené.
+jsou zapojené pro všechny tři sběrné zdroje. Hráčem položené bloky se od doby
+zapnutí modulu značí v perzistentních datech chunku, časové chunk limity tlumí
+farmení a stejný zdrojový otisk se nezapíše dvakrát. Nákup perku vždy znovu načte
+profil, ověří úroveň, předchůdce, rank i Power body a uloží jej přes optimistic
+revision. Současný dvojklik stejného hráče tlumí zámek probíhajícího zápisu;
+autoritou zůstává kontrola uvnitř transakční služby.
 
 Ležení používá pevnou spánkovou pózu bez postele, změny spawnu nebo volání CMI.
 Počítá se do Rested stejně jako sezení. Noc se po nastaveném čekání posune pouze
@@ -162,8 +189,8 @@ provést úplný restart a zkontrolovat startovací logy.
 
 ## Další práce
 
-Nejdřív živě otestuj vydanou verzi 2.0.0 podle `NekaraRPG/TESTING.md` a
-`NekaraRPG/LIVE_TESTING.md`, zejména:
+Nejdřív spusť vydaný `NekaraRPG.jar` 2.1.0 na Purpur serveru a podle
+`NekaraRPG/TESTING.md` a `NekaraRPG/LIVE_TESTING.md` ověř zejména:
 
 - registraci, login, lockout, přesný zápis nicku a blokaci akcí NekaraAuth,
 - bezpečný přechod s aktivním AuthMe a převzetí po jeho odstranění,
@@ -172,11 +199,19 @@ Nejdřív živě otestuj vydanou verzi 2.0.0 podle `NekaraRPG/TESTING.md` a
 - že +25 % XP vzniká právě jednou z označeného bloku,
 - že 50% řetězení a bonusový drop nejsou příliš štědré.
 
-ValhallaMMO ponech zapnuté. Po běžném restartu nejdřív ověř beze změny jeho
-`/skills`, protože nativní modul je výchozím stavem vypnutý. Teprve potom nastav
-`modules.skills.enabled: true`, použij `/nekararpg reload` a ověř read-only
-přehled, Power 0, všech 15 dovedností na úrovni 0, návrat do `/nrpg`, vznik
-`skills/data.db` a žádné nativní XP nebo bonusové dropy.
+ValhallaMMO ponech zapnuté. Na izolovaném stagingu nastav
+`modules.skills.enabled: true` a ověř přehled, všech 15 stezek, ikonky efektů,
+zamčené stavy, navigaci, bezpečné klikání, XP zdroje a perky všech vertikál.
+Auditovaný grant/reset je dostupný pod `/nrpg skills admin`. Ověř, že Creative,
+Spectator, zrušená nebo syntetická událost, hráčem položený blok, duplicitní event
+a přehřátý chunk odměnu nevytvoří. Zkontroluj migraci rozdělených konfigurací a
+ležící mannequin vizuál bez packet encoder chyb. Bloky položené před prvním
+zapnutím trackeru nelze zpětně spolehlivě rozlišit; první staging test proto dělej
+v čisté oblasti.
+
+Po záloze lze v plánovaném testovacím okně ValhallaMMO dočasně vypnout a provést
+čistě nativní test všech 15 vertikál se sledováním MSPT. Produkční odstranění má
+smysl až po exportu a mapování profilů, paritním provozu a ověřeném rollbacku.
 
 Součástí akceptace je osobní přehled, administrátorská diagnostika a celý bezpečný
 průchod změny hesla. U Mounts ověř migraci YAML do SQLite, zachování brašen přes

@@ -10,10 +10,20 @@ import cz.nekara.rpg.modules.campfire.CampfireModule;
 import cz.nekara.rpg.modules.fishing.FishingModule;
 import cz.nekara.rpg.modules.mining.MiningModule;
 import cz.nekara.rpg.modules.mounts.MountsModule;
+import cz.nekara.rpg.modules.skills.SkillsModule;
 import cz.nekara.rpg.modules.sitting.SittingModule;
 import cz.nekara.rpg.sitting.SitResult;
+import cz.nekara.rpg.skills.SkillId;
+import cz.nekara.rpg.skills.SkillPresentation;
+import cz.nekara.rpg.skills.admin.SkillAdminActor;
+import cz.nekara.rpg.skills.admin.SkillAdminInspection;
+import cz.nekara.rpg.skills.admin.SkillAdminOperation;
+import cz.nekara.rpg.skills.admin.SkillAuditEntry;
+import cz.nekara.rpg.skills.admin.SkillAdminResult;
+import cz.nekara.rpg.skills.perks.PerkId;
 import cz.nekara.rpg.updater.UpdaterService;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -21,17 +31,25 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
+    private static final DateTimeFormatter AUDIT_TIME = DateTimeFormatter
+        .ofPattern("yyyy-MM-dd HH:mm:ss 'UTC'")
+        .withZone(ZoneOffset.UTC);
+
     private final NekaraRPGPlugin plugin;
     private final FishingModule fishingModule;
     private final SittingModule sittingModule;
     private final CampfireModule campfireModule;
     private final MiningModule miningModule;
     private final MountsModule mountsModule;
+    private final SkillsModule skillsModule;
     private final ModuleRegistry modules;
     private final MessageService messages;
     private final UpdaterService updater;
@@ -44,6 +62,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
             CampfireModule campfireModule,
             MiningModule miningModule,
             MountsModule mountsModule,
+            SkillsModule skillsModule,
             ModuleRegistry modules,
             MessageService messages,
             UpdaterService updater,
@@ -55,6 +74,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
         this.campfireModule = campfireModule;
         this.miningModule = miningModule;
         this.mountsModule = mountsModule;
+        this.skillsModule = skillsModule;
         this.modules = modules;
         this.messages = messages;
         this.updater = updater;
@@ -164,6 +184,10 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                 } else {
                     messages.send(sender, "update-usage");
                 }
+                yield true;
+            }
+            case "skills" -> {
+                handleSkillsAdmin(sender, args);
                 yield true;
             }
             case "sit" -> {
@@ -292,6 +316,248 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
         return false;
     }
 
+    private void handleSkillsAdmin(CommandSender sender, String[] args) {
+        if (!require(sender, "nekararpg.skills.admin")) {
+            return;
+        }
+        if (args.length < 3 || !"admin".equalsIgnoreCase(args[1])) {
+            messages.send(sender, "skills-admin-usage");
+            return;
+        }
+        if (!modules.isEnabled(SkillsModule.ID)) {
+            messages.send(sender, "module-disabled", Map.of("module", SkillsModule.ID));
+            return;
+        }
+        if (args.length < 4) {
+            messages.send(sender, "skills-admin-usage");
+            return;
+        }
+
+        OfflinePlayer target = findKnownPlayer(args[3]);
+        if (target == null || target.getName() == null) {
+            messages.send(sender, "player-not-found");
+            return;
+        }
+        String action = args[2].toLowerCase(Locale.ROOT);
+        if ("inspect".equals(action)) {
+            if (args.length != 4) {
+                messages.send(sender, "skills-admin-usage");
+                return;
+            }
+            dispatchInspection(sender, target);
+            return;
+        }
+
+        SkillAdminOperation operation;
+        try {
+            operation = switch (action) {
+                case "grant-xp" -> parseGrantExperience(args);
+                case "grant-perk" -> parseGrantPerk(args);
+                case "reset" -> parseReset(args);
+                default -> null;
+            };
+        } catch (IllegalArgumentException exception) {
+            messages.send(sender, "skills-admin-invalid-input", Map.of("reason", exception.getMessage()));
+            return;
+        }
+        if (operation == null) {
+            messages.send(sender, "skills-admin-usage");
+            return;
+        }
+
+        SkillAdminActor actor = sender instanceof Player player
+            ? new SkillAdminActor(player.getUniqueId().toString(), player.getName())
+            : new SkillAdminActor("console:" + sender.getName().toLowerCase(Locale.ROOT), sender.getName());
+        SkillsModule.AdminDispatchStatus status = skillsModule.executeAdmin(
+            actor,
+            target.getUniqueId(),
+            target.getName(),
+            operation,
+            result -> messages.send(sender, "skills-admin-result", Map.of(
+                "player", target.getName(),
+                "summary", adminSummary(result),
+                "revision", result.profile().revision(),
+                "audit", result.changed() ? "zapsán" : "beze změny"
+            )),
+            exception -> messages.send(sender, "skills-admin-storage-error")
+        );
+        sendAdminDispatchStatus(sender, status);
+    }
+
+    private SkillAdminOperation parseGrantExperience(String[] args) {
+        if (args.length != 6) {
+            throw new IllegalArgumentException("Použij grant-xp <hráč> <skill> <množství>.");
+        }
+        SkillId skill = parseGameplaySkill(args[4]);
+        long amount;
+        try {
+            amount = Long.parseLong(args[5]);
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("Množství XP musí být celé kladné číslo.");
+        }
+        if (amount < 1) {
+            throw new IllegalArgumentException("Množství XP musí být celé kladné číslo.");
+        }
+        return SkillAdminOperation.grantExperience(skill, amount);
+    }
+
+    private SkillAdminOperation parseGrantPerk(String[] args) {
+        if (args.length < 5 || args.length > 6) {
+            throw new IllegalArgumentException("Použij grant-perk <hráč> <perk-id> [rank].");
+        }
+        PerkId perkId;
+        try {
+            perkId = new PerkId(args[4].toLowerCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("ID perku musí mít tvar skill.perk_name.");
+        }
+        int rank = 1;
+        if (args.length == 6) {
+            try {
+                rank = Integer.parseInt(args[5]);
+            } catch (NumberFormatException exception) {
+                throw new IllegalArgumentException("Rank musí být celé kladné číslo.");
+            }
+        }
+        int maximumRank;
+        try {
+            maximumRank = skillsModule.adminPerkMaxRank(perkId);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Neznámé ID perku: " + perkId.value() + ".");
+        }
+        if (rank < 1 || rank > maximumRank) {
+            throw new IllegalArgumentException("Povolený rank tohoto perku je 1 až " + maximumRank + ".");
+        }
+        return SkillAdminOperation.grantPerk(perkId, rank);
+    }
+
+    private SkillAdminOperation parseReset(String[] args) {
+        if (args.length != 5) {
+            throw new IllegalArgumentException("Použij reset <hráč> <skill|perks|all>.");
+        }
+        return switch (args[4].toLowerCase(Locale.ROOT)) {
+            case "perks" -> SkillAdminOperation.resetPerks();
+            case "all" -> SkillAdminOperation.resetAll();
+            default -> SkillAdminOperation.resetSkill(parseGameplaySkill(args[4]));
+        };
+    }
+
+    private SkillId parseGameplaySkill(String value) {
+        for (SkillId skill : SkillId.gameplaySkills()) {
+            if (skill.id().equalsIgnoreCase(value)) {
+                return skill;
+            }
+        }
+        if (SkillId.POWER.id().equalsIgnoreCase(value)) {
+            throw new IllegalArgumentException("Hlavní úroveň je odvozená a nelze jí přímo měnit XP.");
+        }
+        throw new IllegalArgumentException("Neznámé ID dovednosti: " + value + ".");
+    }
+
+    private void dispatchInspection(CommandSender sender, OfflinePlayer target) {
+        SkillsModule.AdminDispatchStatus status = skillsModule.inspectAdmin(
+            target.getUniqueId().toString(),
+            inspection -> sendInspection(sender, target.getName(), inspection),
+            exception -> messages.send(sender, "skills-admin-storage-error")
+        );
+        sendAdminDispatchStatus(sender, status);
+    }
+
+    private void sendInspection(
+        CommandSender sender,
+        String targetName,
+        SkillAdminInspection inspection
+    ) {
+        int availablePoints = Math.max(
+            0,
+            inspection.progress().power().level() - inspection.profile().spentPerkPoints()
+        );
+        messages.send(sender, "skills-admin-inspect-header", Map.of(
+            "player", targetName,
+            "revision", inspection.profile().revision(),
+            "power", inspection.progress().power().level(),
+            "spent", inspection.profile().spentPerkPoints(),
+            "available", availablePoints
+        ));
+        for (SkillId skill : SkillId.gameplaySkills()) {
+            messages.send(sender, "skills-admin-inspect-skill", Map.of(
+                "name", SkillPresentation.czechName(skill),
+                "id", skill.id(),
+                "level", inspection.progress().skill(skill).level(),
+                "experience", inspection.profile().totalExperience(skill)
+            ));
+        }
+        String perks = inspection.profile().perkRanks().entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(entry -> entry.getKey().value() + "=" + entry.getValue())
+            .reduce((left, right) -> left + ", " + right)
+            .orElse("žádné");
+        messages.send(sender, "skills-admin-inspect-perks", Map.of("perks", perks));
+        if (inspection.recentAuditEntries().isEmpty()) {
+            messages.send(sender, "skills-admin-inspect-no-audit");
+            return;
+        }
+        messages.send(sender, "skills-admin-inspect-audit-header");
+        for (SkillAuditEntry entry : inspection.recentAuditEntries()) {
+            messages.send(sender, "skills-admin-inspect-audit", Map.of(
+                "time", AUDIT_TIME.format(Instant.ofEpochMilli(entry.occurredAtEpochMillis())),
+                "actor", entry.actor().displayName(),
+                "operation", entry.operation(),
+                "before", entry.revisionBefore(),
+                "after", entry.revisionAfter(),
+                "detail", entry.detail()
+            ));
+        }
+    }
+
+    private String adminSummary(SkillAdminResult result) {
+        if (!result.changed()) {
+            return switch (result.status()) {
+                case ALREADY_CAPPED -> "Dovednost už dosáhla maximální úrovně.";
+                case RANK_ALREADY_PRESENT -> "Perk už má stejný nebo vyšší rank.";
+                case SKILL_ALREADY_EMPTY -> "Dovednost už má 0 XP.";
+                case PERKS_ALREADY_EMPTY -> "Profil už nemá žádné perky ani utracené body.";
+                case PROFILE_ALREADY_EMPTY -> "Profil už je prázdný.";
+                case CHANGED -> throw new IllegalStateException("Changed result cannot be unchanged");
+            };
+        }
+        return switch (result.operation().type()) {
+            case GRANT_EXPERIENCE -> "Přidáno " + result.affectedValue() + " XP do "
+                + result.operation().skill().id() + ".";
+            case GRANT_PERK -> "Perk " + result.operation().perkId().value()
+                + " nastaven na rank " + result.operation().rank() + ".";
+            case RESET_SKILL -> "XP dovednosti " + result.operation().skill().id()
+                + " byla vynulována.";
+            case RESET_PERKS -> "Perky byly resetovány a utracené body vráceny.";
+            case RESET_ALL -> "XP, perky i utracené body byly resetovány.";
+        };
+    }
+
+    private void sendAdminDispatchStatus(
+        CommandSender sender,
+        SkillsModule.AdminDispatchStatus status
+    ) {
+        switch (status) {
+            case STARTED -> messages.send(sender, "skills-admin-processing");
+            case MODULE_DISABLED -> messages.send(sender, "module-disabled", Map.of("module", SkillsModule.ID));
+            case STORAGE_UNAVAILABLE -> messages.send(sender, "skills-admin-storage-error");
+            case BUSY -> messages.send(sender, "skills-admin-busy");
+        }
+    }
+
+    private OfflinePlayer findKnownPlayer(String name) {
+        Player online = Bukkit.getPlayerExact(name);
+        if (online != null) {
+            return online;
+        }
+        for (OfflinePlayer offline : Bukkit.getOfflinePlayers()) {
+            if (offline.getName() != null && offline.getName().equalsIgnoreCase(name)) {
+                return offline;
+            }
+        }
+        return null;
+    }
+
     private boolean require(CommandSender sender, String permission) {
         if (sender.hasPermission(permission)) {
             return true;
@@ -303,7 +569,44 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return prefix(List.of("menu", "help", "reload", "status", "update", "sit", "stand", "lay", "rise", "mount", "test", "cancel"), args[0]);
+            return prefix(List.of("menu", "help", "reload", "status", "update", "skills", "sit", "stand", "lay", "rise", "mount", "test", "cancel"), args[0]);
+        }
+        if (sender.hasPermission("nekararpg.skills.admin")
+                && args.length == 2 && "skills".equalsIgnoreCase(args[0])) {
+            return prefix(List.of("admin"), args[1]);
+        }
+        if (sender.hasPermission("nekararpg.skills.admin")
+                && args.length == 3 && "skills".equalsIgnoreCase(args[0])
+                && "admin".equalsIgnoreCase(args[1])) {
+            return prefix(List.of("inspect", "grant-xp", "grant-perk", "reset"), args[2]);
+        }
+        if (sender.hasPermission("nekararpg.skills.admin")
+                && args.length == 4 && "skills".equalsIgnoreCase(args[0])
+                && "admin".equalsIgnoreCase(args[1])) {
+            return prefix(Bukkit.getOfflinePlayers().length == 0
+                ? List.of()
+                : java.util.Arrays.stream(Bukkit.getOfflinePlayers())
+                    .map(OfflinePlayer::getName)
+                    .filter(java.util.Objects::nonNull)
+                    .toList(), args[3]);
+        }
+        if (sender.hasPermission("nekararpg.skills.admin")
+                && args.length == 5 && "skills".equalsIgnoreCase(args[0])
+                && "admin".equalsIgnoreCase(args[1])) {
+            String action = args[2].toLowerCase(Locale.ROOT);
+            if ("grant-xp".equals(action)) {
+                return prefix(SkillId.gameplaySkills().stream().map(SkillId::id).toList(), args[4]);
+            }
+            if ("grant-perk".equals(action)) {
+                return prefix(skillsModule.adminPerkIds(), args[4]);
+            }
+            if ("reset".equals(action)) {
+                List<String> targets = new ArrayList<>(
+                    SkillId.gameplaySkills().stream().map(SkillId::id).toList());
+                targets.add("perks");
+                targets.add("all");
+                return prefix(targets, args[4]);
+            }
         }
         if (args.length == 2 && "update".equalsIgnoreCase(args[0])) {
             return prefix(List.of("check", "status"), args[1]);

@@ -1,6 +1,10 @@
 package cz.nekara.rpg.skills.profile;
 
 import cz.nekara.rpg.skills.SkillId;
+import cz.nekara.rpg.skills.admin.SkillAdminActor;
+import cz.nekara.rpg.skills.admin.SkillAdministrationRepository;
+import cz.nekara.rpg.skills.admin.SkillAuditEntry;
+import cz.nekara.rpg.skills.admin.SkillAuditRecord;
 import cz.nekara.rpg.skills.perks.PerkId;
 import java.io.File;
 import java.io.IOException;
@@ -13,11 +17,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public final class SqliteSkillProfileRepository implements SkillProfileRepository {
-    private static final int SCHEMA_VERSION = 1;
+public final class SqliteSkillProfileRepository implements SkillAdministrationRepository {
+    private static final int SCHEMA_VERSION = 2;
 
     private final Connection connection;
 
@@ -37,19 +42,7 @@ public final class SqliteSkillProfileRepository implements SkillProfileRepositor
                 statement.execute("PRAGMA busy_timeout=500");
                 statement.execute("CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
             }
-            validateSchema(opened);
-            try (Statement statement = opened.createStatement()) {
-                statement.execute("CREATE TABLE IF NOT EXISTS profiles ("
-                    + "player_key TEXT PRIMARY KEY, spent_perk_points INTEGER NOT NULL, revision INTEGER NOT NULL)");
-                statement.execute("CREATE TABLE IF NOT EXISTS skill_experience ("
-                    + "player_key TEXT NOT NULL, skill_id TEXT NOT NULL, total_experience INTEGER NOT NULL, "
-                    + "PRIMARY KEY(player_key, skill_id), "
-                    + "FOREIGN KEY(player_key) REFERENCES profiles(player_key) ON DELETE CASCADE)");
-                statement.execute("CREATE TABLE IF NOT EXISTS perk_ranks ("
-                    + "player_key TEXT NOT NULL, perk_id TEXT NOT NULL, rank INTEGER NOT NULL, "
-                    + "PRIMARY KEY(player_key, perk_id), "
-                    + "FOREIGN KEY(player_key) REFERENCES profiles(player_key) ON DELETE CASCADE)");
-            }
+            initializeSchema(opened);
             connection = opened;
         } catch (SQLException | ClassNotFoundException | IOException exception) {
             if (opened != null) {
@@ -93,6 +86,61 @@ public final class SqliteSkillProfileRepository implements SkillProfileRepositor
 
     @Override
     public synchronized SkillProfile save(SkillProfile profile, long expectedRevision) {
+        return saveInternal(profile, expectedRevision, null);
+    }
+
+    @Override
+    public synchronized SkillProfile saveAdminMutation(
+        SkillProfile profile,
+        long expectedRevision,
+        SkillAuditRecord auditRecord
+    ) {
+        if (auditRecord == null) {
+            throw new NullPointerException("auditRecord");
+        }
+        return saveInternal(profile, expectedRevision, auditRecord);
+    }
+
+    @Override
+    public synchronized List<SkillAuditEntry> findRecentAuditEntries(String playerKey, int limit) {
+        requirePlayerKey(playerKey);
+        if (limit < 1 || limit > 100) {
+            throw new IllegalArgumentException("Audit entry limit must be between 1 and 100");
+        }
+        try (PreparedStatement statement = connection.prepareStatement(
+            "SELECT id,actor_key,actor_name,target_player_key,target_name,operation,detail,"
+                + "occurred_at_epoch_millis,revision_before,revision_after "
+                + "FROM admin_audit WHERE target_player_key=? ORDER BY id DESC LIMIT ?")) {
+            statement.setString(1, playerKey);
+            statement.setInt(2, limit);
+            try (ResultSet result = statement.executeQuery()) {
+                java.util.ArrayList<SkillAuditEntry> entries = new java.util.ArrayList<>();
+                while (result.next()) {
+                    entries.add(new SkillAuditEntry(
+                        result.getLong("id"),
+                        new SkillAdminActor(
+                            result.getString("actor_key"), result.getString("actor_name")),
+                        result.getString("target_player_key"),
+                        result.getString("target_name"),
+                        result.getString("operation"),
+                        result.getString("detail"),
+                        result.getLong("occurred_at_epoch_millis"),
+                        result.getLong("revision_before"),
+                        result.getLong("revision_after")
+                    ));
+                }
+                return List.copyOf(entries);
+            }
+        } catch (SQLException | RuntimeException exception) {
+            throw storage("Could not read Nekara Skills administrative audit", exception);
+        }
+    }
+
+    private SkillProfile saveInternal(
+        SkillProfile profile,
+        long expectedRevision,
+        SkillAuditRecord auditRecord
+    ) {
         if (profile == null) {
             throw new NullPointerException("profile");
         }
@@ -111,6 +159,9 @@ public final class SqliteSkillProfileRepository implements SkillProfileRepositor
             upsertProfile(profile, expectedRevision, nextRevision);
             replaceExperience(profile);
             replacePerks(profile);
+            if (auditRecord != null) {
+                insertAudit(profile.playerKey(), expectedRevision, nextRevision, auditRecord);
+            }
             connection.commit();
             return profile.withRevision(nextRevision);
         } catch (SQLException | RuntimeException exception) {
@@ -133,23 +184,88 @@ public final class SqliteSkillProfileRepository implements SkillProfileRepositor
         }
     }
 
-    private static void validateSchema(Connection connection) throws SQLException, IOException {
-        String version = null;
+    private static void initializeSchema(Connection connection) throws SQLException, IOException {
+        String version = readSchemaVersion(connection);
+        if (version == null) {
+            updateSchema(connection, null);
+            return;
+        }
+        if ("1".equals(version)) {
+            updateSchema(connection, "1");
+            return;
+        }
+        if (!Integer.toString(SCHEMA_VERSION).equals(version)) {
+            throw new IOException("Unsupported Nekara Skills SQLite schema version " + version);
+        }
+        createCurrentTables(connection);
+    }
+
+    private static String readSchemaVersion(Connection connection) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
             "SELECT value FROM metadata WHERE key='schema-version'");
              ResultSet result = statement.executeQuery()) {
             if (result.next()) {
-                version = result.getString(1);
+                return result.getString(1);
             }
         }
-        if (version == null) {
-            try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO metadata(key,value) VALUES('schema-version',?)")) {
-                statement.setString(1, Integer.toString(SCHEMA_VERSION));
-                statement.executeUpdate();
+        return null;
+    }
+
+    private static void updateSchema(Connection connection, String previousVersion)
+        throws SQLException {
+        boolean previousAutoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try {
+            createCurrentTables(connection);
+            if (previousVersion == null) {
+                try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO metadata(key,value) VALUES('schema-version',?)")) {
+                    statement.setString(1, Integer.toString(SCHEMA_VERSION));
+                    statement.executeUpdate();
+                }
+            } else {
+                try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE metadata SET value=? WHERE key='schema-version' AND value=?")) {
+                    statement.setString(1, Integer.toString(SCHEMA_VERSION));
+                    statement.setString(2, previousVersion);
+                    if (statement.executeUpdate() != 1) {
+                        throw new SQLException("Nekara Skills schema version changed during migration");
+                    }
+                }
             }
-        } else if (!Integer.toString(SCHEMA_VERSION).equals(version)) {
-            throw new IOException("Unsupported Nekara Skills SQLite schema version " + version);
+            connection.commit();
+        } catch (SQLException | RuntimeException exception) {
+            try {
+                connection.rollback();
+            } catch (SQLException rollback) {
+                exception.addSuppressed(rollback);
+            }
+            throw exception;
+        } finally {
+            connection.setAutoCommit(previousAutoCommit);
+        }
+    }
+
+    private static void createCurrentTables(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("CREATE TABLE IF NOT EXISTS profiles ("
+                + "player_key TEXT PRIMARY KEY, spent_perk_points INTEGER NOT NULL, revision INTEGER NOT NULL)");
+            statement.execute("CREATE TABLE IF NOT EXISTS skill_experience ("
+                + "player_key TEXT NOT NULL, skill_id TEXT NOT NULL, total_experience INTEGER NOT NULL, "
+                + "PRIMARY KEY(player_key, skill_id), "
+                + "FOREIGN KEY(player_key) REFERENCES profiles(player_key) ON DELETE CASCADE)");
+            statement.execute("CREATE TABLE IF NOT EXISTS perk_ranks ("
+                + "player_key TEXT NOT NULL, perk_id TEXT NOT NULL, rank INTEGER NOT NULL, "
+                + "PRIMARY KEY(player_key, perk_id), "
+                + "FOREIGN KEY(player_key) REFERENCES profiles(player_key) ON DELETE CASCADE)");
+            statement.execute("CREATE TABLE IF NOT EXISTS admin_audit ("
+                + "id INTEGER PRIMARY KEY AUTOINCREMENT, actor_key TEXT NOT NULL, actor_name TEXT NOT NULL, "
+                + "target_player_key TEXT NOT NULL, target_name TEXT NOT NULL, operation TEXT NOT NULL, "
+                + "detail TEXT NOT NULL, occurred_at_epoch_millis INTEGER NOT NULL, "
+                + "revision_before INTEGER NOT NULL, revision_after INTEGER NOT NULL, "
+                + "CHECK(revision_before >= 0), CHECK(revision_after = revision_before + 1))");
+            statement.execute("CREATE INDEX IF NOT EXISTS admin_audit_target_time "
+                + "ON admin_audit(target_player_key, occurred_at_epoch_millis DESC)");
         }
     }
 
@@ -246,6 +362,28 @@ public final class SqliteSkillProfileRepository implements SkillProfileRepositor
                 statement.addBatch();
             }
             statement.executeBatch();
+        }
+    }
+
+    private void insertAudit(
+        String targetPlayerKey,
+        long revisionBefore,
+        long revisionAfter,
+        SkillAuditRecord auditRecord
+    ) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+            "INSERT INTO admin_audit(actor_key,actor_name,target_player_key,target_name,operation,"
+                + "detail,occurred_at_epoch_millis,revision_before,revision_after) VALUES(?,?,?,?,?,?,?,?,?)")) {
+            statement.setString(1, auditRecord.actor().key());
+            statement.setString(2, auditRecord.actor().displayName());
+            statement.setString(3, targetPlayerKey);
+            statement.setString(4, auditRecord.targetDisplayName());
+            statement.setString(5, auditRecord.operation());
+            statement.setString(6, auditRecord.detail());
+            statement.setLong(7, auditRecord.occurredAtEpochMillis());
+            statement.setLong(8, revisionBefore);
+            statement.setLong(9, revisionAfter);
+            statement.executeUpdate();
         }
     }
 

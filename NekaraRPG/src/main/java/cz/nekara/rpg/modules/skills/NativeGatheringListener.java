@@ -1,0 +1,485 @@
+package cz.nekara.rpg.modules.skills;
+
+import cz.nekara.rpg.NekaraRPGPlugin;
+import cz.nekara.rpg.configuration.GatheringSkillConfig;
+import cz.nekara.rpg.configuration.NativeGatheringConfig;
+import cz.nekara.rpg.configuration.SkillsConfig;
+import cz.nekara.rpg.modules.skills.GatheringMaterialPolicy.GatheringTool;
+import cz.nekara.rpg.skills.SkillId;
+import cz.nekara.rpg.skills.combat.RandomChanceRoller;
+import cz.nekara.rpg.skills.experience.ChunkActivityTracker;
+import cz.nekara.rpg.skills.experience.ExperienceAwardRequest;
+import cz.nekara.rpg.skills.experience.ExperienceContext;
+import cz.nekara.rpg.skills.experience.ExperienceFingerprint;
+import cz.nekara.rpg.skills.experience.ExperienceGrantGuard;
+import cz.nekara.rpg.skills.experience.RecentActionGuard;
+import cz.nekara.rpg.skills.perks.DefaultPerkTree;
+import cz.nekara.rpg.skills.perks.MechanicId;
+import cz.nekara.rpg.skills.perks.PerkMechanicResolver;
+import cz.nekara.rpg.skills.profile.SkillProfile;
+import cz.nekara.rpg.skills.rewards.DropMultiplierResolver;
+import cz.nekara.rpg.skills.stats.PerkStatResolver;
+import cz.nekara.rpg.skills.stats.StatId;
+import cz.nekara.rpg.skills.stats.StatSnapshot;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.block.Block;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDamageEvent;
+import org.bukkit.event.block.BlockDropItemEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.inventory.ItemStack;
+
+final class NativeGatheringListener implements Listener {
+    private static final Duration FINGERPRINT_TTL = Duration.ofSeconds(5);
+    private static final Duration PLAYER_INPUT_TTL = Duration.ofSeconds(30);
+    private static final int TRACKED_FINGERPRINTS = 32_768;
+    private static final int TRACKED_CHUNKS = 16_384;
+
+    private final NekaraRPGPlugin plugin;
+    private final SkillsModule module;
+    private final List<Definition> definitions;
+    private final Map<SkillId, ChunkActivityTracker> chunkActivity = new EnumMap<>(SkillId.class);
+    private final PlacedBlockTracker placedBlocks;
+    private final ExperienceGrantGuard rewardGuard = new ExperienceGrantGuard(
+        FINGERPRINT_TTL, TRACKED_FINGERPRINTS);
+    private final RecentActionGuard physicalInputs = new RecentActionGuard(PLAYER_INPUT_TTL);
+    private final RecentActionGuard validatedBreaks = new RecentActionGuard(FINGERPRINT_TTL);
+    private final PerkStatResolver perkStats;
+    private final PerkMechanicResolver perkMechanics;
+    private final DropMultiplierResolver dropMultiplier = new DropMultiplierResolver();
+    private final NamespacedKey speedModifierKey;
+    private final Set<UUID> automatedPlayers = ConcurrentHashMap.newKeySet();
+    private boolean enabled;
+
+    NativeGatheringListener(
+        NekaraRPGPlugin plugin,
+        SkillsModule module,
+        SkillsConfig config,
+        DefaultPerkTree perkTree
+    ) {
+        this.plugin = plugin;
+        this.module = module;
+        this.placedBlocks = new PlacedBlockTracker(plugin);
+        this.perkStats = new PerkStatResolver(perkTree.catalog());
+        this.perkMechanics = new PerkMechanicResolver(perkTree.catalog());
+        this.speedModifierKey = new NamespacedKey(plugin, "skills_gathering_speed");
+        this.definitions = List.of(
+            new Definition(SkillId.MINING, config.mining(), GatheringTool.PICKAXE,
+                StatId.MINING_SPEED, null),
+            new Definition(SkillId.WOODCUTTING, config.woodcutting(), GatheringTool.AXE,
+                StatId.WOODCUTTING_SPEED, MechanicId.RARE_LEAF_DROPS),
+            new Definition(SkillId.DIGGING, config.digging(), GatheringTool.SHOVEL,
+                StatId.DIGGING_SPEED, null)
+        );
+        for (Definition definition : definitions) {
+            chunkActivity.put(definition.skill(), new ChunkActivityTracker(
+                Duration.ofSeconds(definition.config().chunkWindowSeconds()), TRACKED_CHUNKS));
+        }
+    }
+
+    void enable() {
+        if (enabled) {
+            return;
+        }
+        placedBlocks.enable();
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+        enabled = true;
+        plugin.getServer().getOnlinePlayers().forEach(module::preloadProfile);
+    }
+
+    void disable() {
+        if (!enabled) {
+            return;
+        }
+        enabled = false;
+        HandlerList.unregisterAll(this);
+        placedBlocks.disable();
+        chunkActivity.values().forEach(ChunkActivityTracker::clear);
+        physicalInputs.clear();
+        validatedBreaks.clear();
+        automatedPlayers.clear();
+        Bukkit.getOnlinePlayers().forEach(this::removeSpeedModifier);
+    }
+
+    PlacedBlockTracker placedBlocks() {
+        return placedBlocks;
+    }
+
+    void beginAutomatedBreaks(UUID playerId) {
+        automatedPlayers.add(playerId);
+    }
+
+    void endAutomatedBreaks(UUID playerId) {
+        automatedPlayers.remove(playerId);
+    }
+
+    @EventHandler
+    public void preloadProfile(PlayerJoinEvent event) {
+        module.preloadProfile(event.getPlayer());
+    }
+
+    @EventHandler
+    public void forgetProfile(PlayerQuitEvent event) {
+        String playerKey = event.getPlayer().getUniqueId().toString();
+        physicalInputs.forget(playerKey);
+        validatedBreaks.forget(playerKey);
+        removeSpeedModifier(event.getPlayer());
+        module.forgetProfile(event.getPlayer().getUniqueId());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void recordPhysicalInput(BlockDamageEvent event) {
+        if (!enabled || automatedPlayers.contains(event.getPlayer().getUniqueId())) {
+            return;
+        }
+        Player player = event.getPlayer();
+        Block block = event.getBlock();
+        definition(block.getType(), player.getInventory().getItemInMainHand()).ifPresent(definition -> {
+            if (plugin.configuration().get().worlds().isEnabled(block.getWorld().getName())) {
+                physicalInputs.record(player.getUniqueId().toString(),
+                    actionKey(definition.skill(), sourceKey(block, block.getType())));
+            }
+        });
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void awardCompletedBreak(BlockBreakEvent event) {
+        if (!enabled || automatedPlayers.contains(event.getPlayer().getUniqueId())) {
+            return;
+        }
+        Block block = event.getBlock();
+        Player player = event.getPlayer();
+        Material material = block.getType();
+        Optional<Definition> found = definition(material, player.getInventory().getItemInMainHand());
+        if (found.isEmpty()
+            || !plugin.configuration().get().worlds().isEnabled(block.getWorld().getName())) {
+            return;
+        }
+        Definition definition = found.get();
+        String sourceKey = sourceKey(block, material);
+        String actionKey = actionKey(definition.skill(), sourceKey);
+        String playerKey = player.getUniqueId().toString();
+        if (!physicalInputs.consume(playerKey, actionKey)) {
+            return;
+        }
+        validatedBreaks.record(playerKey, actionKey);
+        long baseExperience = definition.config().experience(material);
+        if (!definition.config().experienceEnabled() || baseExperience < 1) {
+            return;
+        }
+
+        GatheringBreak fact = new GatheringBreak(
+            player.getUniqueId(), definition.skill(), block.getLocation(), material,
+            baseExperience, placedBlocks.isPlayerPlaced(block),
+            player.getGameMode() == GameMode.CREATIVE,
+            player.getGameMode() == GameMode.SPECTATOR,
+            chunkKey(block), sourceKey);
+        plugin.getServer().getScheduler().runTask(plugin, () -> finishBreak(fact));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void applyFinalDropPerks(BlockDropItemEvent event) {
+        if (!enabled || automatedPlayers.contains(event.getPlayer().getUniqueId())) {
+            return;
+        }
+        Player player = event.getPlayer();
+        Material material = event.getBlockState().getType();
+        Block block = event.getBlockState().getBlock();
+        Optional<Definition> found = definition(material, player.getInventory().getItemInMainHand());
+        if (found.isEmpty() || placedBlocks.isPlayerPlaced(block)
+            || unsupportedMode(player)
+            || !plugin.configuration().get().worlds().isEnabled(block.getWorld().getName())) {
+            return;
+        }
+        Definition definition = found.get();
+        String sourceKey = sourceKey(block, material);
+        String actionKey = actionKey(definition.skill(), sourceKey);
+        if (!validatedBreaks.consume(player.getUniqueId().toString(), actionKey)
+            || !rewardGuard.tryAcquire(fingerprint(player.getUniqueId(), definition.skill(),
+                "gathering_drop", sourceKey))) {
+            return;
+        }
+        Optional<SkillProfile> cached = module.cachedProfile(player.getUniqueId());
+        if (cached.isEmpty()) {
+            module.preloadProfile(player);
+            return;
+        }
+
+        SkillProfile profile = cached.get();
+        StatSnapshot stats;
+        try {
+            stats = perkStats.resolve(profile, definition.skill());
+        } catch (RuntimeException exception) {
+            module.invalidateProfile(player.getUniqueId(), exception);
+            return;
+        }
+
+        List<BonusDrop> bonusDrops = new ArrayList<>();
+        if (definition.config().finalDropMultiplierEnabled()
+            && definition.config().experience(material) > 0 && !event.getItems().isEmpty()) {
+            int multiplier = dropMultiplier.resolve(
+                stats, new RandomChanceRoller(ThreadLocalRandom.current()));
+            bonusDrops.addAll(createBonusDrops(event.getItems(), multiplier - 1));
+        }
+        try {
+            rareDrop(definition, profile, stats, material, block.getLocation())
+                .ifPresent(bonusDrops::add);
+        } catch (RuntimeException exception) {
+            module.invalidateProfile(player.getUniqueId(), exception);
+            return;
+        }
+        if (bonusDrops.isEmpty()) {
+            return;
+        }
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            if (!enabled) {
+                return;
+            }
+            for (BonusDrop bonus : bonusDrops) {
+                bonus.location().getWorld().dropItemNaturally(bonus.location(), bonus.item());
+            }
+        });
+    }
+
+    @EventHandler
+    public void refreshHeldSlot(PlayerItemHeldEvent event) {
+        scheduleRefresh(event.getPlayer());
+    }
+
+    @EventHandler
+    public void refreshSwappedHands(PlayerSwapHandItemsEvent event) {
+        scheduleRefresh(event.getPlayer());
+    }
+
+    @EventHandler
+    public void refreshInventory(InventoryClickEvent event) {
+        if (event.getWhoClicked() instanceof Player player) {
+            scheduleRefresh(player);
+        }
+    }
+
+    void refreshPlayer(Player player) {
+        if (!enabled || !player.isOnline()) {
+            return;
+        }
+        removeSpeedModifier(player);
+        Optional<Definition> held = definitionForTool(player.getInventory().getItemInMainHand());
+        Optional<SkillProfile> profile = module.cachedProfile(player.getUniqueId());
+        if (held.isEmpty() || profile.isEmpty()) {
+            return;
+        }
+        double multiplier;
+        try {
+            multiplier = perkStats.resolve(profile.get(), held.get().skill())
+                .value(held.get().speedStat());
+        } catch (RuntimeException exception) {
+            module.invalidateProfile(player.getUniqueId(), exception);
+            return;
+        }
+        if (multiplier <= 1.0) {
+            return;
+        }
+        AttributeInstance speed = player.getAttribute(Attribute.BLOCK_BREAK_SPEED);
+        if (speed != null) {
+            speed.addTransientModifier(new AttributeModifier(
+                speedModifierKey, multiplier - 1.0, AttributeModifier.Operation.ADD_SCALAR));
+        }
+    }
+
+    private void finishBreak(GatheringBreak fact) {
+        if (!enabled || fact.location().getBlock().getType() == fact.material()
+            || fact.creative() || fact.spectator() || fact.playerPlaced()) {
+            return;
+        }
+        Definition definition = definition(fact.skill());
+        int recentAwards = chunkActivity.get(fact.skill()).reserveAward(fact.chunk());
+        ExperienceContext context = new ExperienceContext(
+            fact.skill(), false, fact.creative(), fact.spectator(), false,
+            fact.playerPlaced(), false, recentAwards);
+        ExperienceAwardRequest request = new ExperienceAwardRequest(
+            fact.playerId().toString(), fact.skill(), fact.baseExperience(), context,
+            fingerprint(fact.playerId(), fact.skill(), "block_break", fact.sourceKey()));
+        module.awardExperience(fact.playerId(), request, result -> { });
+    }
+
+    private Optional<BonusDrop> rareDrop(
+        Definition definition,
+        SkillProfile profile,
+        StatSnapshot stats,
+        Material source,
+        Location location
+    ) {
+        if (!(definition.config() instanceof NativeGatheringConfig gathering)
+            || !gathering.rareDropsEnabled()
+            || gathering.rareDropWeights().isEmpty()) {
+            return Optional.empty();
+        }
+        if (definition.skill() == SkillId.WOODCUTTING
+            && (!GatheringMaterialPolicy.isLeaves(source)
+                || definition.rareMechanic() == null
+                || !perkMechanics.has(profile, definition.skill(), definition.rareMechanic()))) {
+            return Optional.empty();
+        }
+        double chance = stats.value(StatId.RARE_DROP_CHANCE);
+        if (chance <= 0 || ThreadLocalRandom.current().nextDouble() >= chance) {
+            return Optional.empty();
+        }
+        Map<Material, Integer> weights = new EnumMap<>(Material.class);
+        weights.putAll(gathering.rareDropWeights());
+        if (definition.skill() == SkillId.DIGGING
+            && perkMechanics.has(profile, SkillId.DIGGING, MechanicId.ARCHAEOLOGY_FINDS)) {
+            weights.merge(Material.BRICK, 3, Integer::sum);
+            weights.merge(Material.ECHO_SHARD, 1, Integer::sum);
+        }
+        Material selected = selectWeighted(weights);
+        return Optional.of(new BonusDrop(location.clone().add(0.5, 0.5, 0.5),
+            new ItemStack(selected, 1)));
+    }
+
+    private Optional<Definition> definition(Material material, ItemStack tool) {
+        return definitions.stream()
+            .filter(definition -> GatheringMaterialPolicy.suitableTool(definition.tool(), tool))
+            .filter(definition -> definition.config().experience(material) > 0
+                || definition.skill() == SkillId.WOODCUTTING
+                    && GatheringMaterialPolicy.isLeaves(material))
+            .findFirst();
+    }
+
+    private Optional<Definition> definitionForTool(ItemStack tool) {
+        return definitions.stream()
+            .filter(definition -> GatheringMaterialPolicy.suitableTool(definition.tool(), tool))
+            .findFirst();
+    }
+
+    private Definition definition(SkillId skill) {
+        return definitions.stream().filter(value -> value.skill() == skill).findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Unknown gathering skill: " + skill));
+    }
+
+    private void scheduleRefresh(Player player) {
+        Bukkit.getScheduler().runTask(plugin, () -> refreshPlayer(player));
+    }
+
+    private void removeSpeedModifier(Player player) {
+        AttributeInstance speed = player.getAttribute(Attribute.BLOCK_BREAK_SPEED);
+        if (speed != null) {
+            speed.removeModifier(speedModifierKey);
+        }
+    }
+
+    private static List<BonusDrop> createBonusDrops(List<Item> drops, int additionalCopies) {
+        if (additionalCopies < 1) {
+            return List.of();
+        }
+        List<BonusDrop> bonus = new ArrayList<>();
+        for (Item dropped : drops) {
+            ItemStack original = dropped.getItemStack();
+            long remaining = (long) original.getAmount() * additionalCopies;
+            int maximum = Math.max(1, original.getMaxStackSize());
+            while (remaining > 0) {
+                ItemStack copy = original.clone();
+                int amount = (int) Math.min(maximum, remaining);
+                copy.setAmount(amount);
+                bonus.add(new BonusDrop(dropped.getLocation().clone(), copy));
+                remaining -= amount;
+            }
+        }
+        return List.copyOf(bonus);
+    }
+
+    private static Material selectWeighted(Map<Material, Integer> weights) {
+        int total = weights.values().stream().mapToInt(Integer::intValue).sum();
+        int roll = ThreadLocalRandom.current().nextInt(total);
+        for (Map.Entry<Material, Integer> entry : weights.entrySet()) {
+            roll -= entry.getValue();
+            if (roll < 0) {
+                return entry.getKey();
+            }
+        }
+        throw new IllegalStateException("Weighted material table is empty");
+    }
+
+    private static boolean unsupportedMode(Player player) {
+        return player.getGameMode() == GameMode.CREATIVE
+            || player.getGameMode() == GameMode.SPECTATOR;
+    }
+
+    private static ChunkActivityTracker.ChunkKey chunkKey(Block block) {
+        return new ChunkActivityTracker.ChunkKey(
+            block.getWorld().getUID(), block.getChunk().getX(), block.getChunk().getZ());
+    }
+
+    private static ExperienceFingerprint fingerprint(
+        UUID playerId,
+        SkillId skill,
+        String type,
+        String sourceKey
+    ) {
+        return new ExperienceFingerprint(playerId.toString(), skill, type, sourceKey);
+    }
+
+    private static String actionKey(SkillId skill, String sourceKey) {
+        return skill.id() + ":" + sourceKey;
+    }
+
+    private static String sourceKey(Block block, Material material) {
+        return block.getWorld().getUID() + ":" + block.getX() + ":" + block.getY() + ":"
+            + block.getZ() + ":" + material.getKey().asString();
+    }
+
+    private record Definition(
+        SkillId skill,
+        GatheringSkillConfig config,
+        GatheringTool tool,
+        StatId speedStat,
+        MechanicId rareMechanic
+    ) {
+    }
+
+    private record GatheringBreak(
+        UUID playerId,
+        SkillId skill,
+        Location location,
+        Material material,
+        long baseExperience,
+        boolean playerPlaced,
+        boolean creative,
+        boolean spectator,
+        ChunkActivityTracker.ChunkKey chunk,
+        String sourceKey
+    ) {
+        private GatheringBreak {
+            location = location.clone();
+        }
+    }
+
+    private record BonusDrop(Location location, ItemStack item) {
+    }
+}
