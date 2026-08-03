@@ -6,22 +6,22 @@ Repozitář je publikovaný jako
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 Výchozí větev je `main`.
 
-Nejnovější stabilní a publikovaná verze je **NekaraRPG 1.8.0**. Vestavěný
-updater ji rozpozná jako nástupce verze 1.6.0:
+Nejnovější stabilní a publikovaná verze je **NekaraRPG 1.10.0**. Vestavěný
+updater ji rozpozná jako novější feature release:
 
-- tag: `v1.8.0`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.8.0>
+- tag: `v1.10.0`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.10.0>
 - nasazovaný soubor: `NekaraRPG.jar`
-- release commit: `c3ad9fc5c36686d4fdcaecb8749c761a6073ed67`
+- release commit: `e8052e893b2564cffd6d103d3507461c1659dd5a`
 - SHA-256 vydaného JARu:
-  `2BC4FB04B736B0338B67FDA3855535A45607E551AA3019B72CAC6F638C05AEC8`
-- velikost release assetu: `12302405` bajtů
-- automatické ověření: 70 úspěšných testů
+  `9A64EA27A0D2686C564F0480897F239C66516EC46CC6AAAFB27BE880F49339EE`
+- velikost release assetu: `12311052` bajtů
+- automatické ověření: 74 úspěšných testů
 
-Verze 1.8.0 rozšiřuje centrální GUI o osobní přehled a administrátorskou
-diagnostiku. NekaraMounts přidává přirozené putování, přesměrování aktivního koně,
-výchozí sedlo, truhlu a 54slotové virtuální brašny. Mounts persistence přechází
-z YAML na SQLite s jednorázovým importem a zálohou původních dat.
+Verze 1.10.0 opravuje nasazování truhly, sedla a koňského brnění přímo z
+hráčského inventáře. Centrální GUI sdružuje Rybaření, Táboření a Těžbu pod
+Činnosti. Sitting už není samostatný modul: Táboření vlastní sezení, ležení u
+zapáleného ohně a bezpečné přeskočení noci pouze pro jediného online hráče.
 
 Metadata GitHub release, hash zpětně staženého JARu, verze uvnitř `plugin.yml`,
 přítomnost SQLite ovladače, stabilní `latest` stav, jediný asset a cíl tagu byly
@@ -31,12 +31,18 @@ ověřeny. Zbývá živě ověřit pořadí událostí, migraci a chování na P
 záměrně stabilní, aby při nasazení nevznikla druhá verzovaná kopie vedle
 aktivního pluginu.
 
-## NekaraRPG 1.8.0
+## NekaraRPG 1.10.0
 
-Centrální menu propojuje NekaraAuth, NekaraMounts, Fishing, Sitting, Campfire a
-Mining bez přesunu doménové logiky. Hráčský přehled ukazuje účet, Rested, aktivní
-činnost a koně. Oprávněná diagnostika ukazuje moduly, integrace, updater, paměť a
-stav Mounts úložiště. Při načteném ValhallaMMO lze otevřít jeho vlastní `/skills`.
+Centrální menu propojuje NekaraAuth, NekaraMounts, Činnosti a ValhallaMMO
+`/skills`. Činnosti obsahují Rybaření, Táboření a Těžbu; Tábořiště nabízí
+sezení, ležení a vstávání. Správa NekaraRPG je viditelná a otevíratelná pouze s
+`nekararpg.command.status`, které má výchozí hodnotu `op`.
+
+Ležení používá pevnou spánkovou pózu bez postele, změny spawnu nebo volání CMI.
+Počítá se do Rested stejně jako sezení. Noc se po nastaveném čekání posune pouze
+v Overworldu a pouze tehdy, když je hráč jediný online na celém serveru. Starý
+`sitting/config.yml` se jednou převede pod `sitting` v `campfire/config.yml` a
+zůstane zachovaný jako záloha.
 
 Vydaný modul NekaraMounts přidává virtuální
 vytvoření jednoho vanilla koně přes GUI pro barvu a jméno, svázanou píšťalku,
@@ -45,8 +51,8 @@ management výbavy, virtuální 54slotové brašny a transakční SQLite backend
 i jako `data.yml.pre-sqlite.bak`. Selhání zápisu modul uzamkne proti ztrátě nebo
 duplikaci. Zbývající živé Purpur scénáře jsou v `TESTING.md` a `LIVE_TESTING.md`.
 
-Release postup prošel se 70 testy. Vydaný asset má velikost `12302405` bajtů
-a SHA-256 `2BC4FB04B736B0338B67FDA3855535A45607E551AA3019B72CAC6F638C05AEC8`.
+Release postup prošel se 74 testy. Vydaný asset má velikost `12311052` bajtů
+a SHA-256 `9A64EA27A0D2686C564F0480897F239C66516EC46CC6AAAFB27BE880F49339EE`.
 Release build ověřuje verzi, manifest a přítomnost zabaleného SQLite JDBC
 ovladače. Smrt koně má minutový cooldown a píšťalka zůstává soulbound.
 
@@ -69,15 +75,12 @@ perzistentní combat okno a normalizovaný nick jako stabilní offline identita.
 - Zachovává volitelné ValhallaMMO loot odměny, profesní XP a škálování obtížnosti.
 - Časování zobrazuje v action baru a používá vlastní bossbar minihry.
 
-### Sezení
+### Táboření včetně sezení a ležení
 
 - Příkazy: `/nekararpg sit`, `/nrpg sit` a `/nekararpg stand`.
 - Neregistruje hlavní `/sit`; vlastníkem tohoto příkazu zůstává CMI.
 - Rozpoznává nakonfigurovaná externí sedadla; výchozí typ pro CMI je `ARMOR_STAND`.
 - Aktuální serverový posun sedadla na ose Y je `0.20`.
-
-### Táboření
-
 - Přijímá NekaraRPG i podporované externí sezení do pěti bloků od zapáleného
   campfire nebo soul campfire.
 - Pomalu léčí, blokuje ztrátu hladu, mírně doplňuje hlad a používá omezený
@@ -148,7 +151,7 @@ provést úplný restart a zkontrolovat startovací logy.
 
 ## Další práce
 
-Nejdřív živě otestuj vydanou verzi 1.8.0 podle `NekaraRPG/TESTING.md` a
+Nejdřív živě otestuj vydanou verzi 1.10.0 podle `NekaraRPG/TESTING.md` a
 `NekaraRPG/LIVE_TESTING.md`, zejména:
 
 - registraci, login, lockout, přesný zápis nicku a blokaci akcí NekaraAuth,
@@ -160,7 +163,9 @@ Nejdřív živě otestuj vydanou verzi 1.8.0 podle `NekaraRPG/TESTING.md` a
 
 Součástí akceptace je osobní přehled, administrátorská diagnostika a celý bezpečný
 průchod změny hesla. U Mounts ověř migraci YAML do SQLite, zachování brašen přes
-restart a smrt, putování, zotavení pathfindingu, dvojí volání, PvP a cizí manipulaci.
+restart a smrt, putování, zotavení pathfindingu, dvojí volání, PvP, cizí manipulaci
+a nasazení výbavy z hráčského inventáře. U Táboření ověř ležení s CMI, čištění
+pózy a zákaz přeskočení noci při více online hráčích.
 
 Možná pozdější rozšíření Campfire:
 
