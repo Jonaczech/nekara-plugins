@@ -5,8 +5,8 @@ zůstávají v `PROJECT_MEMORY.md` a aktuální release stav v `HANDOFF.md`.
 
 ## Aktuální stav
 
-- Nejnovější stabilní release: **NekaraRPG 1.10.0** s opravou výbavy koně,
-  obrazovkou Činnosti a rozšířeným Tábořením se sezením a ležením.
+- Nejnovější stabilní release: **NekaraRPG 2.0.0** s vypnutým základem Nekara
+  Skills, opravou výbavy koně, obrazovkou Činnosti a rozšířeným Tábořením.
 - Release je dostupný updateru; migrace SQLite, brašny, pathfinding
   ještě vyžadují živou Purpur akceptaci.
 - Modul zůstane součástí jediného `NekaraRPG.jar` a bude samostatně zapínatelný.

@@ -6,37 +6,48 @@ Repozitář je publikovaný jako
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 Výchozí větev je `main`.
 
-Nejnovější stabilní a publikovaná verze je **NekaraRPG 1.10.0**. Vestavěný
-updater ji rozpozná jako novější feature release:
+Nejnovější stabilní a publikovaná verze je **NekaraRPG 2.0.0**. Vestavěný
+updater ji rozpozná jako nový major release:
 
-- tag: `v1.10.0`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.10.0>
+- tag: `v2.0.0`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v2.0.0>
 - nasazovaný soubor: `NekaraRPG.jar`
-- release commit: `e8052e893b2564cffd6d103d3507461c1659dd5a`
+- release commit: `0eeb2bea2d1f61e5c40ec81df9b3c6c4a1f39fab`
 - SHA-256 vydaného JARu:
-  `9A64EA27A0D2686C564F0480897F239C66516EC46CC6AAAFB27BE880F49339EE`
-- velikost release assetu: `12311052` bajtů
-- automatické ověření: 74 úspěšných testů
+  `C768215E7ED08F7F2ED99F0359597ECFB0B18552A9D5AEEE4EAAB53A4A889514`
+- velikost release assetu: `12399790` bajtů
+- automatické ověření: 116 úspěšných testů
 
-Verze 1.10.0 opravuje nasazování truhly, sedla a koňského brnění přímo z
-hráčského inventáře. Centrální GUI sdružuje Rybaření, Táboření a Těžbu pod
-Činnosti. Sitting už není samostatný modul: Táboření vlastní sezení, ležení u
-zapáleného ohně a bezpečné přeskočení noci pouze pro jediného online hráče.
+Verze 2.0.0 zakládá clean-room platformu Nekara Skills: 16 dovedností, strop 100,
+odvozený Powerlevel, validované perky a statistiky, bezpečnostní jádro bojových a
+sběrných mechanik, transakční SQLite profily a atomické XP zpracování. Nativní
+modul `skills` je výchozím stavem vypnutý a nabízí pouze read-only 54slotový
+přehled; ValhallaMMO zatím zůstává autoritativní a nesmí se vypínat.
+
+Release současně obsahuje opravy připravené původně pro 1.10.1: sezení i ležení
+jsou znovu přímo v `/nrpg`, lehnout lze kdekoliv, Rested funguje jen u ohně a
+pohyb už sleeping pózu bezprostředně neruší.
 
 Metadata GitHub release, hash zpětně staženého JARu, verze uvnitř `plugin.yml`,
-přítomnost SQLite ovladače, stabilní `latest` stav, jediný asset a cíl tagu byly
-ověřeny. Zbývá živě ověřit pořadí událostí, migraci a chování na Purpur serveru.
+přítomnost SQLite ovladače, stabilní `latest` stav, jediný asset, cíl tagu a hash
+zpětně staženého JARu byly ověřeny. Zbývá živě ověřit chování na Purpur serveru.
 
 Čísla verzí patří do metadat pluginu, changelogu a Git tagů. Název JARu zůstává
 záměrně stabilní, aby při nasazení nevznikla druhá verzovaná kopie vedle
 aktivního pluginu.
 
-## NekaraRPG 1.10.0
+## NekaraRPG 2.0.0
 
-Centrální menu propojuje NekaraAuth, NekaraMounts, Činnosti a ValhallaMMO
-`/skills`. Činnosti obsahují Rybaření, Táboření a Těžbu; Tábořiště nabízí
-sezení, ležení a vstávání. Správa NekaraRPG je viditelná a otevíratelná pouze s
-`nekararpg.command.status`, které má výchozí hodnotu `op`.
+Centrální menu propojuje NekaraAuth, NekaraMounts, Činnosti a dovednosti.
+Při vypnutém `modules.skills.enabled` vede tlačítko dál do ValhallaMMO `/skills`.
+Po ručním zapnutí nativního modulu otevře read-only přehled Nekara Skills, ale
+neuděluje XP, perky ani herní bonusy. Správa NekaraRPG je viditelná a
+otevíratelná pouze s `nekararpg.command.status`, které má výchozí hodnotu `op`.
+
+Nekara Skills ukládá profily do `skills/data.db` za `SkillProfileRepository`.
+SQLite používá WAL, cizí klíče a optimistic revision; neznámou budoucí verzi
+schématu odmítne před vytvořením starších tabulek. XP policy a fingerprint guard
+jsou připravené, ale Paper listenery zatím nejsou zapojené.
 
 Ležení používá pevnou spánkovou pózu bez postele, změny spawnu nebo volání CMI.
 Počítá se do Rested stejně jako sezení. Noc se po nastaveném čekání posune pouze
@@ -51,8 +62,8 @@ management výbavy, virtuální 54slotové brašny a transakční SQLite backend
 i jako `data.yml.pre-sqlite.bak`. Selhání zápisu modul uzamkne proti ztrátě nebo
 duplikaci. Zbývající živé Purpur scénáře jsou v `TESTING.md` a `LIVE_TESTING.md`.
 
-Release postup prošel se 74 testy. Vydaný asset má velikost `12311052` bajtů
-a SHA-256 `9A64EA27A0D2686C564F0480897F239C66516EC46CC6AAAFB27BE880F49339EE`.
+Release postup prošel se 116 testy. Vydaný asset má velikost `12399790` bajtů
+a SHA-256 `C768215E7ED08F7F2ED99F0359597ECFB0B18552A9D5AEEE4EAAB53A4A889514`.
 Release build ověřuje verzi, manifest a přítomnost zabaleného SQLite JDBC
 ovladače. Smrt koně má minutový cooldown a píšťalka zůstává soulbound.
 
@@ -151,7 +162,7 @@ provést úplný restart a zkontrolovat startovací logy.
 
 ## Další práce
 
-Nejdřív živě otestuj vydanou verzi 1.10.0 podle `NekaraRPG/TESTING.md` a
+Nejdřív živě otestuj vydanou verzi 2.0.0 podle `NekaraRPG/TESTING.md` a
 `NekaraRPG/LIVE_TESTING.md`, zejména:
 
 - registraci, login, lockout, přesný zápis nicku a blokaci akcí NekaraAuth,
@@ -160,6 +171,12 @@ Nejdřív živě otestuj vydanou verzi 1.10.0 podle `NekaraRPG/TESTING.md` a
 - že jsou tři zvuky Echo Vein jasně rozlišitelné,
 - že +25 % XP vzniká právě jednou z označeného bloku,
 - že 50% řetězení a bonusový drop nejsou příliš štědré.
+
+ValhallaMMO ponech zapnuté. Po běžném restartu nejdřív ověř beze změny jeho
+`/skills`, protože nativní modul je výchozím stavem vypnutý. Teprve potom nastav
+`modules.skills.enabled: true`, použij `/nekararpg reload` a ověř read-only
+přehled, Power 0, všech 15 dovedností na úrovni 0, návrat do `/nrpg`, vznik
+`skills/data.db` a žádné nativní XP nebo bonusové dropy.
 
 Součástí akceptace je osobní přehled, administrátorská diagnostika a celý bezpečný
 průchod změny hesla. U Mounts ověř migraci YAML do SQLite, zachování brašen přes
