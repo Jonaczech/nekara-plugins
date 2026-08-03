@@ -6,15 +6,16 @@ Repozitář je publikovaný jako
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 Výchozí větev je `main`.
 
-Připravovaná a lokálně ověřená verze je **NekaraRPG 1.8.0**. Po publikaci ji
-vestavěný updater rozpozná jako nástupce vydané verze 1.6.0:
+Nejnovější stabilní a publikovaná verze je **NekaraRPG 1.8.0**. Vestavěný
+updater ji rozpozná jako nástupce verze 1.6.0:
 
 - tag: `v1.8.0`
 - GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.8.0>
 - nasazovaný soubor: `NekaraRPG.jar`
-- SHA-256 připraveného JARu:
+- release commit: `c3ad9fc5c36686d4fdcaecb8749c761a6073ed67`
+- SHA-256 vydaného JARu:
   `2BC4FB04B736B0338B67FDA3855535A45607E551AA3019B72CAC6F638C05AEC8`
-- velikost připraveného release assetu: `12302405` bajtů
+- velikost release assetu: `12302405` bajtů
 - automatické ověření: 70 úspěšných testů
 
 Verze 1.8.0 rozšiřuje centrální GUI o osobní přehled a administrátorskou
@@ -22,9 +23,9 @@ diagnostiku. NekaraMounts přidává přirozené putování, přesměrování ak
 výchozí sedlo, truhlu a 54slotové virtuální brašny. Mounts persistence přechází
 z YAML na SQLite s jednorázovým importem a zálohou původních dat.
 
-Po publikaci je nutné ověřit metadata GitHub release, hash zpětně staženého JARu,
-stabilní stav, jediný asset a cíl tagu. Potom zbývá živě ověřit pořadí událostí,
-migraci a chování na Purpur serveru s ValhallaMMO.
+Metadata GitHub release, hash zpětně staženého JARu, verze uvnitř `plugin.yml`,
+přítomnost SQLite ovladače, stabilní `latest` stav, jediný asset a cíl tagu byly
+ověřeny. Zbývá živě ověřit pořadí událostí, migraci a chování na Purpur serveru.
 
 Čísla verzí patří do metadat pluginu, changelogu a Git tagů. Název JARu zůstává
 záměrně stabilní, aby při nasazení nevznikla druhá verzovaná kopie vedle
@@ -44,7 +45,7 @@ management výbavy, virtuální 54slotové brašny a transakční SQLite backend
 i jako `data.yml.pre-sqlite.bak`. Selhání zápisu modul uzamkne proti ztrátě nebo
 duplikaci. Zbývající živé Purpur scénáře jsou v `TESTING.md` a `LIVE_TESTING.md`.
 
-Release postup prošel se 70 testy. Připravený asset má velikost `12302405` bajtů
+Release postup prošel se 70 testy. Vydaný asset má velikost `12302405` bajtů
 a SHA-256 `2BC4FB04B736B0338B67FDA3855535A45607E551AA3019B72CAC6F638C05AEC8`.
 Release build ověřuje verzi, manifest a přítomnost zabaleného SQLite JDBC
 ovladače. Smrt koně má minutový cooldown a píšťalka zůstává soulbound.
