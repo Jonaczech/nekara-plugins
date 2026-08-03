@@ -52,6 +52,14 @@ Budoucí moduly lze přidávat bez rozdělení projektu do nesouvisejících JAR
 Vhodnými kandidáty jsou lockpicking, wounds, world events, rumors, territory,
 reputation.
 
+## Centrální menu
+
+Hráč otevře hlavní nabídku příkazem `/nekararpg` nebo `/nekararpg menu`. Nabídka
+zobrazuje jen moduly, které jsou právě zapnuté v `config.yml` a ke kterým má hráč
+oprávnění. Umožňuje otevřít účet a NekaraMounts, sednout si nebo vstát a zobrazuje
+stav rybaření, odpočinku a těžby. Původní příkazy zůstávají dostupné jako fallback
+a pro administraci. Přístup k nabídce řídí oprávnění `nekararpg.menu.use`.
+
 ## NekaraMounts
 
 Hráč nepotřebuje hledat ani ochočovat vanilla koně. `/nekararpg mount` otevře
@@ -88,7 +96,10 @@ velikost písmen a výchozím stavem vyžaduje také jeho přesný zápis.
 
 Hlavní ovládání je herní GUI `/nekaraauth`. Registrace a login používají
 virtuální kovadlinu, takže heslo nejde běžným chatem; registrace vyžaduje druhé
-zadání stejného hesla. `/login` a `/register` jsou pro běžné hráče vypnuté,
+zadání stejného hesla. Přihlášený hráč může ve stejné správě účtu změnit heslo po
+zadání současného hesla, nového hesla a jeho potvrzení. Úspěšná změna zruší uložené
+relog session; žádné heslo se nezapisuje do chatu, logu ani datového souboru.
+`/login` a `/register` jsou pro běžné hráče vypnuté,
 protože příkaz může vidět jiný serverový plugin pracující s command eventy.
 Nouzový fallback musí administrátor výslovně zapnout v konfiguraci a povolit
 samostatným oprávněním.

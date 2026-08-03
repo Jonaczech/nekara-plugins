@@ -6,6 +6,8 @@ zůstávají v `PROJECT_MEMORY.md` a aktuální release stav v `HANDOFF.md`.
 ## Aktuální stav
 
 - Nejnovější stabilní release: **NekaraRPG 1.5.1** s modulem **NekaraMounts** (`mounts`).
+- Lokální kandidát **1.6.0** sjednocuje hráčský vstup do dynamického GUI
+  `/nekararpg` a přidává změnu hesla v NekaraAuth; před vydáním vyžaduje živou akceptaci.
 - Modul zůstane součástí jediného `NekaraRPG.jar` a bude samostatně zapínatelný.
 
 ## NekaraMounts — první vydání

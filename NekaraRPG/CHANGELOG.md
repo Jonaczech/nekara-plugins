@@ -1,5 +1,18 @@
 # Přehled změn
 
+## 1.6.0
+
+- Přidáno centrální hráčské GUI `/nekararpg` (také `/nekararpg menu`), které
+  zobrazuje pouze právě aktivní moduly dostupné podle oprávnění hráče.
+- Menu propojuje NekaraAuth, Fishing, Sitting, Campfire, Mining a NekaraMounts;
+  příkazy zůstávají jako administrativní a nouzový fallback.
+- NekaraAuth účet nově umožňuje bezpečnou změnu hesla přes tři kroky ve virtuální
+  kovadlině: současné heslo, nové heslo a potvrzení nového hesla.
+- Ověřování a hashování zůstává mimo hlavní serverové vlákno. Plaintext se
+  neukládá ani neloguje a úspěšná změna ruší dřívější relog session.
+- Přidána oprávnění, české zprávy, automatické kontroly YAML a jednotkový test
+  zachování identity a auditních údajů účtu při výměně hashe.
+
 ## 1.5.1
 
 - Navazující stabilní patch release pro instance, které už před publikací na

@@ -24,9 +24,14 @@ reloaded: "%prefix%&aKonfigurace byla znovu načtena."
 no-permission: "%prefix%&cNemáš oprávnění."
 invalid-command: "%prefix%&cNeplatný příkaz. Použij &f/nekararpg help&c."
 module-disabled: "%prefix%&cModul &f%module% &cje vypnutý."
+menu-fishing-info: "%prefix%&7Rybářská minihra se spustí sama při přirozeném záběru."
+menu-campfire-rested: "%prefix%&aJsi odpočatý ještě &f%time%&a."
+menu-campfire-info: "%prefix%&7Posaď se poblíž zapáleného ohně a chvíli odpočívej."
+menu-mining-info: "%prefix%&7Ozvěna žíly se může spustit při těžbě s aktivním ValhallaMMO."
 help: |-
   &8&m--------------------------------
   &bNekaraRPG &7- příkazy
+  &f/nekararpg &7- otevře centrální menu aktivních modulů
   &f/nekararpg help &7- zobrazí tuto nápovědu
   &f/nekararpg reload &7- znovu načte konfiguraci
   &f/nekararpg status &7- zobrazí stav pluginu
@@ -82,6 +87,11 @@ auth-time-remaining: "<aqua>Přihlášení</aqua> <dark_gray>|</dark_gray> <whit
 auth-processing: "%prefix%&7Bezpečně ověřuji heslo…"
 auth-busy: "%prefix%&cPřihlašování je právě vytížené. Zkus to za chvíli znovu."
 auth-confirm-password: "%prefix%&eZadej stejné heslo ještě jednou pro potvrzení."
+auth-change-current-prompt: "%prefix%&eNejprve zadej své současné heslo."
+auth-change-new-prompt: "%prefix%&eNyní zadej nové heslo."
+auth-change-confirm-prompt: "%prefix%&eZadej nové heslo ještě jednou pro potvrzení."
+auth-current-password-invalid: "%prefix%&cSoučasné heslo není správné. Zbývající pokusy: &f%remaining%&c."
+auth-password-changed: "%prefix%&aHeslo bylo bezpečně změněno. Ostatní relog relace byly zrušeny."
 auth-password-mismatch: "%prefix%&cZadaná hesla se neshodují. Registraci spusť znovu."
 auth-password-too-short: "%prefix%&cHeslo musí mít alespoň &f%min% &cznaků."
 auth-password-too-long: "%prefix%&cHeslo může mít nejvýše &f%max% &cznaků."

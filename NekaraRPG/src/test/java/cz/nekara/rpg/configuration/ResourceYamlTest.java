@@ -169,6 +169,14 @@ class ResourceYamlTest {
             assertNotNull(messages.get("auth-session-restored"));
             assertNotNull(messages.get("auth-time-remaining"));
             assertNotNull(messages.get("auth-fallback-disabled"));
+            assertNotNull(messages.get("auth-change-current-prompt"));
+            assertNotNull(messages.get("auth-change-new-prompt"));
+            assertNotNull(messages.get("auth-change-confirm-prompt"));
+            assertNotNull(messages.get("auth-current-password-invalid"));
+            assertNotNull(messages.get("auth-password-changed"));
+            assertNotNull(messages.get("menu-fishing-info"));
+            assertNotNull(messages.get("menu-campfire-rested"));
+            assertNotNull(messages.get("menu-mining-info"));
             assertNotNull(messages.get("mount-status"));
             assertNotNull(messages.get("mount-combat-blocked"));
             assertNotNull(messages.get("mount-created"));
@@ -181,6 +189,18 @@ class ResourceYamlTest {
                     messages.get("campfire-rested-timer")
             );
         }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void centralMenuPermissionIsAvailableToPlayersByDefault() throws Exception {
+        Map<String, Object> plugin = loadYaml("plugin.yml");
+        Map<String, Object> permissions = (Map<String, Object>) plugin.get("permissions");
+        Map<String, Object> menuPermission =
+                (Map<String, Object>) permissions.get("nekararpg.menu.use");
+
+        assertNotNull(menuPermission);
+        assertEquals(true, menuPermission.get("default"));
     }
 
     @SuppressWarnings("unchecked")

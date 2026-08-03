@@ -2,6 +2,7 @@ package cz.nekara.rpg.command;
 
 import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.messages.MessageService;
+import cz.nekara.rpg.menu.NekaraRPGMenu;
 import cz.nekara.rpg.minigame.FishingMinigameManager;
 import cz.nekara.rpg.modules.ModuleRegistry;
 import cz.nekara.rpg.modules.campfire.CampfireModule;
@@ -33,6 +34,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
     private final ModuleRegistry modules;
     private final MessageService messages;
     private final UpdaterService updater;
+    private final NekaraRPGMenu mainMenu;
 
     public NekaraRPGCommand(
             NekaraRPGPlugin plugin,
@@ -43,7 +45,8 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
             MountsModule mountsModule,
             ModuleRegistry modules,
             MessageService messages,
-            UpdaterService updater
+            UpdaterService updater,
+            NekaraRPGMenu mainMenu
     ) {
         this.plugin = plugin;
         this.fishingModule = fishingModule;
@@ -54,12 +57,24 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
         this.modules = modules;
         this.messages = messages;
         this.updater = updater;
+        this.mainMenu = mainMenu;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        String subcommand = args.length == 0 ? "help" : args[0].toLowerCase(Locale.ROOT);
+        String subcommand = args.length == 0
+                ? (sender instanceof Player ? "menu" : "help")
+                : args[0].toLowerCase(Locale.ROOT);
         return switch (subcommand) {
+            case "menu" -> {
+                if (!require(sender, "nekararpg.menu.use")) yield true;
+                if (!(sender instanceof Player player)) {
+                    messages.send(sender, "player-only");
+                    yield true;
+                }
+                mainMenu.open(player);
+                yield true;
+            }
             case "help" -> {
                 if (!require(sender, "nekararpg.command.help", "nekarafishing.command.help")) yield true;
                 messages.send(sender, "help");
@@ -263,7 +278,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return prefix(List.of("help", "reload", "status", "update", "sit", "stand", "mount", "test", "cancel"), args[0]);
+            return prefix(List.of("menu", "help", "reload", "status", "update", "sit", "stand", "mount", "test", "cancel"), args[0]);
         }
         if (args.length == 2 && "update".equalsIgnoreCase(args[0])) {
             return prefix(List.of("check", "status"), args[1]);

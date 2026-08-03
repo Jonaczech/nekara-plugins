@@ -5,6 +5,7 @@ import cz.nekara.rpg.command.AuthCommand;
 import cz.nekara.rpg.configuration.ConfigurationService;
 import cz.nekara.rpg.configuration.PluginConfig;
 import cz.nekara.rpg.messages.MessageService;
+import cz.nekara.rpg.menu.NekaraRPGMenu;
 import cz.nekara.rpg.modules.ModuleRegistry;
 import cz.nekara.rpg.modules.auth.AuthModule;
 import cz.nekara.rpg.modules.campfire.CampfireModule;
@@ -30,6 +31,7 @@ public final class NekaraRPGPlugin extends JavaPlugin {
     private CampfireModule campfireModule;
     private MiningModule miningModule;
     private MountsModule mountsModule;
+    private NekaraRPGMenu mainMenu;
 
     @Override
     public void onEnable() {
@@ -54,9 +56,11 @@ public final class NekaraRPGPlugin extends JavaPlugin {
         modules.register(campfireModule);
         modules.register(miningModule);
         modules.register(mountsModule);
+        mainMenu = new NekaraRPGMenu(this, messages, modules, authModule, fishingModule,
+                sittingModule, campfireModule, mountsModule);
         fishingModule.registerCommand(new NekaraRPGCommand(
                 this, fishingModule, sittingModule, campfireModule, miningModule, mountsModule,
-                modules, messages, updater));
+                modules, messages, updater, mainMenu));
         AuthCommand authCommand = new AuthCommand(authModule, messages);
         for (String commandName : new String[]{"nekaraauth", "login", "register", "logout"}) {
             var command = Objects.requireNonNull(getCommand(commandName),
@@ -75,11 +79,17 @@ public final class NekaraRPGPlugin extends JavaPlugin {
         messages.reload();
         sounds.reload(config.sounds());
         modules.applyConfig(config);
+        if (mainMenu != null) {
+            mainMenu.closeOpenMenus();
+        }
         updater.reload(config.updater());
     }
 
     @Override
     public void onDisable() {
+        if (mainMenu != null) {
+            mainMenu.shutdown();
+        }
         if (updater != null) {
             updater.shutdown();
         }

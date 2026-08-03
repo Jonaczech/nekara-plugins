@@ -47,6 +47,17 @@ Po změně spusť `/nekararpg reload`. Před akceptací vrať produkční defaul
 20sekundové nabíjení, základ pět minut, jednu minutu za unikátní prvek, bezpečný
 radius 24 bloků, jeden bod zdraví za pět sekund a jeden bod jídla za deset sekund.
 
+## Akceptace centrálního menu a změny hesla
+
+1. Přihlášený hráč otevře `/nekararpg`; vidí pouze zapnuté moduly, ke kterým má
+   oprávnění. Konzole bez argumentu dál dostane textovou nápovědu.
+2. Otevři NekaraMounts a NekaraAuth z centrálního menu a ověř návrat do jejich
+   existujících bezpečných GUI bez duplikace mounta nebo píšťalky.
+3. V NekaraAuth změň heslo přes současné heslo, nové heslo a potvrzení. Po logoutu
+   ověř odmítnutí starého a přijetí nového hesla.
+4. Ověř chybný současný údaj, neshodné potvrzení, zavření každého kroku a odpojení
+   během výpočtu. Účet musí zůstat použitelný a plaintext se nesmí objevit v logu.
+
 ## Akceptace sezení
 
 1. Spusť `/nekararpg sit` na plných blocích, slabech, schodech a nerovném terénu.

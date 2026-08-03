@@ -106,6 +106,9 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
   správně předané skutečné IP se musí vypnout.
 - `/login` a `/register` jsou pro běžné hráče vypnuté. Nouzový fallback vyžaduje
   současně zapnutou konfiguraci a oprávnění `nekararpg.auth.fallback-commands`.
+- Změna hesla vyžaduje současné heslo, nové heslo a jeho potvrzení. Běží přes stejné
+  omezené asynchronní hashování jako login, po úspěchu ruší relog session a nesmí
+  pokračovat, pokud se autentizační stav hráče během výpočtu změnil.
 - První registrace si nick nárokuje. Počáteční nasazení proto používá whitelist,
   dokud nejsou vytvořené účty administrátorů a rezervovaných nicků.
 - AuthMe se nesmí odstranit před řízenou migrací existujících účtů a živou
@@ -114,6 +117,8 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
 ## Konfigurace a upgrady
 
 - Kořenový `config.yml` obsahuje pouze jádro, updater a přepínače modulů.
+- Centrální hráčské GUI `/nekararpg` zobrazuje pouze zapnuté moduly dostupné podle
+  oprávnění. Modulová GUI a příkazy zůstávají vlastníky své doménové logiky.
   Podrobné hodnoty patří do `<module>/config.yml`; současné moduly používají
   složky `auth`, `fishing`, `sitting`, `campfire` a `mining`.
 - Přechod ze starého monolitického configu musí nejprve úspěšně uložit vlastní
