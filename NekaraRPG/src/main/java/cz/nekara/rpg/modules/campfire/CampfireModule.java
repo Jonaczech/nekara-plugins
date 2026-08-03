@@ -163,11 +163,6 @@ public final class CampfireModule implements NekaraModule, Listener {
         if (sitting.isSeated(player) || sitting.isLying(player)) {
             return LieResult.ALREADY_RESTING;
         }
-        if (!player.hasPermission("nekararpg.campfire.use")
-                || !plugin.configuration().get().worlds().isEnabled(player.getWorld().getName())
-                || findNearestLitCampfire(player.getLocation(), config.radius()) == null) {
-            return LieResult.NOT_NEAR_CAMPFIRE;
-        }
         return sitting.lie(player) ? LieResult.SUCCESS : LieResult.INVALID_STATE;
     }
 

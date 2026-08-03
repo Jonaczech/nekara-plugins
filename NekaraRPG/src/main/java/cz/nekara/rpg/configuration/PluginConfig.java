@@ -17,6 +17,7 @@ public record PluginConfig(
         AuthConfig auth,
         EchoVeinConfig echoVein,
         MountConfig mounts,
+        SkillsConfig skills,
         UpdaterConfig updater,
         WorldConfig worlds,
         Map<String, SoundSettings> sounds

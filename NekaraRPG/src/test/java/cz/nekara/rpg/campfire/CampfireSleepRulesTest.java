@@ -19,6 +19,12 @@ class CampfireSleepRulesTest {
     }
 
     @Test
+    void lyingOutsideActiveCampfireNeverPassesNight() {
+        assertFalse(CampfireSleepRules.canSkipNight(
+                true, 1, false, 10_000L, 5_000L, true, 13_000L));
+    }
+
+    @Test
     void dayAndNonOverworldNeverAdvance() {
         assertFalse(CampfireSleepRules.canSkipNight(
                 true, 1, true, 10_000L, 5_000L, true, 6_000L));

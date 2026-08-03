@@ -21,6 +21,23 @@ Deploy skript odmítne pokračovat, pokud vedle stabilního `NekaraRPG.jar` najd
 další `NekaraRPG*.jar` nebo starý `NekaraFishing*.jar`; nahlášený soubor nejdřív
 přesuň mimo `plugins`.
 
+Před prvním restartem do 2.0.0 si ponech ověřenou kopii stabilního 1.10.0 JARu i
+datové složky. Nativní Skills testuj s ValhallaMMO stále načteným a odstraň ho až
+po dokončení pozdější migrační fáze.
+
+## Náhled Nekara Skills 2.0
+
+1. Na izolovaném staging serveru nastav `modules.skills.enabled: true`; výchozí
+   hodnota zůstává záměrně `false`.
+2. Otevři `/nrpg` a Dovednosti. Zkontroluj 54slotový přehled, všech 15 trénovaných
+   dovedností, Power, volné body, návrat a blokaci přesunů itemů.
+3. S ValhallaMMO ověř, že zapnutý nativní modul má v centrálním menu přednost, ale
+   sám neuděluje žádné XP ani odměny. Po jeho vypnutí se vrátí původní `/skills`.
+4. Ověř `skills/data.db`, restart a reload. Při chybě storage se modul uzamkne a
+   nesmí tiše vytvořit druhou databázi nebo přepsat profil.
+5. Neprováděj ruční úpravy živé SQLite databáze. Import ValhallaMMO v tomto milníku
+   ještě neexistuje.
+
 ## Profil pro rychlé testování
 
 Pro krátký vývojový cyklus dočasně použij na staging serveru:
@@ -71,9 +88,12 @@ radius 24 bloků, jeden bod zdraví za pět sekund a jeden bod jídla za deset s
 6. Použij `/cmi sit` nebo jeho alias u ohně a ověř spuštění Campfire bez příkazu NekaraRPG.
 7. Ověř, že samostatný přepínač `modules.sitting.enabled` už neexistuje a vypnutí
    Campfire uklidí interní sedadlo i ležení.
-8. Ulehni přes Tábořiště u zapáleného ohně. Bez postele musí vzniknout spánková
-   póza a pohyb, teleport, smrt, odpojení či nakonfigurované poškození ji uklidí.
-9. Se dvěma hráči noc nesmí přeskočit. Po odpojení druhého smí jediný ležící hráč
+8. Ulehni bez ohně a ověř trvalou spánkovou pózu bez Rested. Pohyb musí být
+   zablokovaný, rozhlížení povolené a přikrčení hráče zvedne. Teleport, smrt,
+   odpojení či nakonfigurované poškození musí pózu také uklidit.
+9. Ověř stejná tlačítka sezení a ležení přímo na hlavní obrazovce `/nrpg` i v
+   Tábořišti. Každé použití musí zůstat ve správné obrazovce GUI.
+10. Se dvěma hráči noc nesmí přeskočit. Po odpojení druhého smí jediný ležící hráč
    po pěti sekundách přejít do rána; CMI příkaz se nesmí spustit a spawn se nezmění.
 
 ## Akceptace Campfire

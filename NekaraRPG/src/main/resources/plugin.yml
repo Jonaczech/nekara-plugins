@@ -74,6 +74,9 @@ permissions:
   nekararpg.mount.use:
     description: Allows the player to create, manage, call, dismiss, and inspect their Nekara mount.
     default: true
+  nekararpg.skills.use:
+    description: Opens the native Nekara Skills progression overview when the module is enabled.
+    default: true
   nekararpg.mount.admin:
     description: Allows administrators to open virtual horse creation for another player.
     default: op

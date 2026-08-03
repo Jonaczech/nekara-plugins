@@ -38,7 +38,7 @@ help: |-
   &f/nekaraauth &7- otevře registraci a správu účtu
   &f/nekararpg sit &7- posadí tě na aktuálním místě
   &f/nekararpg stand &7- ukončí sezení
-  &f/nekararpg lay &7- ulehneš poblíž zapáleného ohně
+  &f/nekararpg lay &7- ulehneš na aktuálním místě
   &f/nekararpg rise &7- ukončíš ležení
   &f/nekararpg mount [menu|status|call|dismiss|whistle] &7- spravuje tvého koně
   &f/nekararpg test <fishing|vein> &7- spustí vybranou testovací minihru
@@ -71,12 +71,11 @@ campfire-rested-granted: "<green>Jsi odpočatý.</green> <gray>Rested bonus: %du
 campfire-rested-active: "<green>Rested je aktivní.</green> <gray>Zbývá %remaining% s · skupina %group% · %multiplier%x</gray>"
 campfire-rest-complete: "<gold>U ohně ses plně zotavil.</gold>"
 campfire-rest-left: "<gray>Vzdálil ses od tepla ohně.</gray>"
-campfire-lying-started: "<gold>Ulehl jsi k teplu ohně.</gold>"
+campfire-lying-started: "<gold>Ulehl jsi k odpočinku.</gold>"
 campfire-lying-stopped: "<gray>Znovu ses postavil na nohy.</gray>"
 campfire-not-lying: "<gray>Právě neležíš.</gray>"
-campfire-lying-disabled: "<gray>Dnes se u ohně ulehnout nedá.</gray>"
+campfire-lying-disabled: "<gray>V tuto chvíli si lehnout nemůžeš.</gray>"
 campfire-already-resting: "<gray>Nejdřív ukonči současný odpočinek.</gray>"
-campfire-lying-needs-fire: "<gold>K ulehnutí potřebuješ zapálený oheň nablízku.</gold>"
 campfire-lying-invalid-state: "<gray>V tuto chvíli si nemůžeš lehnout.</gray>"
 campfire-night-passed: "<gold>Oheň dohoříval a nad krajinou se rozednilo.</gold>"
 

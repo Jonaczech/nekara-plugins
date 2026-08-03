@@ -19,7 +19,7 @@ class ResourceYamlTest {
     void bundledYamlResourcesAreValid() throws Exception {
         for (String resource : new String[]{"config.yml", "messages.yml", "plugin.yml",
                 "auth/config.yml", "fishing/config.yml", "campfire/config.yml",
-                "mining/config.yml", "mounts/config.yml"}) {
+                "mining/config.yml", "mounts/config.yml", "skills/config.yml"}) {
             InputStream stream = getClass().getClassLoader().getResourceAsStream(resource);
             assertNotNull(stream, resource + " is missing from the test classpath");
             try (stream; InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
@@ -39,6 +39,7 @@ class ResourceYamlTest {
         Map<String, Object> mining = loadYaml("mining/config.yml");
         Map<String, Object> fishing = loadYaml("fishing/config.yml");
         Map<String, Object> mountsConfig = loadYaml("mounts/config.yml");
+        Map<String, Object> skillsConfig = loadYaml("skills/config.yml");
 
             Map<String, Object> updater = (Map<String, Object>) root.get("updater");
             Map<String, Object> modules = (Map<String, Object>) root.get("modules");
@@ -72,6 +73,8 @@ class ResourceYamlTest {
             Map<String, Object> mountPersistence = (Map<String, Object>) mountsConfig.get("persistence");
             Map<String, Object> mountNaming = (Map<String, Object>) mountsConfig.get("naming");
             Map<String, Object> mountWhistle = (Map<String, Object>) mountsConfig.get("whistle");
+            Map<String, Object> skillStorage = (Map<String, Object>) skillsConfig.get("storage");
+            Map<String, Object> skillProgression = (Map<String, Object>) skillsConfig.get("progression");
 
             assertEquals(0.20, ((Number) sitting.get("seat-y-offset")).doubleValue(), 0.0001);
             assertTrue((Boolean) lying.get("enabled"));
@@ -82,6 +85,8 @@ class ResourceYamlTest {
             assertNotNull(modules.get("mining"));
             assertNotNull(modules.get("auth"));
             assertNotNull(modules.get("mounts"));
+            assertNotNull(modules.get("skills"));
+            assertFalse((Boolean) ((Map<String, Object>) modules.get("skills")).get("enabled"));
             assertFalse(modules.containsKey("sitting"));
             assertFalse(root.containsKey("auth"));
             assertFalse(root.containsKey("campfire"));
@@ -156,6 +161,10 @@ class ResourceYamlTest {
             assertEquals(24, ((Number) mountNaming.get("maximum-length")).intValue());
             assertEquals("GOAT_HORN", mountWhistle.get("material"));
             assertEquals(260102, ((Number) mountWhistle.get("custom-model-data")).intValue());
+            assertEquals("skills/data.db", skillStorage.get("database-file"));
+            assertEquals(100, ((Number) skillProgression.get("base-experience")).intValue());
+            assertEquals(35, ((Number) skillProgression.get("linear-growth")).intValue());
+            assertEquals(2, ((Number) skillProgression.get("quadratic-growth")).intValue());
     }
 
     @Test

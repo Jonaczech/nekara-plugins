@@ -208,7 +208,6 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                     case SUCCESS -> "campfire-lying-started";
                     case MODULE_DISABLED, LYING_DISABLED -> "campfire-lying-disabled";
                     case ALREADY_RESTING -> "campfire-already-resting";
-                    case NOT_NEAR_CAMPFIRE -> "campfire-lying-needs-fire";
                     case INVALID_STATE -> "campfire-lying-invalid-state";
                 });
                 yield true;

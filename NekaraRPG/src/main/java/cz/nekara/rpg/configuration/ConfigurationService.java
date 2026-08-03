@@ -358,6 +358,18 @@ public final class ConfigurationService {
                         0, 16_777_215, 260102, "mounts.whistle.custom-model-data", warning)
         );
 
+        SkillsConfig skills = new SkillsConfig(
+                validateRelativeStoragePath(
+                        config.getString("skills.storage.database-file", "skills/data.db"),
+                        "skills.storage.database-file", "skills/data.db", warning),
+                validateLong(config.getLong("skills.progression.base-experience", 100),
+                        1, 1_000_000, 100, "skills.progression.base-experience", warning),
+                validateLong(config.getLong("skills.progression.linear-growth", 35),
+                        0, 1_000_000, 35, "skills.progression.linear-growth", warning),
+                validateLong(config.getLong("skills.progression.quadratic-growth", 2),
+                        0, 100_000, 2, "skills.progression.quadratic-growth", warning)
+        );
+
         Map<String, SoundSettings> sounds = new HashMap<>();
         for (String key : new String[]{"bite", "hit", "miss", "timeout", "escape", "minigame-success",
                 "catch-success", "campfire-rested", "echo-vein-pulse", "echo-vein-ore-reveal",
@@ -398,7 +410,8 @@ public final class ConfigurationService {
                         "campfire", config.getBoolean("modules.campfire.enabled", true),
                         "auth", config.getBoolean("modules.auth.enabled", true),
                         "mining", miningModuleEnabled,
-                        "mounts", config.getBoolean("modules.mounts.enabled", true)
+                        "mounts", config.getBoolean("modules.mounts.enabled", true),
+                        "skills", config.getBoolean("modules.skills.enabled", false)
                 ),
                 minigame,
                 hookParticles,
@@ -411,6 +424,7 @@ public final class ConfigurationService {
                 auth,
                 echoVein,
                 mounts,
+                skills,
                 updater,
                 worldConfig,
                 Map.copyOf(sounds)
@@ -615,6 +629,15 @@ public final class ConfigurationService {
 
     private int validateInt(int value, int minimum, int maximum, int fallback,
                             String path, Consumer<String> warning) {
+        if (value < minimum || value > maximum) {
+            warning.accept("Invalid " + path + "; using " + fallback + ".");
+            return fallback;
+        }
+        return value;
+    }
+
+    private long validateLong(long value, long minimum, long maximum, long fallback,
+                              String path, Consumer<String> warning) {
         if (value < minimum || value > maximum) {
             warning.accept("Invalid " + path + "; using " + fallback + ".");
             return fallback;

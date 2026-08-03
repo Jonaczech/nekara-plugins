@@ -31,3 +31,7 @@ modules:
     enabled: true
   mounts:
     enabled: true
+  # Preview foundation only. Keep disabled until XP listeners, perks and migration
+  # have completed their live acceptance.
+  skills:
+    enabled: false

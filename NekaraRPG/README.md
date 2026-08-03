@@ -8,9 +8,31 @@ NekaraMounts s jedním trvalým vanilla koněm na hráče.
 Plugin je záměrně konzervativní: nenahrazuje vanilla loot tabulky, nevytváří
 syntetické fishing eventy a nevyžaduje ValhallaMMO ani jiný plugin.
 
+## Nekara Skills 2.0 — ve vývoji
+
+Větev 2.0 staví vlastní autoritativní RPG postup: 15 přímo trénovaných dovedností
+a odvozený Powerlevel, vše se stropem 100. Součástí základu je validovaný perk
+graf, skládání statistik, bojové efekty, bezpečný násobitel dropů, rozhraní pro
+aktivní schopnosti a ochrana XP před opakováním či automatizací. Powerlevel je
+průměr úrovní všech trénovaných dovedností; jednostranné vytěžení jediné profese
+proto hlavní úroveň výrazně nezvedne.
+
+Implementace je clean-room. ValhallaMMO, AuraSkills a mcMMO slouží pouze jako
+veřejná žánrová reference; NekaraRPG nepřebírá jejich kód, texty, názvy perků,
+hodnoty ani rozložení stromů. Podrobná rozhodnutí jsou v
+`docs/adr/0001-native-skills-platform.md` a pořadí práce v
+`docs/SKILLS_2_0_ROADMAP.md`.
+
+Aktuální milestone obsahuje doménový základ, transakční SQLite adaptér a bezpečný
+read-only 54slotový přehled. Modul `skills` je výchozím stavem vypnutý; po ručním
+zapnutí nahradí tlačítko ValhallaMMO v `/nrpg` vlastním přehledem, ale zatím
+neuděluje XP ani neutratí perk pointy. Release 2.0.0 tento základ zpřístupňuje k
+řízenému testování vedle nadále aktivního ValhallaMMO.
+
 ## Moduly
 
-Moduly jsou výchozím stavem zapnuté a ovládají se v `config.yml`:
+Produkční moduly jsou výchozím stavem zapnuté a ovládají se v `config.yml`.
+Vývojový modul `skills` zůstává bezpečně vypnutý:
 
 ```yml
 modules:
@@ -24,13 +46,16 @@ modules:
     enabled: true
   mounts:
     enabled: true
+  skills:
+    enabled: false
 ```
 
 Kořenový `config.yml` obsahuje pouze jádro, updater a přepínače modulů. Podrobné
 nastavení je rozdělené do `auth/config.yml`, `fishing/config.yml`,
-`campfire/config.yml`, `mining/config.yml` a `mounts/config.yml` uvnitř datové
-složky pluginu. Při prvním upgradu ze starého monolitického configu se vlastní
-hodnoty automaticky přenesou do odpovídajících souborů.
+`campfire/config.yml`, `mining/config.yml`, `mounts/config.yml` a
+`skills/config.yml` uvnitř datové složky pluginu. Při prvním upgradu ze starého
+monolitického configu se vlastní hodnoty automaticky přenesou do odpovídajících
+souborů.
 
 Aktuální moduly:
 
@@ -41,6 +66,7 @@ Aktuální moduly:
 | `campfire` | produkční | Sezení, ležení, léčení, Rested bonus, skupinové škálování a roleplay u zapáleného ohně. |
 | `mining` | testovací | Aktivity NekaraMining, aktuálně prostorová výzva Echo Vein s nativními ValhallaMMO odměnami. |
 | `mounts` | testovací | Jeden trvalý vanilla kůň na hráče s píšťalkou, brašnami a ochranou proti duplikaci. |
+| `skills` | vývojový náhled | Read-only přehled 16 dovedností a SQLite profil; XP a perky ještě nejsou aktivní. |
 
 Campfire přijímá sedadla NekaraRPG i nakonfigurovaná externí vehicle sedadla.
 Při upgradu se vlastní hodnoty ze starého `sitting/config.yml` jednou převezmou
@@ -52,8 +78,9 @@ Hráč otevře hlavní nabídku příkazem `/nekararpg` nebo `/nekararpg menu`. 
 zobrazuje jen moduly, které jsou právě zapnuté v `config.yml` a ke kterým má hráč
 oprávnění. Rybaření, Táboření a Těžbu sdružuje pod dlaždicí Činnosti; v Tábořišti
 lze sednout, vstát, lehnout si i ukončit ležení. Původní příkazy zůstávají jako fallback
-a pro administraci. Pokud je načtený ValhallaMMO, menu nabízí také přímý vstup do
-jeho nabídky dovedností přes `/skills`. Přístup k nabídce řídí oprávnění
+a pro administraci. Zapnutý nativní modul `skills` nabídne vlastní read-only
+přehled; jinak při načteném ValhallaMMO zůstává přímý vstup do jeho nabídky přes
+`/skills`. Přístup k nabídce řídí oprávnění
 `nekararpg.menu.use`.
 
 Ikona osobního přehledu spojuje stav účtu, Rested, právě probíhající činnost a
@@ -142,11 +169,11 @@ Příkaz `/nekararpg sit` posadí hráče na aktuální uzemněné pozici a
 odstraní při sesednutí, teleportu, smrti, odpojení, nakonfigurovaném poškození,
 vypnutí modulu, čištění při reloadu a ukončení serveru.
 
-Příkaz `/nekararpg lay` nebo tlačítko v Tábořišti uloží hráče do spánkové pózy,
-pokud je nablízku zapálený campfire nebo soul campfire. Nejde o vanilla spánek:
-nevzniká falešná postel, nemění se spawn a plugin nevolá příkaz CMI. Ležení se
-ukončí pohybem, teleportem, smrtí, odpojením, poškozením podle konfigurace nebo
-pomocí `/nekararpg rise`.
+Příkaz `/nekararpg lay` nebo tlačítko na hlavní obrazovce či v Tábořišti uloží
+hráče do spánkové pózy kdekoliv. Nejde o vanilla spánek: nevzniká falešná postel,
+nemění se spawn a plugin nevolá příkaz CMI. Během ležení je poziční pohyb
+zablokovaný, ale hráč se může rozhlížet. Přikrčení, teleport, smrt, odpojení,
+poškození podle konfigurace nebo `/nekararpg rise` jej znovu postaví.
 
 NekaraRPG záměrně neregistruje hlavní příkaz `/sit`. CMI a jiné sitting pluginy
 tak zůstávají vlastníky svých příkazů. Campfire výchozím stavem detekuje externí
