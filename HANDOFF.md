@@ -6,28 +6,22 @@ Repozitář je publikovaný jako
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 Výchozí větev je `main`.
 
-Nejnovější vydaná verze je **NekaraRPG 1.5.1**:
+Nejnovější vydaná verze je **NekaraRPG 1.6.0**:
 
-- tag: `v1.5.1`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.5.1>
+- tag: `v1.6.0`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v1.6.0>
 - nasazovaný soubor: `NekaraRPG.jar`
-- zdrojové PR: <https://github.com/Jonaczech/nekara-plugins/pull/25>
-- release merge commit: `d23e94c8ec6713fd13f9df3492ed854a0d149d9a`
+- zdrojové PR: <https://github.com/Jonaczech/nekara-plugins/pull/27>
+- release merge commit: `d577890ce58a0f9b581fc7ed502900a59bf9fb4f`
 - SHA-256 vydaného JARu:
-  `EE1CE0759A98F56B416F1E3E29A2C53E0089BFB43A8019D672D0AF66C2073F9C`
-- velikost release assetu: `296565` bajtů
-- automatické ověření: 64 úspěšných testů
+  `2F5105C191E639C985281EC864D0B494DECA5EB055AB5D6250CA22A18CCA5B05`
+- velikost release assetu: `308187` bajtů
+- automatické ověření: 66 úspěšných testů
 
-Lokální pracovní strom připravuje nevydaného kandidáta **1.6.0** s centrálním
-GUI `/nekararpg` a změnou hesla v NekaraAuth. Dokud změny neprojdou živou Purpur
-akceptací, commitem a vydáním, výše uvedená verze 1.5.1 zůstává posledním stabilním
-releasem dostupným updateru.
-
-Verze 1.5.1 obsahuje NekaraMounts: virtuálně evidovaného vanilla koně, GUI pro
-jméno, barvu a výbavu, soulbound píšťalku, doběhnutí na místo volání, ochranu
-proti duplicitě a cizí manipulaci a atomické YAML úložiště. Smrt koně zachová
-výbavu a používá minutový cooldown. Starý záznam bez `custom-name` se bezpečně
-migruje na `Bezejmenný`.
+Verze 1.6.0 přidává centrální dynamické GUI `/nekararpg`, které ukazuje pouze
+zapnuté moduly dostupné podle oprávnění, a bezpečnou změnu hesla v NekaraAuth.
+Součástí zůstává NekaraMounts s virtuálně evidovaným koněm, soulbound píšťalkou,
+minutovým cooldownem po smrti a ochranou proti duplicitě a cizí manipulaci.
 
 Metadata GitHub release, hash zpětně staženého JARu, stabilní stav, jediný asset
 i cíl tagu byly ověřeny. Zbývá živě ověřit zvuky, pořadí událostí a vyvážení na
@@ -37,7 +31,12 @@ Purpur serveru s ValhallaMMO a celý NekaraAuth průchod z `TESTING.md`.
 záměrně stabilní, aby při nasazení nevznikla druhá verzovaná kopie vedle
 aktivního pluginu.
 
-## NekaraMounts 1.5.1
+## NekaraRPG 1.6.0
+
+Centrální menu propojuje NekaraAuth, NekaraMounts, Fishing, Sitting, Campfire a
+Mining bez přesunu doménové logiky z jednotlivých modulů. NekaraAuth mění heslo
+po ověření současného hesla, zadání nového hesla a jeho potvrzení; výpočty zůstávají
+mimo hlavní serverové vlákno a úspěch ruší dřívější relog session.
 
 Vydaný modul NekaraMounts přidává virtuální
 vytvoření jednoho vanilla koně přes GUI pro barvu a jméno, svázanou píšťalku,
@@ -45,8 +44,8 @@ management výbavy, atomický YAML backend za `MountRepository`, perzistentní P
 okno, cooldown po smrti a ochranu proti duplicitní entitě i vybavení. Zbývající
 živé Purpur scénáře jsou vedené v `TESTING.md` a `LIVE_TESTING.md`.
 
-Release postup prošel se 64 testy. Vydaný asset má velikost `296565` bajtů a
-SHA-256 `EE1CE0759A98F56B416F1E3E29A2C53E0089BFB43A8019D672D0AF66C2073F9C`.
+Release postup prošel se 66 testy. Vydaný asset má velikost `308187` bajtů a
+SHA-256 `2F5105C191E639C985281EC864D0B494DECA5EB055AB5D6250CA22A18CCA5B05`.
 Hash byl ověřen stažením assetu z GitHub release.
 Hotfix migruje starší mount záznam bez `custom-name` na jméno `Bezejmenný`.
 Smrt koně má minutový cooldown a píšťalka je soulbound: nedropuje, nejde uložit do
@@ -150,7 +149,7 @@ provést úplný restart a zkontrolovat startovací logy.
 
 ## Další práce
 
-Nejdřív živě otestuj verzi 1.4.0 podle `NekaraRPG/TESTING.md` a
+Nejdřív živě otestuj vydanou verzi 1.6.0 podle `NekaraRPG/TESTING.md` a
 `NekaraRPG/LIVE_TESTING.md`, zejména:
 
 - registraci, login, lockout, přesný zápis nicku a blokaci akcí NekaraAuth,
@@ -160,8 +159,7 @@ Nejdřív živě otestuj verzi 1.4.0 podle `NekaraRPG/TESTING.md` a
 - že +25 % XP vzniká právě jednou z označeného bloku,
 - že 50% řetězení a bonusový drop nejsou příliš štědré.
 
-Dalším krokem je živá akceptace kandidáta 1.6.0 podle `NekaraRPG/TESTING.md` a
-`NekaraRPG/LIVE_TESTING.md`: centrální menu, filtrování modulů a oprávnění a celý
+Součástí akceptace je centrální menu, filtrování modulů a oprávnění a celý
 bezpečný průchod změny hesla. Současně zbývá živě ověřit Mounts GUI, píšťalku,
 pathfinding, restart, unload chunku, rychlé dvojí volání, smrt/cooldown, reconnect
 v PvP a cizí manipulace.
