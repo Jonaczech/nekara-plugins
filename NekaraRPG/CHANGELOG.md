@@ -1,5 +1,19 @@
 # Přehled změn
 
+## 2.3.0
+
+- Přidána jednorázová Nová hra+ pro každou dovednost: po dosažení levelu 100 vrátí XP
+  a perky daného skillu, ponechá trvalý bonus statistik a umožní znovu postupovat za
+  snížené XP. Power může díky druhému průchodu dosáhnout 200.
+- Přidány perzistentní globální XP události a dočasné admin XP boosty pro bezpečné
+  testování; jejich stav je auditovatelný a po restartu se chová podle konfigurace.
+- Každá z patnácti dovedností má rozšířené, konfigurovatelné zdroje XP, přesnější
+  hráčskou zpětnou vazbu, segmentový ukazatel postupu a konkrétní popisy perků.
+- Perkové stezky používají větší virtuální plochu s osmisměrnou navigací. Nová hra+
+  je ve středu stezky a spojnice rozlišují zamčený, dostupný a odemčený stav.
+- Přidán klientský resource pack pro navigaci, potvrzovací tlačítka a animované cesty;
+  serverový pack je vydán samostatně jako Nekara Resourcepack v0.5.
+
 ## 2.2.0
 
 - Kovářská dílna `/nrpg forge` byla odstraněna. Výbava vzniká přímo ve vanilla
@@ -71,7 +85,7 @@
 ## 2.1.0
 
 - Všech 15 trénovaných dovedností má nativní runtime zdroj XP. Nové eventové
-  listenery pokrývají Farming, Fishing, Trading, Smithing, Enchanting, Alchemy,
+  listenery pokrývají Hospodářství, Fishing, Trading, Smithing, Enchanting, Alchemy,
   Martial Arts, Light/Heavy Weapons, Archery a Light/Heavy Armor; Creative,
   Spectator, PvP/alt cíle, pasivní combat farmy a nepřiřazený automatický var jsou
   odmítnuté.

@@ -49,8 +49,11 @@ import org.bukkit.inventory.EnchantingInventory;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionType;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
@@ -71,6 +74,8 @@ final class ProductionPerkListener implements Listener {
     private final NekaraRPGPlugin plugin;
     private final SkillsModule module;
     private final SmithingTier.Keys smithingTierKeys;
+    private final org.bukkit.NamespacedKey workshopKitKey;
+    private final org.bukkit.NamespacedKey scoutArrowKey;
     private final Map<UUID, BukkitTask> sharpeningTasks = new HashMap<>();
     private final Map<BlockKey, BrewingActor> brewingActors = new HashMap<>();
     private final Map<ChunkKey, CropCaretaker> cropCaretakers = new LinkedHashMap<>() {
@@ -86,6 +91,8 @@ final class ProductionPerkListener implements Listener {
         this.plugin = plugin;
         this.module = module;
         this.smithingTierKeys = SmithingTier.keys(plugin);
+        this.workshopKitKey = new org.bukkit.NamespacedKey(plugin, "skills_workshop_kit");
+        this.scoutArrowKey = new org.bukkit.NamespacedKey(plugin, "skills_scout_arrow");
     }
 
     void enable() {
@@ -159,7 +166,8 @@ final class ProductionPerkListener implements Listener {
         }
         module.runtimeState(player.getUniqueId(), SkillId.SMITHING).ifPresent(state -> {
             module.cachedProfile(player.getUniqueId()).ifPresent(profile -> SmithingTier.apply(
-                event.getCurrentItem(), module.skillLevel(profile, SkillId.SMITHING), smithingTierKeys));
+                event.getCurrentItem(), module.skillLevel(profile, SkillId.SMITHING),
+                state.stats().value(StatId.ITEM_QUALITY), smithingTierKeys));
             refundCraftingIngredient(player, event.getInventory().getMatrix(),
                 state.stats().value(StatId.RESOURCE_COST_REDUCTION));
         });
@@ -173,7 +181,8 @@ final class ProductionPerkListener implements Listener {
         }
         module.runtimeState(player.getUniqueId(), SkillId.SMITHING).ifPresent(state -> {
             module.cachedProfile(player.getUniqueId()).ifPresent(profile -> SmithingTier.apply(
-                event.getCurrentItem(), module.skillLevel(profile, SkillId.SMITHING), smithingTierKeys));
+                event.getCurrentItem(), module.skillLevel(profile, SkillId.SMITHING),
+                state.stats().value(StatId.ITEM_QUALITY), smithingTierKeys));
             refundCraftingIngredient(player, event.getInventory().getContents(),
                 state.stats().value(StatId.RESOURCE_COST_REDUCTION));
         });
@@ -191,6 +200,13 @@ final class ProductionPerkListener implements Listener {
         }
         ItemStack item = player.getInventory().getItemInMainHand();
         Material station = event.getClickedBlock().getType();
+        if (station == Material.SMITHING_TABLE && player.isSneaking()
+            && module.runtimeState(player.getUniqueId(), SkillId.SMITHING)
+                .map(state -> state.has(MechanicId.TINKERING)).orElse(false)
+            && repairWithWorkshopKit(player, item)) {
+            event.setCancelled(true);
+            return;
+        }
         SmithingTier.ProcessingState state = SmithingTier.state(item, smithingTierKeys);
         if (station == Material.BLAST_FURNACE && state == SmithingTier.ProcessingState.UNPROCESSED) {
             if (!consumeFuel(player)) {
@@ -542,6 +558,13 @@ final class ProductionPerkListener implements Listener {
             return;
         }
         ItemStack vanillaResult = event.getRecipe().getResult();
+        if (hasMechanic(player, SkillId.WOODCUTTING, MechanicId.WOOD_RECIPES)
+            && isSingleLogRecipe(event.getInventory().getMatrix(), vanillaResult)) {
+            ItemStack result = vanillaResult.clone();
+            result.setAmount(5);
+            event.getInventory().setResult(result);
+            return;
+        }
         if (vanillaResult.getType().isAir() || !isEfficientConstructionOutput(vanillaResult.getType())) {
             return;
         }
@@ -556,6 +579,30 @@ final class ProductionPerkListener implements Listener {
         });
     }
 
+    /**
+     * Perk-only recipes intentionally remain in the vanilla crafting grid: they need no custom
+     * blocks and vanilla consumes the displayed matrix only after the preview was authorized.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void previewPerkRecipeResult(PrepareItemCraftEvent event) {
+        if (event.isRepair() || !(event.getView().getPlayer() instanceof Player player) || !supported(player)) {
+            return;
+        }
+        ItemStack[] matrix = event.getInventory().getMatrix();
+        if (hasMechanic(player, SkillId.SMITHING, MechanicId.SMITHING_RECIPES)
+            && isWorkshopKitIngredients(matrix)) {
+            event.getInventory().setResult(workshopKit());
+        } else if (hasMechanic(player, SkillId.ALCHEMY, MechanicId.ALCHEMY_RECIPES)
+            && isVitalityTonicIngredients(matrix)) {
+            event.getInventory().setResult(vitalityTonic());
+        } else if (hasMechanic(player, SkillId.ALCHEMY, MechanicId.POTION_MERGING)) {
+            mergedPotion(matrix).ifPresent(event.getInventory()::setResult);
+        } else if (hasMechanic(player, SkillId.ARCHERY, MechanicId.CUSTOM_ARROW_RECIPES)
+            && isScoutArrowIngredients(matrix)) {
+            event.getInventory().setResult(scoutArrows());
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void preserveCraftedToolDurability(PlayerItemDamageEvent event) {
         Double chance = event.getItem().getPersistentDataContainer().get(
@@ -563,6 +610,161 @@ final class ProductionPerkListener implements Listener {
         if (chance != null && chance > 0.0 && ThreadLocalRandom.current().nextDouble() < chance) {
             event.setCancelled(true);
         }
+    }
+
+    private boolean repairWithWorkshopKit(Player player, ItemStack item) {
+        ItemStack kit = player.getInventory().getItemInOffHand();
+        if (item == null || item.getType().isAir() || !(item.getItemMeta() instanceof Damageable damageable)
+            || damageable.getDamage() <= 0 || kit == null || kit.getType() != Material.BUNDLE
+            || !kit.getPersistentDataContainer().has(workshopKitKey, PersistentDataType.BYTE)) {
+            return false;
+        }
+        int repair = Math.max(1, (int) Math.ceil(item.getType().getMaxDurability() * 0.25));
+        damageable.setDamage(Math.max(0, damageable.getDamage() - repair));
+        item.setItemMeta(damageable);
+        kit.subtract(1);
+        player.playSound(player.getLocation(), Sound.BLOCK_SMITHING_TABLE_USE, 0.8F, 1.1F);
+        player.sendActionBar(net.kyori.adventure.text.Component.text(
+            "Řemeslnická souprava obnovila čtvrtinu odolnosti.",
+            net.kyori.adventure.text.format.NamedTextColor.GREEN));
+        return true;
+    }
+
+    private boolean hasMechanic(Player player, SkillId skill, MechanicId mechanic) {
+        return module.runtimeState(player.getUniqueId(), skill).map(state -> state.has(mechanic)).orElse(false);
+    }
+
+    static boolean isWorkshopKitIngredients(ItemStack[] matrix) {
+        return isWorkshopKitIngredients(materialGrid(matrix));
+    }
+
+    static boolean isWorkshopKitIngredients(Material[] matrix) {
+        return hasExactly(matrix, Map.of(Material.IRON_NUGGET, 4, Material.PAPER, 1, Material.STRING, 1));
+    }
+
+    static boolean isScoutArrowIngredients(ItemStack[] matrix) {
+        return isScoutArrowIngredients(materialGrid(matrix));
+    }
+
+    static boolean isScoutArrowIngredients(Material[] matrix) {
+        return hasExactly(matrix, Map.of(Material.ARROW, 4, Material.GLOW_INK_SAC, 1, Material.AMETHYST_SHARD, 1));
+    }
+
+    private static boolean isVitalityTonicIngredients(ItemStack[] matrix) {
+        if (!hasExactly(matrix, Map.of(Material.POTION, 1, Material.SWEET_BERRIES, 1, Material.GLOW_BERRIES, 1))) {
+            return false;
+        }
+        return java.util.Arrays.stream(matrix)
+            .filter(item -> item != null && item.getType() == Material.POTION)
+            .allMatch(ProductionPerkListener::isWaterPotion);
+    }
+
+    private static boolean isWaterPotion(ItemStack item) {
+        if (item == null || item.getType() != Material.POTION || !(item.getItemMeta() instanceof PotionMeta meta)) {
+            return false;
+        }
+        return meta.getBasePotionType() == PotionType.WATER && meta.getAllEffects().isEmpty();
+    }
+
+    private static boolean hasExactly(ItemStack[] matrix, Map<Material, Integer> expected) {
+        return hasExactly(materialGrid(matrix), expected);
+    }
+
+    private static boolean hasExactly(Material[] matrix, Map<Material, Integer> expected) {
+        Map<Material, Integer> present = new HashMap<>();
+        for (Material material : matrix) {
+            if (material == null || material == Material.AIR) continue;
+            present.merge(material, 1, Integer::sum);
+        }
+        return present.equals(expected);
+    }
+
+    private static Material[] materialGrid(ItemStack[] matrix) {
+        Material[] materials = new Material[matrix.length];
+        for (int index = 0; index < matrix.length; index++) {
+            materials[index] = matrix[index] == null ? Material.AIR : matrix[index].getType();
+        }
+        return materials;
+    }
+
+    private static boolean isSingleLogRecipe(ItemStack[] matrix, ItemStack vanillaResult) {
+        if (vanillaResult == null || !vanillaResult.getType().name().endsWith("_PLANKS")) {
+            return false;
+        }
+        List<ItemStack> ingredients = java.util.Arrays.stream(matrix)
+            .filter(item -> item != null && !item.getType().isAir())
+            .toList();
+        return ingredients.size() == 1 && isLogOrStem(ingredients.getFirst().getType());
+    }
+
+    private static boolean isLogOrStem(Material material) {
+        String name = material.name();
+        return name.endsWith("_LOG") || name.endsWith("_STEM") || name.endsWith("_HYPHAE");
+    }
+
+    private ItemStack workshopKit() {
+        ItemStack result = new ItemStack(Material.BUNDLE);
+        org.bukkit.inventory.meta.ItemMeta meta = result.getItemMeta();
+        meta.getPersistentDataContainer().set(workshopKitKey, PersistentDataType.BYTE, (byte) 1);
+        meta.displayName(net.kyori.adventure.text.Component.text("Řemeslnická souprava",
+            net.kyori.adventure.text.format.NamedTextColor.GOLD));
+        meta.lore(List.of(
+            net.kyori.adventure.text.Component.text("Plížení + pravé tlačítko na smithing table", net.kyori.adventure.text.format.NamedTextColor.GRAY),
+            net.kyori.adventure.text.Component.text("v hlavní ruce poškozená výbava, v levé souprava", net.kyori.adventure.text.format.NamedTextColor.DARK_GRAY),
+            net.kyori.adventure.text.Component.text("Obnoví 25 % její odolnosti", net.kyori.adventure.text.format.NamedTextColor.GREEN)
+        ));
+        result.setItemMeta(meta);
+        return result;
+    }
+
+    private static ItemStack vitalityTonic() {
+        ItemStack result = new ItemStack(Material.POTION);
+        PotionMeta meta = (PotionMeta) result.getItemMeta();
+        meta.addCustomEffect(new PotionEffect(PotionEffectType.REGENERATION, 900, 0, false, true, true), true);
+        meta.displayName(net.kyori.adventure.text.Component.text("Tonikum vitality",
+            net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE));
+        meta.lore(List.of(net.kyori.adventure.text.Component.text(
+            "Regeneration I na 45 sekund", net.kyori.adventure.text.format.NamedTextColor.GREEN)));
+        result.setItemMeta(meta);
+        return result;
+    }
+
+    private Optional<ItemStack> mergedPotion(ItemStack[] matrix) {
+        if (!hasExactly(matrix, Map.of(Material.POTION, 2, Material.AMETHYST_SHARD, 1))) {
+            return Optional.empty();
+        }
+        List<PotionEffect> effects = java.util.Arrays.stream(matrix)
+            .filter(item -> item != null && item.getType() == Material.POTION)
+            .flatMap(item -> ((PotionMeta) item.getItemMeta()).getAllEffects().stream())
+            .toList();
+        if (effects.isEmpty() || effects.stream().map(PotionEffect::getType).distinct().count() > 2) {
+            return Optional.empty();
+        }
+        ItemStack result = new ItemStack(Material.POTION);
+        PotionMeta meta = (PotionMeta) result.getItemMeta();
+        Map<PotionEffectType, PotionEffect> strongest = new HashMap<>();
+        for (PotionEffect effect : effects) {
+            strongest.merge(effect.getType(), effect, (left, right) -> left.getAmplifier() > right.getAmplifier()
+                ? left : left.getAmplifier() < right.getAmplifier()
+                    ? right : left.getDuration() >= right.getDuration() ? left : right);
+        }
+        strongest.values().forEach(effect -> meta.addCustomEffect(effect, true));
+        meta.displayName(net.kyori.adventure.text.Component.text("Spojená esence",
+            net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE));
+        result.setItemMeta(meta);
+        return Optional.of(result);
+    }
+
+    private ItemStack scoutArrows() {
+        ItemStack result = new ItemStack(Material.ARROW, 4);
+        org.bukkit.inventory.meta.ItemMeta meta = result.getItemMeta();
+        meta.getPersistentDataContainer().set(scoutArrowKey, PersistentDataType.BYTE, (byte) 1);
+        meta.displayName(net.kyori.adventure.text.Component.text("Šíp průzkumníka",
+            net.kyori.adventure.text.format.NamedTextColor.AQUA));
+        meta.lore(List.of(net.kyori.adventure.text.Component.text(
+            "Zásah označí cíl na 8 sekund", net.kyori.adventure.text.format.NamedTextColor.GRAY)));
+        result.setItemMeta(meta);
+        return result;
     }
 
     private void rewardFishingLevelTreasure(Player player) {

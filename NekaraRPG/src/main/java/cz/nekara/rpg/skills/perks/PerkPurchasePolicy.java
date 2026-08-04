@@ -13,7 +13,8 @@ public final class PerkPurchasePolicy {
         Objects.requireNonNull(profile, "profile");
         Objects.requireNonNull(progress, "progress");
         Objects.requireNonNull(perk, "perk");
-        int availablePoints = Math.max(0, progress.power().level() - profile.spentPerkPoints());
+        int availablePoints = Math.max(0, progress.power().level() + profile.adminBonusPerkPoints()
+            - profile.spentPerkPoints());
         int currentRank = profile.perkRank(perk.id());
         if (currentRank >= perk.maxRank()) {
             return new PerkPurchaseDecision(PerkPurchaseStatus.MAX_RANK, availablePoints);

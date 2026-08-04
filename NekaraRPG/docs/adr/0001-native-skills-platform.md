@@ -34,7 +34,7 @@ The player-facing catalog contains sixteen skills:
 7. Mining
 8. Woodcutting
 9. Digging
-10. Farming
+10. Hospodářství (`farming`)
 11. Fishing
 12. Light Weapons
 13. Heavy Weapons

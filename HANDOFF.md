@@ -6,15 +6,14 @@ Repozitář je publikovaný jako
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 Výchozí větev je `main`.
 
-Nejnovější stabilní a publikovaná verze je **NekaraRPG 2.2.0**:
+Nejnovější stabilní a publikovaná verze je **NekaraRPG 2.3.0**:
 
-- tag: `v2.2.0`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v2.2.0>
+- tag: `v2.3.0`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v2.3.0>
 - nasazovaný soubor: `NekaraRPG.jar`
 - SHA-256 vydaného i nasazeného JARu:
-  `5208354726F1E777D96328BB76196BB0999F59BB7FA7E0BC43EC0B24999CE9A0`
-- velikost release assetu: `12679445` bajtů
-- automatické ověření: 171 úspěšných testů
+  `77D7FC8A2304D7125EF45CFF12ACE58C32BA52E59715C47F23966F3CDC86204C`
+- automatické ověření: Gradle `release` včetně unit testů úspěšně dokončen
 
 Release 2.2.0 dokončuje live-readiness nativních Nekara Skills: opravuje orientaci
 ležícího mannequinu i duplicitní zobrazení výbavy, přidává bezpečný export profilů
@@ -70,7 +69,7 @@ nativní zdroj XP a provádí zakoupené runtime efekty. Správa NekaraRPG je vi
 otevíratelná pouze s `nekararpg.command.status`, které má výchozí hodnotu `op`.
 
 Schválené názvy jsou: Hlavní úroveň, Řemeslo, Runotepectví, Alchymie, Hornictví,
-Rubačina, Zeměrytectví, Sedlačení, Sekání a bodání, Brutální boj, Umění dlaně,
+Rubačina, Zeměrytectví, Hospodářství, Sekání a bodání, Brutální boj, Umění dlaně,
 Obchodování, Udičkářství, Umění střelby, Stínový oděv a Plátová ochrana.
 
 Nekara Skills ukládá profily do `skills/data.db` za `SkillProfileRepository`.

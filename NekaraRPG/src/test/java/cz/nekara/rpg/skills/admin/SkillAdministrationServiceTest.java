@@ -129,6 +129,26 @@ class SkillAdministrationServiceTest {
         }
     }
 
+    @Test
+    void administratorCanAddAndRemoveOnlyTheExplicitTestingPointBonus() throws Exception {
+        try (SqliteSkillProfileRepository repository = repository()) {
+            SkillAdministrationService service = service(repository);
+            SkillAdminResult added = service.execute(
+                ACTOR, "player-id", "Player", SkillAdminOperation.adjustBonusPerkPoints(12));
+            assertEquals(12, added.profile().adminBonusPerkPoints());
+            assertEquals("adjust_bonus_perk_points", repository.findRecentAuditEntries("player-id", 1)
+                .getFirst().operation());
+
+            SkillAdminResult removed = service.execute(
+                ACTOR, "player-id", "Player", SkillAdminOperation.adjustBonusPerkPoints(-5));
+            assertEquals(7, removed.profile().adminBonusPerkPoints());
+
+            SkillAdminResult emptied = service.execute(
+                ACTOR, "player-id", "Player", SkillAdminOperation.adjustBonusPerkPoints(-99));
+            assertEquals(0, emptied.profile().adminBonusPerkPoints());
+        }
+    }
+
     private SqliteSkillProfileRepository repository() throws Exception {
         return new SqliteSkillProfileRepository(new File(temporaryDirectory, "skills.db"));
     }

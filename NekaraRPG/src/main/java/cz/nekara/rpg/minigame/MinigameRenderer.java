@@ -8,8 +8,8 @@ import net.kyori.adventure.text.format.TextDecoration;
 import java.util.Locale;
 
 public final class MinigameRenderer {
-    private static final String TRACK_CELL = "\u2501";
-    private static final String TARGET_CELL = "\u2501";
+    private static final String TRACK_CELL = "\u25b1";
+    private static final String TARGET_CELL = "\u25b0";
     private static final String INDICATOR_CELL = "\u2693";
 
     public Component render(MinigameEngine engine) {
@@ -19,7 +19,7 @@ public final class MinigameRenderer {
             if (index == engine.indicatorPosition()) {
                 result.append(Component.text(INDICATOR_CELL, NamedTextColor.GOLD));
             } else if (index >= engine.targetStart() && index < engine.targetEndExclusive()) {
-                result.append(Component.text(TARGET_CELL, NamedTextColor.GREEN)
+                result.append(Component.text(TARGET_CELL, NamedTextColor.AQUA)
                         .decorate(TextDecoration.BOLD));
             } else {
                 result.append(Component.text(TRACK_CELL, NamedTextColor.DARK_GRAY));

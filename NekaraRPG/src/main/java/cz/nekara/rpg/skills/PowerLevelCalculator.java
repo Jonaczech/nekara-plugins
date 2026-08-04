@@ -14,7 +14,12 @@ public final class PowerLevelCalculator {
     }
 
     public PowerProgress calculate(Map<SkillId, Integer> skillLevels) {
+        return calculate(skillLevels, Map.of());
+    }
+
+    public PowerProgress calculate(Map<SkillId, Integer> skillLevels, Map<SkillId, Integer> newGamePlusRanks) {
         Objects.requireNonNull(skillLevels, "skillLevels");
+        Objects.requireNonNull(newGamePlusRanks, "newGamePlusRanks");
         int total = 0;
         for (SkillId skill : SkillId.gameplaySkills()) {
             Integer level = skillLevels.get(skill);
@@ -24,12 +29,14 @@ public final class PowerLevelCalculator {
             if (level < 0 || level > maxLevel) {
                 throw new IllegalArgumentException("Invalid level for " + skill.id() + ": " + level);
             }
-            total = Math.addExact(total, level);
+            int rebirth = newGamePlusRanks.getOrDefault(skill, 0);
+            if (rebirth < 0 || rebirth > 1) throw new IllegalArgumentException("Invalid New Game+ rank for " + skill.id());
+            total = Math.addExact(total, Math.addExact(level, rebirth * maxLevel));
         }
 
         int skillCount = SkillId.gameplaySkills().size();
-        int powerLevel = Math.min(maxLevel, total / skillCount);
-        int levelsUntilNext = powerLevel == maxLevel
+        int powerLevel = Math.min(maxLevel * 2, total / skillCount);
+        int levelsUntilNext = powerLevel == maxLevel * 2
             ? 0
             : skillCount - (total % skillCount);
         return new PowerProgress(powerLevel, total, levelsUntilNext);

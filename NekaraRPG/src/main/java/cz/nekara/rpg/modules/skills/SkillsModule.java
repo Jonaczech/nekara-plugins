@@ -14,15 +14,19 @@ import cz.nekara.rpg.skills.admin.SkillAdministrationService;
 import cz.nekara.rpg.skills.experience.ExperienceAwardRequest;
 import cz.nekara.rpg.skills.experience.ExperienceAwardResult;
 import cz.nekara.rpg.skills.experience.ExperienceGrantGuard;
+import cz.nekara.rpg.skills.experience.GlobalExperienceEvent;
 import cz.nekara.rpg.skills.experience.ExperiencePolicy;
 import cz.nekara.rpg.skills.experience.SkillExperienceService;
 import cz.nekara.rpg.skills.export.SkillExportResult;
 import cz.nekara.rpg.skills.export.SkillExportService;
+import cz.nekara.rpg.skills.newgameplus.NewGamePlusResult;
+import cz.nekara.rpg.skills.newgameplus.NewGamePlusService;
 import cz.nekara.rpg.skills.perks.DefaultPerkTree;
 import cz.nekara.rpg.skills.perks.PerkDefinition;
 import cz.nekara.rpg.skills.perks.PerkId;
 import cz.nekara.rpg.skills.perks.PerkPurchasePolicy;
 import cz.nekara.rpg.skills.perks.PerkPurchaseService;
+import cz.nekara.rpg.skills.perks.PerkTreeViewport;
 import cz.nekara.rpg.skills.perks.PerkMechanicResolver;
 import cz.nekara.rpg.skills.profile.SkillProfile;
 import cz.nekara.rpg.skills.profile.SkillProfileRepository;
@@ -81,6 +85,9 @@ public final class SkillsModule implements NekaraModule {
     private volatile SkillProgressResolver progressResolver;
     private volatile PerkPurchaseService purchaseService;
     private volatile SkillExperienceService experienceService;
+    private volatile GlobalExperienceEvent globalExperienceEvent;
+    private volatile NewGamePlusService newGamePlusService;
+    private volatile SkillsConfig activeConfig;
     private volatile SkillAdministrationService administrationService;
     private volatile SkillExportService exportService;
     private volatile SkillRuntimeMetrics runtimeMetrics =
@@ -118,6 +125,7 @@ public final class SkillsModule implements NekaraModule {
         generation++;
         runtimeMetrics = new SkillRuntimeMetrics(System.currentTimeMillis());
         SkillsConfig config = plugin.configuration().get().skills();
+        activeConfig = config;
         SkillProgressionCurve progressionCurve = new SkillProgressionCurve(
             SkillProgressionCurve.DEFAULT_MAX_LEVEL,
             config.baseExperience(),
@@ -153,6 +161,8 @@ public final class SkillsModule implements NekaraModule {
                 new ExperienceGrantGuard(Duration.ofSeconds(5), 16_384),
                 3
             );
+            newGamePlusService = new NewGamePlusService(repository, progressionCurve, perkTree.catalog(), config.newGamePlus());
+            globalExperienceEvent = new GlobalExperienceEvent(new File(plugin.getDataFolder(), "skills/experience-event.yml"));
             administrationService = new SkillAdministrationService(
                 sqliteRepository,
                 progressionCurve,
@@ -170,6 +180,8 @@ public final class SkillsModule implements NekaraModule {
             repository = null;
             purchaseService = null;
             experienceService = null;
+            newGamePlusService = null;
+            globalExperienceEvent = null;
             administrationService = null;
             exportService = null;
             storageFailure = exception.getMessage();
@@ -185,7 +197,8 @@ public final class SkillsModule implements NekaraModule {
         gatheringAbilityListener.enable();
         gatheringUtilityPerkListener = new GatheringUtilityPerkListener(plugin, this, perkTree);
         gatheringUtilityPerkListener.enable();
-        nativeActivityListener = new NativeActivityListener(plugin, this, config.activities());
+        nativeActivityListener = new NativeActivityListener(
+            plugin, this, config.activities(), nativeGatheringListener.placedBlocks());
         nativeActivityListener.enable();
         combatPerkListener = new CombatPerkListener(plugin, this);
         combatPerkListener.enable();
@@ -265,8 +278,16 @@ public final class SkillsModule implements NekaraModule {
         loadProfile(player, (profile, snapshot) -> menu.openOverview(player, profile, snapshot));
     }
 
+    public void openPlayerOverview(Player player) {
+        loadProfile(player, (profile, snapshot) -> menu.openPlayerOverview(player, profile, snapshot));
+    }
+
     void openSkillTree(Player player, SkillId skill) {
         loadProfile(player, (profile, snapshot) -> menu.openTree(player, profile, snapshot, skill));
+    }
+
+    void openSkillTree(Player player, SkillId skill, PerkTreeViewport viewport) {
+        loadProfile(player, (profile, snapshot) -> menu.openTree(player, profile, snapshot, skill, viewport));
     }
 
     void openPerkConfirmation(Player player, PerkId perkId) {
@@ -385,7 +406,7 @@ public final class SkillsModule implements NekaraModule {
         RuntimeStateKey key = new RuntimeStateKey(playerId, skill);
         try {
             return Optional.of(runtimeStateCache.computeIfAbsent(key, ignored -> new SkillRuntimeState(
-                perkStats.resolve(profile, skill), perkMechanics.resolve(profile, skill))));
+                perkStats.resolve(profile, skill, newGamePlusStatMultiplier(profile, skill)), perkMechanics.resolve(profile, skill))));
         } catch (RuntimeException exception) {
             invalidateProfile(playerId, exception);
             return Optional.empty();
@@ -470,12 +491,89 @@ public final class SkillsModule implements NekaraModule {
     }
 
     private ExperienceAwardRequest applyExperienceBoost(UUID playerId, ExperienceAwardRequest request) {
-        double multiplier = experienceBoost(playerId, request.skill());
+        SkillProfile profile = profileCache.get(playerId);
+        GlobalExperienceEvent event = globalExperienceEvent;
+        double multiplier = experienceBoost(playerId, request.skill())
+            * (event == null ? 1.0 : event.multiplier(request.skill()))
+            * (profile == null ? 1.0 : newGamePlusExperienceMultiplier(profile, request.skill()));
         if (multiplier == 1.0) return request;
         long boosted = Math.max(1L, Math.min(100_000_000L,
             Math.round(request.baseExperience() * multiplier)));
         return new ExperienceAwardRequest(request.playerKey(), request.skill(), boosted,
             request.context(), request.fingerprint());
+    }
+
+    public void startExperienceEvent(SkillId skill, double multiplier, long durationMillis) {
+        if (durationMillis < 60_000L || durationMillis > 604_800_000L) throw new IllegalArgumentException("Délka musí být od 1 minuty do 7 dní.");
+        GlobalExperienceEvent event = globalExperienceEvent;
+        if (event == null) throw new IllegalStateException("Úložiště XP události není dostupné.");
+        event.start(skill, multiplier, Math.addExact(System.currentTimeMillis(), durationMillis));
+    }
+    public void stopExperienceEvent() { if (globalExperienceEvent != null) globalExperienceEvent.stop(); }
+    public GlobalExperienceEvent globalExperienceEvent() { return globalExperienceEvent; }
+
+    void openNewGamePlusConfirmation(Player player, SkillId skill) {
+        loadProfile(player, (profile, snapshot) -> {
+            if (canUseNewGamePlus(profile, skill)) {
+                menu.openNewGamePlusConfirmation(player, profile, snapshot, skill);
+            } else {
+                menu.openTree(player, profile, snapshot, skill);
+                menu.showNewGamePlusStatus(player, skill, new NewGamePlusResult(
+                    profile.newGamePlusRank(skill) >= 1
+                        ? cz.nekara.rpg.skills.newgameplus.NewGamePlusStatus.MAXIMUM_RANK_REACHED
+                        : cz.nekara.rpg.skills.newgameplus.NewGamePlusStatus.NOT_MAX_LEVEL,
+                    profile, snapshot, 0));
+            }
+        });
+    }
+
+    void requestNewGamePlus(Player player, SkillId skill) {
+        NewGamePlusService activeService = newGamePlusService;
+        if (!enabled || activeService == null || !pendingPurchases.add(player.getUniqueId())) {
+            return;
+        }
+        long requestGeneration = generation;
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                NewGamePlusResult result = activeService.rebirth(player.getUniqueId().toString(), skill);
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    pendingPurchases.remove(player.getUniqueId());
+                    if (enabled && generation == requestGeneration && player.isOnline()) {
+                        cacheProfile(player.getUniqueId(), result.profile());
+                        menu.openTree(player, result.profile(), result.progress(), skill);
+                        menu.showNewGamePlusStatus(player, skill, result);
+                    }
+                });
+            } catch (RuntimeException exception) {
+                pendingPurchases.remove(player.getUniqueId());
+                handleStorageFailure(player, requestGeneration, exception);
+            }
+        });
+    }
+
+    boolean canUseNewGamePlus(SkillProfile profile, SkillId skill) {
+        SkillsConfig config = activeConfig;
+        return config != null && config.newGamePlus().enabled()
+            && skillLevel(profile, skill) >= SkillProgressionCurve.DEFAULT_MAX_LEVEL
+            && profile.newGamePlusRank(skill) == 0;
+    }
+
+    double newGamePlusExperienceMultiplier(SkillProfile profile, SkillId skill) {
+        SkillsConfig config = activeConfig;
+        if (config == null) return 1.0;
+        var rules = config.newGamePlus();
+        return profile.newGamePlusRank(skill) == 0 ? 1.0 : rules.experienceMultiplier();
+    }
+
+    double newGamePlusStatBonus(SkillProfile profile, SkillId skill) {
+        SkillsConfig config = activeConfig;
+        return config == null ? 0.0 : config.newGamePlus().perkStatBonusPerRank() * profile.newGamePlusRank(skill);
+    }
+
+    private double newGamePlusStatMultiplier(SkillProfile profile, SkillId skill) {
+        SkillsConfig config = activeConfig;
+        if (config == null) return 1.0;
+        return 1.0 + newGamePlusStatBonus(profile, skill);
     }
 
     void showExperienceFeedback(

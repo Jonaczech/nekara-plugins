@@ -93,6 +93,7 @@ public final class SkillAdministrationService {
         return switch (operation.type()) {
             case GRANT_EXPERIENCE -> grantExperience(profile, operation.skill(), operation.amount());
             case GRANT_PERK -> grantPerk(profile, operation.perkId(), operation.rank());
+            case ADJUST_BONUS_PERK_POINTS -> adjustBonusPerkPoints(profile, operation.amount());
             case RESET_SKILL -> resetSkill(profile, operation.skill());
             case RESET_PERKS -> resetPerks(profile);
             case RESET_ALL -> resetAll(profile);
@@ -141,6 +142,7 @@ public final class SkillAdministrationService {
             profile.totalExperience(),
             perks,
             spentPoints,
+            profile.adminBonusPerkPoints(),
             profile.revision()
         );
         return changed(
@@ -148,6 +150,20 @@ public final class SkillAdministrationService {
             requestedRank,
             "perk=" + perkId.value() + ";previous_rank=" + currentRank + ";new_rank="
                 + requestedRank + ";charged_points=" + pointCost
+        );
+    }
+
+    private PreparedMutation adjustBonusPerkPoints(SkillProfile profile, long adjustment) {
+        long requested = (long) profile.adminBonusPerkPoints() + adjustment;
+        int next = (int) Math.max(0, Math.min(Integer.MAX_VALUE, requested));
+        if (next == profile.adminBonusPerkPoints()) {
+            return unchanged(profile, SkillAdminStatus.BONUS_POINTS_ALREADY_EMPTY);
+        }
+        return changed(
+            profile.withAdminBonusPerkPoints(next),
+            Math.abs((long) next - profile.adminBonusPerkPoints()),
+            "previous_bonus=" + profile.adminBonusPerkPoints() + ";adjustment=" + adjustment
+                + ";new_bonus=" + next
         );
     }
 
@@ -172,6 +188,7 @@ public final class SkillAdministrationService {
             profile.totalExperience(),
             Map.of(),
             0,
+            profile.adminBonusPerkPoints(),
             profile.revision()
         );
         return changed(
@@ -185,7 +202,8 @@ public final class SkillAdministrationService {
     private PreparedMutation resetAll(SkillProfile profile) {
         boolean hasExperience = SkillId.gameplaySkills().stream()
             .anyMatch(skill -> profile.totalExperience(skill) > 0);
-        if (!hasExperience && profile.perkRanks().isEmpty() && profile.spentPerkPoints() == 0) {
+        if (!hasExperience && profile.perkRanks().isEmpty() && profile.spentPerkPoints() == 0
+            && profile.adminBonusPerkPoints() == 0) {
             return unchanged(profile, SkillAdminStatus.PROFILE_ALREADY_EMPTY);
         }
         long previousExperience = 0;
@@ -197,6 +215,7 @@ public final class SkillAdministrationService {
             new EnumMap<>(SkillId.class),
             Map.of(),
             0,
+            0,
             profile.revision()
         );
         return changed(
@@ -204,6 +223,7 @@ public final class SkillAdministrationService {
             previousExperience,
             "removed_experience=" + previousExperience + ";removed_perks="
                 + profile.perkRanks().size() + ";refunded_points=" + profile.spentPerkPoints()
+                + ";removed_bonus_points=" + profile.adminBonusPerkPoints()
         );
     }
 

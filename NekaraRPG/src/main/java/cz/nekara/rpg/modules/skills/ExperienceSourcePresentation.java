@@ -72,6 +72,10 @@ final class ExperienceSourcePresentation {
             case "enchant_item" -> "Očarování předmětu";
             case "brew_complete" -> "Uvařený lektvar";
             case "mature_harvest" -> "Zralá sklizeň";
+            case "berry_harvest" -> "Sklizeň bobulí";
+            case "wild_flower" -> "Přírodní květina";
+            case "wild_mushroom" -> "Přírodní houba";
+            case "grass_bundle" -> "Sběr trávy";
             case "vanilla_catch", "deferred_catch" -> "Úlovek";
             default -> "Dokončená činnost";
         };

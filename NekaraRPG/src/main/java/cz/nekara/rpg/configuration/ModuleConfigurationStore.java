@@ -42,6 +42,9 @@ final class ModuleConfigurationStore {
             files.add(new ModuleFile(
                     "skills/" + skill.id() + "/config.yml",
                     "skills." + skill.id(), List.of(), List.of()));
+            files.add(new ModuleFile(
+                    "skills/" + skill.id() + "/experience-sources.yml",
+                    "skills." + skill.id() + ".experience-sources", List.of(), List.of()));
         }
         files.add(new ModuleFile("skills/woodcutting/loot-tables.yml",
                 "skills.woodcutting.rewards", List.of(), List.of()));

@@ -12,11 +12,25 @@ class DefaultPerkTreeTest {
     @Test
     void everyGameplaySkillHasSixPresentedNodes() {
         DefaultPerkTree tree = DefaultPerkTree.create();
+        Set<PerkPosition> navigationPositions = Set.of(
+            new PerkPosition(0, 0),
+            new PerkPosition(4, 0),
+            new PerkPosition(8, 0),
+            new PerkPosition(0, 2),
+            new PerkPosition(8, 2),
+            new PerkPosition(0, 4),
+            new PerkPosition(4, 4),
+            new PerkPosition(8, 4)
+        );
 
         assertEquals(90, tree.catalog().size());
         for (SkillId skill : SkillId.gameplaySkills()) {
             assertEquals(6, tree.catalog().forSkill(skill).size(), skill.id());
-            tree.catalog().forSkill(skill).forEach(perk -> tree.presentation(perk.id()));
+            tree.catalog().forSkill(skill).forEach(perk -> {
+                tree.presentation(perk.id());
+                assertTrue(!navigationPositions.contains(perk.position()),
+                    () -> skill.id() + " perk overlaps the fixed tree navigation: " + perk.position());
+            });
         }
     }
 

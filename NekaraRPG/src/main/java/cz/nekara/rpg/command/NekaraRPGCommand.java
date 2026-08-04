@@ -191,6 +191,19 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                 handleSkillsAdmin(sender, args);
                 yield true;
             }
+            case "prehled", "overview", "me" -> {
+                if (!require(sender, "nekararpg.skills.use")) yield true;
+                if (!(sender instanceof Player player)) {
+                    messages.send(sender, "player-only");
+                    yield true;
+                }
+                if (!modules.isEnabled(SkillsModule.ID)) {
+                    messages.send(sender, "module-disabled", Map.of("module", SkillsModule.ID));
+                    yield true;
+                }
+                skillsModule.openPlayerOverview(player);
+                yield true;
+            }
             case "sit" -> {
                 if (!require(sender, "nekararpg.sitting.use")) yield true;
                 if (!modules.isEnabled(CampfireModule.ID)) {
@@ -330,6 +343,10 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
             return;
         }
         String requestedAction = args.length >= 3 ? args[2].toLowerCase(Locale.ROOT) : "";
+        if ("event".equals(requestedAction)) {
+            handleExperienceEvent(sender, args);
+            return;
+        }
         if ("xp-boost".equals(requestedAction) || "xp-boost-clear".equals(requestedAction)
             || "xp-boost-status".equals(requestedAction)) {
             handleExperienceBoost(sender, args, requestedAction);
@@ -369,6 +386,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
             operation = switch (action) {
                 case "grant-xp" -> parseGrantExperience(args);
                 case "grant-perk" -> parseGrantPerk(args);
+                case "points" -> parseBonusPerkPoints(args);
                 case "reset" -> parseReset(args);
                 default -> null;
             };
@@ -447,6 +465,26 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
         return SkillAdminOperation.grantPerk(perkId, rank);
     }
 
+    private SkillAdminOperation parseBonusPerkPoints(String[] args) {
+        if (args.length != 6) {
+            throw new IllegalArgumentException("Použij points <hráč> <add|remove> <množství>.");
+        }
+        int amount;
+        try {
+            amount = Integer.parseInt(args[5]);
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("Množství bodů musí být celé kladné číslo.");
+        }
+        if (amount < 1) {
+            throw new IllegalArgumentException("Množství bodů musí být celé kladné číslo.");
+        }
+        return switch (args[4].toLowerCase(Locale.ROOT)) {
+            case "add", "přidat" -> SkillAdminOperation.adjustBonusPerkPoints(amount);
+            case "remove", "odebrat" -> SkillAdminOperation.adjustBonusPerkPoints(-amount);
+            default -> throw new IllegalArgumentException("Použij points <hráč> <add|remove> <množství>.");
+        };
+    }
+
     private SkillAdminOperation parseReset(String[] args) {
         if (args.length != 5) {
             throw new IllegalArgumentException("Použij reset <hráč> <skill|perks|all>.");
@@ -520,6 +558,43 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    private void handleExperienceEvent(CommandSender sender, String[] args) {
+        if (args.length == 4 && "status".equalsIgnoreCase(args[3])) {
+            var event = skillsModule.globalExperienceEvent();
+            if (event == null || !event.active()) messages.send(sender, "skills-xp-event-inactive");
+            else messages.send(sender, "skills-xp-event-status", Map.of(
+                "skill", event.skill() == null ? "vše" : SkillPresentation.czechName(event.skill()),
+                "multiplier", formatMultiplier(event.configuredMultiplier()),
+                "ends", AUDIT_TIME.format(Instant.ofEpochMilli(event.endsAtEpochMillis()))));
+            return;
+        }
+        if (args.length == 4 && "stop".equalsIgnoreCase(args[3])) {
+            skillsModule.stopExperienceEvent(); messages.send(sender, "skills-xp-event-stopped"); return;
+        }
+        if (args.length != 7 || !"start".equalsIgnoreCase(args[3])) { messages.send(sender, "skills-admin-usage"); return; }
+        try {
+            SkillId skill = "all".equalsIgnoreCase(args[4]) ? null : parseGameplaySkill(args[4]);
+            double multiplier = Double.parseDouble(args[5]);
+            long duration = parseDurationMillis(args[6]);
+            skillsModule.startExperienceEvent(skill, multiplier, duration);
+            messages.send(sender, "skills-xp-event-started", Map.of(
+                "skill", skill == null ? "vše" : SkillPresentation.czechName(skill),
+                "multiplier", formatMultiplier(multiplier), "duration", args[6]));
+        } catch (IllegalArgumentException exception) {
+            messages.send(sender, "skills-admin-invalid-input", Map.of("reason", exception.getMessage()));
+        }
+    }
+
+    private static long parseDurationMillis(String input) {
+        if (input == null || input.length() < 2) throw new IllegalArgumentException("Použij délku jako 30m, 2h nebo 1d.");
+        char unit = Character.toLowerCase(input.charAt(input.length() - 1));
+        long amount;
+        try { amount = Long.parseLong(input.substring(0, input.length() - 1)); }
+        catch (NumberFormatException exception) { throw new IllegalArgumentException("Použij délku jako 30m, 2h nebo 1d."); }
+        if (amount < 1) throw new IllegalArgumentException("Délka musí být kladná.");
+        return switch (unit) { case 'm' -> Math.multiplyExact(amount, 60_000L); case 'h' -> Math.multiplyExact(amount, 3_600_000L); case 'd' -> Math.multiplyExact(amount, 86_400_000L); default -> throw new IllegalArgumentException("Použij délku jako 30m, 2h nebo 1d."); };
+    }
+
     private static String formatMultiplier(double multiplier) {
         return String.format(Locale.ROOT, "%.2f", multiplier);
     }
@@ -570,12 +645,14 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
     ) {
         int availablePoints = Math.max(
             0,
-            inspection.progress().power().level() - inspection.profile().spentPerkPoints()
+            inspection.progress().power().level() + inspection.profile().adminBonusPerkPoints()
+                - inspection.profile().spentPerkPoints()
         );
         messages.send(sender, "skills-admin-inspect-header", Map.of(
             "player", targetName,
             "revision", inspection.profile().revision(),
             "power", inspection.progress().power().level(),
+            "bonus", inspection.profile().adminBonusPerkPoints(),
             "spent", inspection.profile().spentPerkPoints(),
             "available", availablePoints
         ));
@@ -618,6 +695,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                 case SKILL_ALREADY_EMPTY -> "Dovednost už má 0 XP.";
                 case PERKS_ALREADY_EMPTY -> "Profil už nemá žádné perky ani utracené body.";
                 case PROFILE_ALREADY_EMPTY -> "Profil už je prázdný.";
+                case BONUS_POINTS_ALREADY_EMPTY -> "Admin bonus bodů už nelze dále odebrat.";
                 case CHANGED -> throw new IllegalStateException("Changed result cannot be unchanged");
             };
         }
@@ -626,10 +704,12 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                 + result.operation().skill().id() + ".";
             case GRANT_PERK -> "Perk " + result.operation().perkId().value()
                 + " nastaven na rank " + result.operation().rank() + ".";
+            case ADJUST_BONUS_PERK_POINTS -> "Admin bonus volných bodů upraven o "
+                + result.operation().amount() + ".";
             case RESET_SKILL -> "XP dovednosti " + result.operation().skill().id()
                 + " byla vynulována.";
             case RESET_PERKS -> "Perky byly resetovány a utracené body vráceny.";
-            case RESET_ALL -> "XP, perky i utracené body byly resetovány.";
+            case RESET_ALL -> "XP, perky i všechny admin bonus body byly resetovány.";
         };
     }
 
@@ -669,7 +749,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return prefix(List.of("menu", "help", "reload", "status", "update", "skills", "sit", "stand", "lay", "rise", "mount", "test", "cancel"), args[0]);
+            return prefix(List.of("menu", "prehled", "help", "reload", "status", "update", "skills", "sit", "stand", "lay", "rise", "mount", "test", "cancel"), args[0]);
         }
         if (sender.hasPermission("nekararpg.skills.admin")
                 && args.length == 2 && "skills".equalsIgnoreCase(args[0])) {
@@ -678,7 +758,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
         if (sender.hasPermission("nekararpg.skills.admin")
                 && args.length == 3 && "skills".equalsIgnoreCase(args[0])
                 && "admin".equalsIgnoreCase(args[1])) {
-            return prefix(List.of("inspect", "grant-xp", "grant-perk", "reset", "metrics", "export"), args[2]);
+            return prefix(List.of("inspect", "grant-xp", "grant-perk", "points", "reset", "metrics", "export"), args[2]);
         }
         if (sender.hasPermission("nekararpg.skills.admin")
                 && args.length == 4 && "skills".equalsIgnoreCase(args[0])
@@ -703,6 +783,9 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
             }
             if ("grant-perk".equals(action)) {
                 return prefix(skillsModule.adminPerkIds(), args[4]);
+            }
+            if ("points".equals(action)) {
+                return prefix(List.of("add", "remove"), args[4]);
             }
             if ("reset".equals(action)) {
                 List<String> targets = new ArrayList<>(

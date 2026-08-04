@@ -24,14 +24,20 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockFertilizeEvent;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.inventory.BrewEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.SmithItemEvent;
 import org.bukkit.event.player.PlayerFishEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerShearEntityEvent;
+import org.bukkit.event.block.Action;
 import org.bukkit.inventory.ItemStack;
 
 import java.time.Duration;
@@ -43,18 +49,27 @@ import java.util.UUID;
 final class NativeActivityListener implements Listener {
     private static final int MAX_FINGERPRINTS = 65_536;
     private static final long BREWING_ATTRIBUTION_MILLIS = 120_000L;
+    private static final int GRASS_BLOCKS_PER_AWARD = 8;
 
     private final NekaraRPGPlugin plugin;
     private final SkillsModule module;
     private final NativeActivityConfig config;
+    private final PlacedBlockTracker placedBlocks;
     private final ExperienceGrantGuard guard;
     private final Map<BlockKey, BrewingActor> brewingActors = new HashMap<>();
+    private final Map<UUID, Integer> grassForageProgress = new HashMap<>();
     private boolean enabled;
 
-    NativeActivityListener(NekaraRPGPlugin plugin, SkillsModule module, NativeActivityConfig config) {
+    NativeActivityListener(
+        NekaraRPGPlugin plugin,
+        SkillsModule module,
+        NativeActivityConfig config,
+        PlacedBlockTracker placedBlocks
+    ) {
         this.plugin = plugin;
         this.module = module;
         this.config = config;
+        this.placedBlocks = placedBlocks;
         this.guard = new ExperienceGrantGuard(
             Duration.ofMillis(config.deduplicationMillis()), MAX_FINGERPRINTS);
     }
@@ -74,6 +89,7 @@ final class NativeActivityListener implements Listener {
         enabled = false;
         HandlerList.unregisterAll(this);
         brewingActors.clear();
+        grassForageProgress.clear();
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -157,11 +173,57 @@ final class NativeActivityListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onFarm(BlockBreakEvent event) {
-        if (!isHarvestable(event.getBlock())) {
+        Block block = event.getBlock();
+        if (isHarvestable(block)) {
+            award(event.getPlayer(), SkillId.FARMING, "mature_harvest",
+                BlockKey.of(block) + ":" + block.getType().getKey());
             return;
         }
-        award(event.getPlayer(), SkillId.FARMING, "mature_harvest",
-            BlockKey.of(event.getBlock()) + ":" + event.getBlock().getType().getKey());
+        String source = wildForageSource(block.getType().name());
+        if (source == null || placedBlocks.isPlayerPlaced(block)
+            || source.equals("grass_bundle") && !completedGrassBundle(event.getPlayer())) {
+            return;
+        }
+        award(event.getPlayer(), SkillId.FARMING, source,
+            BlockKey.of(block) + ":" + block.getType().getKey());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBerryHarvest(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null) {
+            return;
+        }
+        Block block = event.getClickedBlock();
+        if (isBerryHarvestable(block)) {
+            award(event.getPlayer(), SkillId.FARMING, "berry_harvest",
+                BlockKey.of(block) + ":" + block.getType().getKey());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBreed(EntityBreedEvent event) {
+        if (event.getBreeder() instanceof Player player) {
+            award(player, SkillId.FARMING, "animal_breed", event.getEntity().getUniqueId().toString());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onShear(PlayerShearEntityEvent event) {
+        award(event.getPlayer(), SkillId.FARMING, "animal_shear", event.getEntity().getUniqueId().toString());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onFertilize(BlockFertilizeEvent event) {
+        Player player = event.getPlayer();
+        if (player != null && !event.getBlocks().isEmpty()) {
+            award(player, SkillId.FARMING, "bonemeal_growth",
+                BlockKey.of(event.getBlock()) + ":" + Bukkit.getCurrentTick());
+        }
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        grassForageProgress.remove(event.getPlayer().getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -179,7 +241,7 @@ final class NativeActivityListener implements Listener {
     }
 
     private void award(Player player, SkillId skill, String sourceType, String sourceKey) {
-        long baseExperience = Math.max(0L, Math.round(config.experience(skill)
+        long baseExperience = Math.max(0L, Math.round(config.experience(skill, sourceType)
             * module.runtimeState(player.getUniqueId(), skill)
                 .map(state -> state.stats().value(cz.nekara.rpg.skills.stats.StatId.EXPERIENCE_MULTIPLIER))
                 .orElse(1.0)));
@@ -231,6 +293,37 @@ final class NativeActivityListener implements Listener {
             return ageable.getAge() >= ageable.getMaximumAge();
         }
         return false;
+    }
+
+    private boolean completedGrassBundle(Player player) {
+        int progress = grassForageProgress.merge(player.getUniqueId(), 1, Integer::sum);
+        if (progress < GRASS_BLOCKS_PER_AWARD) {
+            return false;
+        }
+        grassForageProgress.put(player.getUniqueId(), 0);
+        return true;
+    }
+
+    static String wildForageSource(String materialName) {
+        return switch (materialName) {
+            case "DANDELION", "POPPY", "BLUE_ORCHID", "ALLIUM", "AZURE_BLUET",
+                "RED_TULIP", "ORANGE_TULIP", "WHITE_TULIP", "PINK_TULIP", "OXEYE_DAISY",
+                "CORNFLOWER", "LILY_OF_THE_VALLEY", "WITHER_ROSE", "TORCHFLOWER",
+                "PITCHER_PLANT", "OPEN_EYEBLOSSOM", "CLOSED_EYEBLOSSOM", "PINK_PETALS",
+                "WILDFLOWERS" -> "wild_flower";
+            case "BROWN_MUSHROOM", "RED_MUSHROOM", "CRIMSON_FUNGUS", "WARPED_FUNGUS" -> "wild_mushroom";
+            case "SHORT_GRASS", "GRASS", "TALL_GRASS", "FERN", "LARGE_FERN" -> "grass_bundle";
+            default -> null;
+        };
+    }
+
+    private static boolean isBerryHarvestable(Block block) {
+        String type = block.getType().name();
+        if (type.equals("SWEET_BERRY_BUSH") && block.getBlockData() instanceof Ageable ageable) {
+            return ageable.getAge() > 1;
+        }
+        return (type.equals("CAVE_VINES") || type.equals("CAVE_VINES_PLANT"))
+            && block.getBlockData().getAsString().contains("berries=true");
     }
 
     private record BrewingActor(UUID playerId, long recordedAt) {

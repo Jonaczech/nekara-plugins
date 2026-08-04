@@ -17,7 +17,7 @@ Hráč uvidí šestnáct dovedností:
 7. Mining
 8. Woodcutting
 9. Digging
-10. Farming
+10. Hospodářství (`farming`)
 11. Fishing
 12. Light Weapons
 13. Heavy Weapons
@@ -106,7 +106,8 @@ předchůdcem, kolizí pozic nebo cizím stromem se při startu odmítne.
 - hromadné schopnosti používají skutečný hráčský break pro každý blok, nevynucují
   zrušené regionové bloky, nenačítají chunky a respektují limity, cooldown i
   vanilla durability,
-- hotovo v kódu: Farming ověřuje zralost, násobí pouze finální dropy, umí bezpečně
+- hotovo v kódu: Hospodářství ověřuje zralost, odměňuje zralé bobule a přírodní sběr,
+  násobí pouze finální dropy, umí bezpečně
   sklidit a znovu zasadit nejvýše devět bloků a zrychluje jen chunky s nedávným
   hráčským správcem; Fishing navazuje na skutečně doručený deferred catch a jeho
   malé levelové poklady se přidávají vedle něj z vlastní vážené tabulky,

@@ -1,0 +1,26 @@
+# XP za skutečně vykopané přírodní bloky lopatou. Hráčem položené bloky jsou vždy odmítnuty.
+tags:
+  MINEABLE_SHOVEL: 2
+blocks:
+  DIRT: 2
+  GRASS_BLOCK: 2
+  COARSE_DIRT: 2
+  ROOTED_DIRT: 2
+  PODZOL: 2
+  MYCELIUM: 2
+  DIRT_PATH: 2
+  SAND: 2
+  RED_SAND: 2
+  SUSPICIOUS_SAND: 3
+  GRAVEL: 2
+  SUSPICIOUS_GRAVEL: 3
+  SOUL_SAND: 2
+  SOUL_SOIL: 2
+  SNOW: 1
+  SNOW_BLOCK: 2
+  POWDER_SNOW: 2
+  MUD: 3
+  PACKED_MUD: 3
+  MUDDY_MANGROVE_ROOTS: 3
+  CLAY: 3
+  FARMLAND: 2

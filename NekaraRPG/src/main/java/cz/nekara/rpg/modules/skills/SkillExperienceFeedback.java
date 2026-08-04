@@ -3,13 +3,15 @@ package cz.nekara.rpg.modules.skills;
 import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.skills.SkillId;
-import cz.nekara.rpg.skills.SkillPresentation;
+import cz.nekara.rpg.skills.SkillLevelProgress;
+import cz.nekara.rpg.skills.SkillProgressBar;
 import cz.nekara.rpg.skills.experience.ExperienceAwardResult;
 import cz.nekara.rpg.skills.experience.ExperienceAwardStatus;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.bukkit.Bukkit;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -36,6 +38,7 @@ final class SkillExperienceFeedback {
         if (result.status() != ExperienceAwardStatus.AWARDED || result.awardedExperience() < 1) {
             return;
         }
+        SkillLevelProgress progress = result.progress().orElseThrow().skill(skill);
         PendingFeedback current = pendingByPlayer.get(playerId);
         if (current != null && (!current.skill().equals(skill) || !current.source().equals(source))) {
             send(playerId, current);
@@ -43,10 +46,21 @@ final class SkillExperienceFeedback {
             current = null;
         }
         if (current == null) {
-            pendingByPlayer.put(playerId, new PendingFeedback(skill, source, result.awardedExperience()));
+            pendingByPlayer.put(playerId, new PendingFeedback(
+                skill,
+                source,
+                result.awardedExperience(),
+                progress,
+                levelledUp(progress, result.awardedExperience())
+            ));
         } else {
             pendingByPlayer.put(playerId, new PendingFeedback(
-                skill, source, saturatedAdd(current.experience(), result.awardedExperience())));
+                skill,
+                source,
+                saturatedAdd(current.experience(), result.awardedExperience()),
+                progress,
+                current.levelledUp() || levelledUp(progress, result.awardedExperience())
+            ));
         }
         if (flushTask == null) {
             flushTask = Bukkit.getScheduler().runTaskLater(plugin, this::flush, MERGE_DELAY_TICKS);
@@ -75,10 +89,13 @@ final class SkillExperienceFeedback {
             return;
         }
         messages.sendActionBar(player, "skills-experience-awarded", Map.of(
-            "source", feedback.source(),
             "experience", feedback.experience(),
-            "skill", SkillPresentation.czechName(feedback.skill())
+            "progress_bar", SkillProgressBar.miniMessage(feedback.progress()),
+            "progress", progressText(feedback.progress())
         ));
+        if (feedback.levelledUp()) {
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7F, 1.0F);
+        }
         displayUntilByPlayer.put(playerId, System.currentTimeMillis() + DISPLAY_RESERVATION_MILLIS);
     }
 
@@ -98,6 +115,21 @@ final class SkillExperienceFeedback {
         return first > Long.MAX_VALUE - second ? Long.MAX_VALUE : first + second;
     }
 
-    private record PendingFeedback(SkillId skill, String source, long experience) {
+    static String progressText(SkillLevelProgress progress) {
+        return SkillProgressBar.percentageText(progress);
+    }
+
+    static boolean levelledUp(SkillLevelProgress progress, long awardedExperience) {
+        return awardedExperience > 0 && (progress.capped()
+            || progress.experienceIntoLevel() < awardedExperience);
+    }
+
+    private record PendingFeedback(
+        SkillId skill,
+        String source,
+        long experience,
+        SkillLevelProgress progress,
+        boolean levelledUp
+    ) {
     }
 }

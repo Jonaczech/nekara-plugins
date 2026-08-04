@@ -26,6 +26,6 @@ public final class SkillProgressResolver {
             progress.put(skill, skillProgress);
             levels.put(skill, skillProgress.level());
         }
-        return new SkillProgressSnapshot(progress, powerLevelCalculator.calculate(levels));
+        return new SkillProgressSnapshot(progress, powerLevelCalculator.calculate(levels, profile.newGamePlusRanks()));
     }
 }

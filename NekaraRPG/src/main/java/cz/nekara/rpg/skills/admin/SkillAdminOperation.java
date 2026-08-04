@@ -34,6 +34,13 @@ public record SkillAdminOperation(
         return new SkillAdminOperation(Type.GRANT_PERK, null, perkId, 0, rank);
     }
 
+    public static SkillAdminOperation adjustBonusPerkPoints(int amount) {
+        if (amount == 0) {
+            throw new IllegalArgumentException("Perk point adjustment cannot be zero");
+        }
+        return new SkillAdminOperation(Type.ADJUST_BONUS_PERK_POINTS, null, null, amount, 0);
+    }
+
     public static SkillAdminOperation resetSkill(SkillId skill) {
         Objects.requireNonNull(skill, "skill");
         if (!skill.gainsExperience()) {
@@ -53,6 +60,7 @@ public record SkillAdminOperation(
     public enum Type {
         GRANT_EXPERIENCE("grant_xp"),
         GRANT_PERK("grant_perk"),
+        ADJUST_BONUS_PERK_POINTS("adjust_bonus_perk_points"),
         RESET_SKILL("reset_skill"),
         RESET_PERKS("reset_perks"),
         RESET_ALL("reset_all");
