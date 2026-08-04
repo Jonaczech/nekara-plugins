@@ -10,12 +10,12 @@ import java.util.Map;
 import java.util.Set;
 
 public final class DefaultPerkTree {
-    private static final PerkPosition ROOT = new PerkPosition(4, 1);
-    private static final PerkPosition LEFT = new PerkPosition(2, 2);
-    private static final PerkPosition RIGHT = new PerkPosition(6, 2);
-    private static final PerkPosition LEFT_DEEP = new PerkPosition(2, 3);
-    private static final PerkPosition RIGHT_DEEP = new PerkPosition(6, 3);
-    private static final PerkPosition CROWN = new PerkPosition(4, 4);
+    private static final PerkPosition ROOT = new PerkPosition(10, 2);
+    private static final PerkPosition LEFT = new PerkPosition(5, 7);
+    private static final PerkPosition RIGHT = new PerkPosition(15, 7);
+    private static final PerkPosition LEFT_DEEP = new PerkPosition(3, 14);
+    private static final PerkPosition RIGHT_DEEP = new PerkPosition(17, 14);
+    private static final PerkPosition CROWN = new PerkPosition(10, 15);
 
     private final PerkCatalog catalog;
     private final Map<PerkId, PerkPresentation> presentations;
@@ -47,9 +47,9 @@ public final class DefaultPerkTree {
         builder.tree(SkillId.SMITHING,
             node("craft", "Poctivé řemeslo", "Vlastnoručně vyrobená výbava získává vyšší kvalitu.", stat(StatId.ITEM_QUALITY, 0.05)),
             node("economy", "Úsporný výkovek", "Při výrobě a úpravách se šetří materiál.", stat(StatId.RESOURCE_COST_REDUCTION, 0.012)),
-            node("recipes", "Zapomenuté nákresy", "Odemkne efektivní výrobu stavebních bloků a zpracovaných surovin.", mechanic(MechanicId.SMITHING_RECIPES), mechanic(MechanicId.BULK_CRAFTING)),
+            node("recipes", "Zapomenuté nákresy", "Odemkne řemeslnickou soupravu a efektivní výrobu stavebních surovin.", mechanic(MechanicId.SMITHING_RECIPES), mechanic(MechanicId.BULK_CRAFTING)),
             node("fine_work", "Jemná práce", "Další zlepšení vlastností vyrobených předmětů.", stat(StatId.ITEM_QUALITY, 0.08)),
-            node("tinkering", "Dílenské úpravy", "Odemkne bezpečné ladění vlastností výbavy.", mechanic(MechanicId.TINKERING)),
+            node("tinkering", "Dílenské úpravy", "Odemkne bezpečnou opravu výbavy řemeslnickou soupravou.", mechanic(MechanicId.TINKERING)),
             node("masterwork", "Mistrovský kus", "Vrcholné výrobky dosahují nejlepší možné jakosti.", stat(StatId.ITEM_QUALITY, 0.20)));
         builder.tree(SkillId.ENCHANTING,
             node("runes", "Čitelné runy", "Zvyšuje sílu vložených očarování.", stat(StatId.ENCHANTMENT_POWER, 0.05)),
@@ -63,7 +63,7 @@ public final class DefaultPerkTree {
             node("brew_speed", "Rychlý var", "Varné stojany pracují rychleji.", stat(StatId.BREWING_SPEED, 0.08)),
             node("ingredients", "Střídmá dávka", "Při vaření se šetří přísady.", stat(StatId.RESOURCE_COST_REDUCTION, 0.012)),
             node("vials", "Letící sklo", "Zlepšuje vrhací a přetrvávající lektvary.", stat(StatId.THROWING_SPEED, 0.06), stat(StatId.POTION_POWER, 0.04)),
-            node("recipes", "Herbář Nekary", "Odemkne nové alchymistické recepty.", mechanic(MechanicId.ALCHEMY_RECIPES)),
+            node("recipes", "Herbář Nekary", "Odemkne recept Tonika vitality ze vzácných plodů.", mechanic(MechanicId.ALCHEMY_RECIPES)),
             node("merging", "Spojené esence", "Odemkne sloučení účinků dvou lektvarů.", mechanic(MechanicId.POTION_MERGING)));
         builder.tree(SkillId.MINING,
             node("yield", "Hlas kamene", "Zvyšuje šanci na násobný výtěžek.", stat(StatId.DOUBLE_DROP_CHANCE, 0.025)),
@@ -75,7 +75,7 @@ public final class DefaultPerkTree {
         builder.tree(SkillId.WOODCUTTING,
             node("yield", "Míza lesa", "Zvyšuje šanci na násobný výtěžek dřeva.", stat(StatId.DOUBLE_DROP_CHANCE, 0.025)),
             node("tempo", "Jistý zásek", "Zrychluje práci se sekerou.", stat(StatId.WOODCUTTING_SPEED, 0.05)),
-            node("recipes", "Úsporné trámy", "Vanilla recept z jednoho kmene vydá pět prken.", mechanic(MechanicId.WOOD_RECIPES)),
+            node("recipes", "Úsporné trámy", "Recept z jednoho kmene vydá pět prken místo čtyř.", mechanic(MechanicId.WOOD_RECIPES)),
             node("feller", "Pád velikána", "Při plížení porazí propojený přírodní strom.", mechanic(MechanicId.TREE_FELLER)),
             node("leaves", "Koruna tajemství", "Listí může skrývat vzácnou odměnu.", mechanic(MechanicId.RARE_LEAF_DROPS), stat(StatId.RARE_DROP_CHANCE, 0.015)),
             node("triple", "Dědictví hvozdu", "Přidává šanci na trojitý výtěžek.", stat(StatId.TRIPLE_DROP_CHANCE, 0.08)));
@@ -118,7 +118,7 @@ public final class DefaultPerkTree {
             node("damage", "Pevná tětiva", "Zvyšuje poškození luků a kuší.", stat(StatId.DAMAGE_MULTIPLIER, 0.03)),
             node("accuracy", "Klidný dech", "Zlepšuje přesnost střelby.", stat(StatId.ACCURACY, 0.025)),
             node("critical", "Smrtící úhel", "Zvyšuje šanci a sílu kritického zásahu.", stat(StatId.CRITICAL_CHANCE, 0.012), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.04)),
-            node("arrows", "Šípařova brašna", "Odemkne zvláštní šípy a šetří střelivo.", mechanic(MechanicId.CUSTOM_ARROW_RECIPES), stat(StatId.AMMO_CONSUMPTION_REDUCTION, 0.02)),
+            node("arrows", "Šípařova brašna", "Odemkne Šíp průzkumníka, který označí zasažený cíl.", mechanic(MechanicId.CUSTOM_ARROW_RECIPES), stat(StatId.AMMO_CONSUMPTION_REDUCTION, 0.02)),
             node("charged", "Zadržený výstřel", "Odemkne nabité výstřely s volitelným posílením.", mechanic(MechanicId.CHARGED_SHOT)),
             node("master", "Oko bouře", "Vrchol stezky posiluje přesnost i kritický zásah.", stat(StatId.ACCURACY, 0.12), stat(StatId.CRITICAL_CHANCE, 0.08)));
         builder.tree(SkillId.LIGHT_ARMOR,

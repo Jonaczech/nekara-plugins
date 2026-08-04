@@ -223,7 +223,13 @@ public final class NekaraRPGMenu implements Listener {
             return;
         }
         switch (slot) {
-            case OVERVIEW_SLOT -> openOverview(player);
+            case OVERVIEW_SLOT -> {
+                if (canShow(player, SkillsModule.ID, "nekararpg.skills.use")) {
+                    skills.openPlayerOverview(player);
+                } else {
+                    openOverview(player);
+                }
+            }
             case AUTH_SLOT -> {
                 if (canShow(player, AuthModule.ID, null)) {
                     auth.openMenu(player);

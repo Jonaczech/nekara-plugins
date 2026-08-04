@@ -28,6 +28,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -60,6 +61,7 @@ final class CombatPerkListener implements Listener {
     private final NekaraRPGPlugin plugin;
     private final SkillsModule module;
     private final NamespacedKey chargedArrowKey;
+    private final NamespacedKey scoutArrowKey;
     private final NamespacedKey lightMobilityKey;
     private final NamespacedKey heavyStabilityKey;
     private final NamespacedKey smithingWeaponDamageKey;
@@ -78,6 +80,7 @@ final class CombatPerkListener implements Listener {
         this.plugin = plugin;
         this.module = module;
         this.chargedArrowKey = new NamespacedKey(plugin, "skills_charged_arrow");
+        this.scoutArrowKey = new NamespacedKey(plugin, "skills_scout_arrow");
         this.lightMobilityKey = new NamespacedKey(plugin, "skills_light_mobility");
         this.heavyStabilityKey = new NamespacedKey(plugin, "skills_heavy_stability");
         this.smithingWeaponDamageKey = new NamespacedKey(plugin, "smithing_weapon_damage");
@@ -162,10 +165,25 @@ final class CombatPerkListener implements Listener {
         if (event.getForce() >= 0.95F && state.get().has(MechanicId.CHARGED_SHOT)) {
             arrow.getPersistentDataContainer().set(chargedArrowKey, PersistentDataType.BYTE, (byte) 1);
         }
+        ItemStack consumed = event.getConsumable();
+        if (state.get().has(MechanicId.CUSTOM_ARROW_RECIPES)
+            && consumed != null && consumed.getPersistentDataContainer().has(scoutArrowKey, PersistentDataType.BYTE)) {
+            arrow.getPersistentDataContainer().set(scoutArrowKey, PersistentDataType.BYTE, (byte) 1);
+        }
         double saveChance = state.get().stats().value(StatId.AMMO_CONSUMPTION_REDUCTION);
         if (saveChance > 0.0 && ThreadLocalRandom.current().nextDouble() < saveChance) {
             event.setConsumeArrow(false);
         }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void markScoutArrowTarget(ProjectileHitEvent event) {
+        if (!(event.getEntity() instanceof AbstractArrow arrow)
+            || !arrow.getPersistentDataContainer().has(scoutArrowKey, PersistentDataType.BYTE)
+            || !(event.getHitEntity() instanceof LivingEntity target)) {
+            return;
+        }
+        target.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 160, 0, false, true, true));
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

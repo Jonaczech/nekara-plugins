@@ -16,7 +16,7 @@ public final class SkillPresentation {
         names.put(SkillId.MINING, "Hornictví");
         names.put(SkillId.WOODCUTTING, "Rubačina");
         names.put(SkillId.DIGGING, "Zeměrytectví");
-        names.put(SkillId.FARMING, "Sedlačení");
+        names.put(SkillId.FARMING, "Hospodářství");
         names.put(SkillId.LIGHT_WEAPONS, "Sekání a bodání");
         names.put(SkillId.HEAVY_WEAPONS, "Brutální boj");
         names.put(SkillId.MARTIAL_ARTS, "Umění dlaně");

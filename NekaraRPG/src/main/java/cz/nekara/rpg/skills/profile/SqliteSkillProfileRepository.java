@@ -25,7 +25,7 @@ import java.util.Optional;
 
 public final class SqliteSkillProfileRepository
     implements SkillAdministrationRepository, SkillSnapshotRepository {
-    private static final int SCHEMA_VERSION = 2;
+    private static final int SCHEMA_VERSION = 4;
 
     private final Connection connection;
 
@@ -66,19 +66,22 @@ public final class SqliteSkillProfileRepository
     public synchronized Optional<SkillProfile> find(String playerKey) {
         requirePlayerKey(playerKey);
         try (PreparedStatement profileStatement = connection.prepareStatement(
-            "SELECT spent_perk_points, revision FROM profiles WHERE player_key=?")) {
+            "SELECT spent_perk_points, admin_bonus_perk_points, revision FROM profiles WHERE player_key=?")) {
             profileStatement.setString(1, playerKey);
             try (ResultSet profileResult = profileStatement.executeQuery()) {
                 if (!profileResult.next()) {
                     return Optional.empty();
                 }
                 int spentPerkPoints = profileResult.getInt("spent_perk_points");
+                int adminBonusPerkPoints = profileResult.getInt("admin_bonus_perk_points");
                 long revision = profileResult.getLong("revision");
                 return Optional.of(new SkillProfile(
                     playerKey,
                     readExperience(playerKey),
+                    readNewGamePlusRanks(playerKey),
                     readPerks(playerKey),
                     spentPerkPoints,
+                    adminBonusPerkPoints,
                     revision
                 ));
             }
@@ -161,6 +164,7 @@ public final class SqliteSkillProfileRepository
             long nextRevision = Math.addExact(expectedRevision, 1);
             upsertProfile(profile, expectedRevision, nextRevision);
             replaceExperience(profile);
+            replaceNewGamePlusRanks(profile);
             replacePerks(profile);
             if (auditRecord != null) {
                 insertAudit(profile.playerKey(), expectedRevision, nextRevision, auditRecord);
@@ -217,8 +221,8 @@ public final class SqliteSkillProfileRepository
             updateSchema(connection, null);
             return;
         }
-        if ("1".equals(version)) {
-            updateSchema(connection, "1");
+        if ("1".equals(version) || "2".equals(version) || "3".equals(version)) {
+            updateSchema(connection, version);
             return;
         }
         if (!Integer.toString(SCHEMA_VERSION).equals(version)) {
@@ -243,6 +247,11 @@ public final class SqliteSkillProfileRepository
         boolean previousAutoCommit = connection.getAutoCommit();
         connection.setAutoCommit(false);
         try {
+            if ("1".equals(previousVersion) || "2".equals(previousVersion)) {
+                try (Statement statement = connection.createStatement()) {
+                    statement.execute("ALTER TABLE profiles ADD COLUMN admin_bonus_perk_points INTEGER NOT NULL DEFAULT 0");
+                }
+            }
             createCurrentTables(connection);
             if (previousVersion == null) {
                 try (PreparedStatement statement = connection.prepareStatement(
@@ -276,9 +285,14 @@ public final class SqliteSkillProfileRepository
     private static void createCurrentTables(Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             statement.execute("CREATE TABLE IF NOT EXISTS profiles ("
-                + "player_key TEXT PRIMARY KEY, spent_perk_points INTEGER NOT NULL, revision INTEGER NOT NULL)");
+                + "player_key TEXT PRIMARY KEY, spent_perk_points INTEGER NOT NULL, "
+                + "admin_bonus_perk_points INTEGER NOT NULL DEFAULT 0, revision INTEGER NOT NULL)");
             statement.execute("CREATE TABLE IF NOT EXISTS skill_experience ("
                 + "player_key TEXT NOT NULL, skill_id TEXT NOT NULL, total_experience INTEGER NOT NULL, "
+                + "PRIMARY KEY(player_key, skill_id), "
+                + "FOREIGN KEY(player_key) REFERENCES profiles(player_key) ON DELETE CASCADE)");
+            statement.execute("CREATE TABLE IF NOT EXISTS skill_new_game_plus ("
+                + "player_key TEXT NOT NULL, skill_id TEXT NOT NULL, rank INTEGER NOT NULL, "
                 + "PRIMARY KEY(player_key, skill_id), "
                 + "FOREIGN KEY(player_key) REFERENCES profiles(player_key) ON DELETE CASCADE)");
             statement.execute("CREATE TABLE IF NOT EXISTS perk_ranks ("
@@ -315,6 +329,22 @@ public final class SqliteSkillProfileRepository
         return experience;
     }
 
+    private EnumMap<SkillId, Integer> readNewGamePlusRanks(String playerKey) throws SQLException {
+        EnumMap<SkillId, Integer> ranks = new EnumMap<>(SkillId.class);
+        try (PreparedStatement statement = connection.prepareStatement(
+            "SELECT skill_id,rank FROM skill_new_game_plus WHERE player_key=?")) {
+            statement.setString(1, playerKey);
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    int rank = result.getInt("rank");
+                    if (rank < 1) throw new SkillStorageException("Invalid stored New Game+ rank");
+                    ranks.put(skillById(result.getString("skill_id")), rank);
+                }
+            }
+        }
+        return ranks;
+    }
+
     private Map<PerkId, Integer> readPerks(String playerKey) throws SQLException {
         Map<PerkId, Integer> perks = new HashMap<>();
         try (PreparedStatement statement = connection.prepareStatement(
@@ -343,20 +373,22 @@ public final class SqliteSkillProfileRepository
         throws SQLException {
         if (expectedRevision == 0) {
             try (PreparedStatement statement = connection.prepareStatement(
-                "INSERT INTO profiles(player_key,spent_perk_points,revision) VALUES(?,?,?)")) {
+                "INSERT INTO profiles(player_key,spent_perk_points,admin_bonus_perk_points,revision) VALUES(?,?,?,?)")) {
                 statement.setString(1, profile.playerKey());
                 statement.setInt(2, profile.spentPerkPoints());
-                statement.setLong(3, nextRevision);
+                statement.setInt(3, profile.adminBonusPerkPoints());
+                statement.setLong(4, nextRevision);
                 statement.executeUpdate();
             }
             return;
         }
         try (PreparedStatement statement = connection.prepareStatement(
-            "UPDATE profiles SET spent_perk_points=?, revision=? WHERE player_key=? AND revision=?")) {
+            "UPDATE profiles SET spent_perk_points=?, admin_bonus_perk_points=?, revision=? WHERE player_key=? AND revision=?")) {
             statement.setInt(1, profile.spentPerkPoints());
-            statement.setLong(2, nextRevision);
-            statement.setString(3, profile.playerKey());
-            statement.setLong(4, expectedRevision);
+            statement.setInt(2, profile.adminBonusPerkPoints());
+            statement.setLong(3, nextRevision);
+            statement.setString(4, profile.playerKey());
+            statement.setLong(5, expectedRevision);
             if (statement.executeUpdate() != 1) {
                 throw new ConcurrentProfileUpdateException(
                     profile.playerKey(), expectedRevision, currentRevision(profile.playerKey()));
@@ -392,6 +424,20 @@ public final class SqliteSkillProfileRepository
         }
     }
 
+    private void replaceNewGamePlusRanks(SkillProfile profile) throws SQLException {
+        deleteRows("skill_new_game_plus", profile.playerKey());
+        try (PreparedStatement statement = connection.prepareStatement(
+            "INSERT INTO skill_new_game_plus(player_key,skill_id,rank) VALUES(?,?,?)")) {
+            for (Map.Entry<SkillId, Integer> entry : profile.newGamePlusRanks().entrySet()) {
+                statement.setString(1, profile.playerKey());
+                statement.setString(2, entry.getKey().id());
+                statement.setInt(3, entry.getValue());
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        }
+    }
+
     private void insertAudit(
         String targetPlayerKey,
         long revisionBefore,
@@ -417,6 +463,7 @@ public final class SqliteSkillProfileRepository
     private void deleteRows(String table, String playerKey) throws SQLException {
         String sql = switch (table) {
             case "skill_experience" -> "DELETE FROM skill_experience WHERE player_key=?";
+            case "skill_new_game_plus" -> "DELETE FROM skill_new_game_plus WHERE player_key=?";
             case "perk_ranks" -> "DELETE FROM perk_ranks WHERE player_key=?";
             default -> throw new IllegalArgumentException("Unsupported profile table");
         };

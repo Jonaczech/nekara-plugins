@@ -12,6 +12,8 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 /** Original Nekara craft quality. Vanilla enchantments remain entirely separate. */
 enum SmithingTier {
     I(0, "Tier I — Běžný výrobek", 0.0, 0.0, 0.0),
@@ -54,11 +56,18 @@ enum SmithingTier {
     }
 
     static boolean apply(ItemStack item, int smithingLevel, Keys keys) {
+        return apply(item, smithingLevel, 1.0, keys);
+    }
+
+    static boolean apply(ItemStack item, int smithingLevel, double itemQuality, Keys keys) {
         if (item == null || item.getType().isAir() || !SkillEquipmentPolicy.isSmithingProduct(item)) return false;
         ItemMeta meta = item.getItemMeta();
         PersistentDataContainer data = meta.getPersistentDataContainer();
         if (data.has(keys.tier(), PersistentDataType.INTEGER)) return false;
         SmithingTier tier = forLevel(smithingLevel);
+        if (tier != V && ThreadLocalRandom.current().nextDouble() < qualityPromotionChance(itemQuality)) {
+            tier = values()[tier.ordinal() + 1];
+        }
         data.set(keys.tier(), PersistentDataType.INTEGER, tier.ordinal() + 1);
         if (isWeapon(item.getType())) data.set(keys.weaponDamage(), PersistentDataType.DOUBLE, tier.weaponDamage);
         if (isArmor(item.getType())) data.set(keys.armor(), PersistentDataType.DOUBLE, tier.armor);
@@ -78,6 +87,10 @@ enum SmithingTier {
         meta.lore(lore);
         item.setItemMeta(meta);
         return true;
+    }
+
+    static double qualityPromotionChance(double itemQuality) {
+        return Math.max(0.0, Math.min(1.0, itemQuality - 1.0));
     }
 
     static boolean advanceProcessing(ItemStack item, Keys keys, ProcessingState expected, ProcessingState next) {

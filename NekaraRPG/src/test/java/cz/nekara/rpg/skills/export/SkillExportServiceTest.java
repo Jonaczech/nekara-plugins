@@ -56,6 +56,7 @@ class SkillExportServiceTest {
                     "profiles.csv",
                     "skill_experience.csv",
                     "perk_ranks.csv",
+                    "new_game_plus.csv",
                     "admin_audit.csv"
                 ), entries);
                 String manifest = new String(
@@ -86,6 +87,7 @@ class SkillExportServiceTest {
     private static void assertProfile(SkillProfile expected, SkillProfile actual) {
         assertEquals(expected.playerKey(), actual.playerKey());
         assertEquals(expected.totalExperience(), actual.totalExperience());
+        assertEquals(expected.newGamePlusRanks(), actual.newGamePlusRanks());
         assertEquals(expected.perkRanks(), actual.perkRanks());
         assertEquals(expected.spentPerkPoints(), actual.spentPerkPoints());
         assertEquals(expected.revision(), actual.revision());

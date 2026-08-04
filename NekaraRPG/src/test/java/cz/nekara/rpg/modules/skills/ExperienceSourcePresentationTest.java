@@ -17,6 +17,8 @@ class ExperienceSourcePresentationTest {
     @Test
     void presentsActivitySourcesWithoutInternalEventNames() {
         assertEquals("Obchod s vesničanem", ExperienceSourcePresentation.activity("villager_trade"));
+        assertEquals("Přírodní květina", ExperienceSourcePresentation.activity("wild_flower"));
+        assertEquals("Sklizeň bobulí", ExperienceSourcePresentation.activity("berry_harvest"));
         assertEquals("Úlovek", ExperienceSourcePresentation.activity("deferred_catch"));
         assertEquals("Dokončená činnost", ExperienceSourcePresentation.activity("unknown"));
     }

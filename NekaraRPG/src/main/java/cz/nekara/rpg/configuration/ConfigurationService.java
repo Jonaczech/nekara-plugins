@@ -4,6 +4,7 @@ import cz.nekara.rpg.campfire.CampFeature;
 import cz.nekara.rpg.echovein.EchoVeinMath;
 import cz.nekara.rpg.skills.SkillId;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
@@ -424,6 +425,12 @@ public final class ConfigurationService {
                         0, 1_000_000, 35, "skills.progression.linear-growth", warning),
                 validateLong(config.getLong("skills.progression.quadratic-growth", 2),
                         0, 100_000, 2, "skills.progression.quadratic-growth", warning),
+                new NewGamePlusConfig(
+                    config.getBoolean("skills.new-game-plus.enabled", true),
+                    validateDouble(config.getDouble("skills.new-game-plus.experience-multiplier", 0.90),
+                        0.01, 1.0, 0.90, "skills.new-game-plus.experience-multiplier", warning),
+                    validateDouble(config.getDouble("skills.new-game-plus.perk-stat-bonus-per-rank", 0.02),
+                        0.0, 1.0, 0.02, "skills.new-game-plus.perk-stat-bonus-per-rank", warning)),
                 nativeMining,
                 nativeWoodcutting,
                 nativeDigging,
@@ -698,16 +705,17 @@ public final class ConfigurationService {
     ) {
         Map<Material, Long> fallback = NativeMiningConfig.defaultExperienceByMaterial();
         ConfigurationSection section = config.getConfigurationSection(
-                "skills.mining.experience.blocks");
+                "skills.mining.experience-sources.blocks");
         if (section == null) {
             return fallback;
         }
-        Map<Material, Long> values = new HashMap<>(fallback);
+        Map<Material, Long> values = applyMaterialTags(
+            config, "skills.mining.experience-sources.tags", fallback, warning);
         for (String key : section.getKeys(false)) {
             Material material = Material.matchMaterial(key);
             long experience = section.getLong(key, 0);
             if (material == null || !material.isBlock() || experience < 1 || experience > 1_000_000) {
-                warning.accept("Invalid skills.mining.experience.blocks." + key + "; ignoring it.");
+                warning.accept("Invalid skills.mining.experience-sources.blocks." + key + "; ignoring it.");
                 continue;
             }
             values.put(material, experience);
@@ -736,6 +744,12 @@ public final class ConfigurationService {
             softLimit = 32;
             hardLimit = 128;
         }
+        Map<Material, Long> experience = applyMaterialTags(
+            config,
+            root + ".experience-sources.tags",
+            parseMaterialLongTable(config, root + ".experience-sources.blocks", defaultExperience, warning),
+            warning
+        );
         return new NativeGatheringConfig(
                 config.getBoolean(root + ".experience.enabled", true),
                 validateInt(config.getInt(root + ".experience.chunk-window-seconds", 300),
@@ -746,7 +760,7 @@ public final class ConfigurationService {
                         0.01, 1.0, 0.10, root + ".experience.farm-floor-multiplier", warning),
                 config.getBoolean(root + ".rewards.final-drop-multiplier-enabled", true),
                 config.getBoolean(root + ".rewards.rare-drops-enabled", true),
-                parseMaterialLongTable(config, root + ".experience.blocks", defaultExperience, warning),
+                experience,
                 parseMaterialIntTable(config, root + ".rewards.rare-drops", defaultRareDrops, warning)
         );
     }
@@ -820,11 +834,18 @@ public final class ConfigurationService {
             FileConfiguration config,
             Consumer<String> warning
     ) {
-        Map<SkillId, Long> values = new java.util.EnumMap<>(NativeActivityConfig.defaults());
-        for (SkillId skill : NativeActivityConfig.defaults().keySet()) {
-            String path = "skills." + skill.id() + ".experience.amount";
-            values.put(skill, validateLong(config.getLong(path, values.get(skill)),
-                    0, 1_000_000, values.get(skill), path, warning));
+        Map<SkillId, Map<String, Long>> values = new java.util.EnumMap<>(SkillId.class);
+        for (Map.Entry<SkillId, Map<String, Long>> entry : NativeActivityConfig.defaults().entrySet()) {
+            Map<String, Long> sources = new HashMap<>(entry.getValue());
+            String root = "skills." + entry.getKey().id() + ".experience-sources.sources";
+            ConfigurationSection section = config.getConfigurationSection(root);
+            if (section != null) {
+                for (String source : section.getKeys(false)) {
+                    sources.put(source, validateLong(section.getLong(source), 0, 1_000_000, 0,
+                        root + "." + source, warning));
+                }
+            }
+            values.put(entry.getKey(), Map.copyOf(sources));
         }
         return new NativeActivityConfig(
                 config.getBoolean("skills.activities.enabled", true),
@@ -856,6 +877,40 @@ public final class ConfigurationService {
             }
         }
         return Map.copyOf(values);
+    }
+
+    static Map<Material, Long> applyMaterialTags(
+            FileConfiguration config,
+            String path,
+            Map<Material, Long> source,
+            Consumer<String> warning
+    ) {
+        Map<Material, Long> values = new HashMap<>(source);
+        ConfigurationSection section = config.getConfigurationSection(path);
+        if (section == null) {
+            return values;
+        }
+        for (String key : section.getKeys(false)) {
+            long experience = section.getLong(key, 0);
+            if (experience < 1 || experience > 1_000_000) {
+                warning.accept("Invalid " + path + "." + key + "; ignoring it.");
+                continue;
+            }
+            Iterable<Material> materials = switch (key.toUpperCase(Locale.ROOT)) {
+                case "MINEABLE_PICKAXE" -> Tag.MINEABLE_PICKAXE.getValues();
+                case "MINEABLE_AXE" -> Tag.MINEABLE_AXE.getValues();
+                case "MINEABLE_SHOVEL" -> Tag.MINEABLE_SHOVEL.getValues();
+                default -> null;
+            };
+            if (materials == null) {
+                warning.accept("Unknown material tag " + path + "." + key + "; ignoring it.");
+                continue;
+            }
+            for (Material material : materials) {
+                values.putIfAbsent(material, experience);
+            }
+        }
+        return values;
     }
 
     private Map<Material, Integer> parseMaterialIntTable(

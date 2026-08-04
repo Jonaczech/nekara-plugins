@@ -23,8 +23,13 @@ public final class PerkStatResolver {
     }
 
     public StatSnapshot resolve(SkillProfile profile, SkillId skill) {
+        return resolve(profile, skill, 1.0);
+    }
+
+    public StatSnapshot resolve(SkillProfile profile, SkillId skill, double multiplier) {
         Objects.requireNonNull(profile, "profile");
         Objects.requireNonNull(skill, "skill");
+        if (!Double.isFinite(multiplier) || multiplier < 1.0) throw new IllegalArgumentException("Invalid New Game+ multiplier");
         List<StatModifier> modifiers = new ArrayList<>();
         for (PerkDefinition perk : catalog.forSkill(skill)) {
             int rank = profile.perkRank(perk.id());
@@ -40,7 +45,7 @@ public final class PerkStatResolver {
                         "perk:" + perk.id().value() + ":" + index,
                         effect.statId(),
                         effect.operation(),
-                        scaledAmount(effect, rank)
+                        scaledAmount(effect, rank) * multiplier
                     ));
                 }
             }

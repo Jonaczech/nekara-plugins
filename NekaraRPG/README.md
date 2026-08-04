@@ -10,6 +10,22 @@ syntetické fishing eventy a nevyžaduje ValhallaMMO ani jiný plugin.
 
 ## Nekara Skills 2.2 — native progression
 
+Aktuální GUI: aktivace `Nová hra+` je po dosažení levelu 100 přímo uprostřed rozšířené perkové stezky; dřívější údaj o spodní liště již neplatí.
+
+### New Game+ a serverové XP události
+
+Po dosažení levelu 100 je v každé přímé dovednosti ve spodní liště její stezky
+`Nová hra+`. Po potvrzení resetuje pouze XP a zakoupené perky této dovednosti;
+body utracené v jejích percích se vrátí. Každá dovednost může Novou hru+
+aktivovat právě jednou. Trvale zvyšuje její perk-statistiky o 2 % a druhý běh
+zpomalí na 90 % XP. Dokončená Nová hra+ se počítá jako dalších 100 úrovní pro
+odvozený Power: při druhém vyexpění všech dovedností může Power dosáhnout 200.
+Pravidla jsou upravitelná v `skills/config.yml` → `new-game-plus`.
+
+Pro víkendové i testovací bonusy existuje jedna perzistentní událost:
+`/nrpg skills admin event start <skill|all> <1-5> <30m|2h|1d>`, dále `event status`
+a `event stop`. Stav je uložen v `skills/experience-event.yml`, takže přežije restart.
+
 Pro rychlé testování lze použít dočasný admin boost bez zásahu do profilu:
 `/nrpg skills admin xp-boost <hráč> <skill|all> <1-100>` a zrušení přes
 `/nrpg skills admin xp-boost-clear <hráč> <skill|all>`. Boost se po restartu
@@ -34,9 +50,22 @@ Každá dovednost má šest uzlů ve dvou větvích; GUI vysvětluje rank, cenu,
 a předchůdce. Všech 15 dovedností má nativní validovaný zdroj XP a živou runtime
 vertikálu. Sběr, výroba, obchod, rybaření i boj používají sdílenou cache profilu,
 omezenou asynchronní frontu zápisů a eventové efekty bez per-tick skenování světa.
+Po úspěšném zápisu ukazuje action bar právě připsanou XP odměnu a postup
+v aktuální úrovni, například `+4 XP | ▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱ 28 %`.
+Stejný segmentový ukazatel i přesný zbývající počet XP je v popisu dovednosti.
+Stejnou segmentovou grafiku používá rybářská minihra: tmavá dráha `▱`, tyrkysové
+cílové pole `▰` a zlatá kotva jako pohybující se ukazatel.
 Modul `skills` je výchozím stavem zapnutý a je nativní autoritou postupu. ValhallaMMO
 není pro něj potřeba; zbývající kompatibilní bridge se při chybějícím pluginu pouze
 bezpečně neaktivují.
+
+### Doprovodný resource pack stezky
+
+Klientský balíček `resource-pack/NekaraRPG-GUI` přidává vlastní osmisměrné navigační
+šipky a animované spojnice perků ve třech stavech: zamčené, dostupné a odemčené.
+Sestaví se skriptem `resource-pack/NekaraRPG-GUI/build-resource-pack.ps1` do
+`resource-pack/NekaraRPG-GUI.zip`. Plugin bez nahraného packu zůstane funkční a použije
+vanilla zástupné ikony; pro finální vzhled je nutné ZIP hostovat a připojit ho v nastavení serveru.
 
 ## Moduly
 
@@ -63,7 +92,9 @@ Kořenový `config.yml` obsahuje pouze jádro, updater a přepínače modulů. P
 nastavení je rozdělené do `auth/config.yml`, `fishing/config.yml`,
 `campfire/config.yml`, `mining/config.yml`, `mounts/config.yml` a
 `skills/config.yml` uvnitř datové složky pluginu. Každá trénovaná dovednost má
-navíc vlastní `skills/<skill>/config.yml` a `messages.yml`; skill s vlastními
+navíc vlastní `skills/<skill>/config.yml`, `experience-sources.yml` a `messages.yml`;
+`experience-sources.yml` určuje použitelné XP zdroje a jejich hodnoty bez změny kódu.
+Skill s vlastními
 nálezy může mít i `loot-tables.yml`. Při prvním upgradu ze starého monolitického
 configu se vlastní hodnoty automaticky přenesou do odpovídajících souborů.
 
@@ -156,6 +187,23 @@ reputaci a slevy, zrychlený růst opečovávaných plodin, sklizeň pole, včel
 rychlost rybolovu a vybavení či salvage z úlovku. Hromadná sklizeň i nadále volá
 skutečný `Player.breakBlock`, takže každý blok mohou zrušit regionové pluginy.
 
+### Perkové recepty a dílenské úpravy
+
+Perky mimo Obchodování mají konkrétní nativní účinek. `Poctivé řemeslo`, `Jemná
+práce` a `Mistrovský kus` dávají přesnou šanci posunout nově vyrobenou výbavu o
+jeden Tier výše. `Zapomenuté nákresy` odemykají řemeslnickou soupravu z 4 železných
+nugetů, papíru a provázku. S `Dílenskými úpravami` hráč plíží a klikne na smithing
+table s poškozenou výbavou v hlavní ruce a soupravou v levé ruce; souprava se
+spotřebuje a obnoví 25 % odolnosti.
+
+`Herbář Nekary` odemyká Tonikum vitality: water bottle, sweet berries a glow
+berries vytvoří lektvar Regeneration I na 45 sekund. `Spojené esence` spojí dva
+pitné lektvary a ametystový střep do jedné lahve, nejvýše se dvěma odlišnými
+účinky. `Úsporné trámy` mění vanilla recept jednoho kmene či stonku na pět prken.
+`Šípařova brašna` odemyká čtyři Šípy průzkumníka ze čtyř šípů, glow ink sac a
+ametystového střepu; střela označí zasažený cíl na osm sekund. Všechny tyto recepty
+se zobrazí jen hráči s odpovídajícím zakoupeným perkem a používají běžnou crafting mřížku.
+
 ### Auditovaná staging správa Nekara Skills
 
 Operátor s `nekararpg.skills.admin` může na zapnutém staging modulu použít
@@ -191,8 +239,11 @@ a pro administraci. Zapnutý nativní modul `skills` nabídne vlastní přehled 
 perk stezky. Přístup k nabídce řídí oprávnění
 `nekararpg.menu.use`.
 
-Ikona osobního přehledu spojuje stav účtu, Rested, právě probíhající činnost a
-koně bez vypisování technických zpráv do chatu. Hráči s administrátorským
+Ikona osobního přehledu při zapnutých Dovednostech otevírá živou kartu postavy:
+životy, poškození, zbroj, pohyb, aktivní bojové bonusy a souhrn bonusů pro
+sběr, výrobu a obchod. Hodnoty se vždy znovu načtou podle právě nasazené výbavy;
+odkaz Dovednosti vede zpět na úrovně, XP a perk stezky. Bez nativních Dovedností
+zůstává bezpečný stručný přehled účtu, Rested, probíhající činnosti a koně. Hráči s administrátorským
 oprávněním `nekararpg.command.status` mají také diagnostické GUI se stavem modulů,
 integrací, updateru, paměti a úložiště Mounts. Toto oprávnění je výchozím stavem
 pouze pro operátory a kontroluje se znovu i při samotném otevření obrazovky.
@@ -518,6 +569,7 @@ upozornění při přípravě releasu a znovu při připojení před restartem.
 | `/nekararpg status` | `nekararpg.command.status` |
 | `/nekararpg update check` | `nekararpg.command.update` |
 | `/nekararpg update status` | `nekararpg.command.update` |
+| `/nekararpg prehled` | `nekararpg.skills.use`; živý přehled postavy |
 | `/nekararpg sit` | `nekararpg.sitting.use` |
 | `/nekararpg stand` | žádné; hráč se musí vždy moci postavit |
 | `/nekararpg lay` | `nekararpg.campfire.use` |
@@ -527,6 +579,7 @@ upozornění při přípravě releasu a znovu při připojení před restartem.
 | `/nekararpg skills admin inspect <hráč>` | `nekararpg.skills.admin` |
 | `/nekararpg skills admin grant-xp <hráč> <skill> <množství>` | `nekararpg.skills.admin` |
 | `/nekararpg skills admin grant-perk <hráč> <perk-id> [rank]` | `nekararpg.skills.admin` |
+| `/nekararpg skills admin points <hráč> <add\|remove> <množství>` | `nekararpg.skills.admin` |
 | `/nekararpg skills admin reset <hráč> <skill\|perks\|all>` | `nekararpg.skills.admin` |
 | `/nekararpg skills admin metrics` | `nekararpg.skills.admin` |
 | `/nekararpg skills admin export` | `nekararpg.skills.admin` |

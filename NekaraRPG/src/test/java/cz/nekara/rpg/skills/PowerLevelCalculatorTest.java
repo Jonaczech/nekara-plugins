@@ -29,10 +29,20 @@ class PowerLevelCalculatorTest {
     }
 
     @Test
-    void fullyCappedProfileHasCappedPower() {
+    void fullyCappedFirstRunCanStillProgressToNewGamePlusPower() {
         PowerProgress power = calculator.calculate(allAt(100));
 
         assertEquals(100, power.level());
+        assertEquals(15, power.levelsUntilNext());
+    }
+
+    @Test
+    void newGamePlusMakesASecondLevelingRunContributeBeyondOneHundredPower() {
+        EnumMap<SkillId, Integer> levels = allAt(100);
+        EnumMap<SkillId, Integer> rebirths = allAt(1);
+        PowerProgress power = calculator.calculate(levels, rebirths);
+
+        assertEquals(200, power.level());
         assertEquals(0, power.levelsUntilNext());
     }
 

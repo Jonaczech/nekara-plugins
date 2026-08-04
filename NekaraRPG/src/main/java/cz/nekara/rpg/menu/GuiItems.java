@@ -3,6 +3,7 @@ package cz.nekara.rpg.menu;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -20,6 +21,14 @@ public final class GuiItems {
         if (lore.length > 0) {
             meta.lore(List.of(lore));
         }
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    public static ItemStack modeledItem(String model, Material material, Component name, Component... lore) {
+        ItemStack item = item(material, name, lore);
+        ItemMeta meta = item.getItemMeta();
+        meta.setItemModel(new NamespacedKey("nekararpg", model));
         item.setItemMeta(meta);
         return item;
     }

@@ -92,7 +92,7 @@ class SqliteSkillProfileRepositoryTest {
     }
 
     @Test
-    void versionOneDatabaseMigratesToVersionTwoWithoutLosingProfiles() throws Exception {
+    void versionOneDatabaseMigratesToVersionThreeWithoutLosingProfiles() throws Exception {
         File database = new File(temporaryDirectory, "version-one.db");
         Class.forName("org.sqlite.JDBC");
         try (var connection = DriverManager.getConnection("jdbc:sqlite:" + database.getAbsolutePath());
@@ -117,6 +117,7 @@ class SqliteSkillProfileRepositoryTest {
             SkillProfile migrated = repository.find("player-1").orElseThrow();
             assertEquals(1_234, migrated.totalExperience(SkillId.MINING));
             assertEquals(1, migrated.perkRank(new PerkId("mining.yield")));
+            assertEquals(0, migrated.adminBonusPerkPoints());
             assertEquals(4, migrated.revision());
 
             SkillProfile updated = migrated.withExperience(SkillId.MINING, 2_000);
@@ -135,7 +136,7 @@ class SqliteSkillProfileRepositoryTest {
                  "SELECT value FROM metadata WHERE key='schema-version'");
              var result = statement.executeQuery()) {
             assertTrue(result.next());
-            assertEquals("2", result.getString(1));
+            assertEquals("4", result.getString(1));
         }
     }
 

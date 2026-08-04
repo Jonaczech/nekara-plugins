@@ -91,6 +91,9 @@ public final class SkillExportService {
             writeQuery(zip, connection, "perk_ranks.csv",
                 "player_key,perk_id,rank",
                 "SELECT player_key,perk_id,rank FROM perk_ranks ORDER BY player_key,perk_id", 3);
+            writeQuery(zip, connection, "new_game_plus.csv",
+                "player_key,skill_id,rank",
+                "SELECT player_key,skill_id,rank FROM skill_new_game_plus ORDER BY player_key,skill_id", 3);
             writeQuery(zip, connection, "admin_audit.csv",
                 "id,actor_key,actor_name,target_player_key,target_name,operation,detail,"
                     + "occurred_at_epoch_millis,revision_before,revision_after",
@@ -106,13 +109,14 @@ public final class SkillExportService {
     private ExportCounts readCounts(Connection connection) throws SQLException, IOException {
         String schemaVersion = scalarText(connection,
             "SELECT value FROM metadata WHERE key='schema-version'");
-        if (!"2".equals(schemaVersion)) {
+        if (!"4".equals(schemaVersion)) {
             throw new IOException("Unsupported Nekara Skills export schema " + schemaVersion);
         }
         return new ExportCounts(
             scalarLong(connection, "SELECT COUNT(*) FROM profiles"),
             scalarLong(connection, "SELECT COUNT(*) FROM skill_experience"),
             scalarLong(connection, "SELECT COUNT(*) FROM perk_ranks"),
+            scalarLong(connection, "SELECT COUNT(*) FROM skill_new_game_plus"),
             scalarLong(connection, "SELECT COUNT(*) FROM admin_audit")
         );
     }
@@ -125,11 +129,12 @@ public final class SkillExportService {
     ) throws IOException {
         String manifest = "format=nekara-skills-export-v1\n"
             + "plugin_version=" + pluginVersion + "\n"
-            + "schema_version=2\n"
+            + "schema_version=4\n"
             + "created_at=" + createdAt + "\n"
             + "profiles=" + counts.profiles() + "\n"
             + "experience_rows=" + counts.experienceRows() + "\n"
             + "perk_rows=" + counts.perkRows() + "\n"
+            + "new_game_plus_rows=" + counts.newGamePlusRows() + "\n"
             + "audit_rows=" + counts.auditRows() + "\n"
             + "database_sha256=" + databaseHash + "\n";
         writeBytes(zip, "manifest.properties", manifest.getBytes(StandardCharsets.UTF_8));
@@ -236,6 +241,7 @@ public final class SkillExportService {
         long profiles,
         long experienceRows,
         long perkRows,
+        long newGamePlusRows,
         long auditRows
     ) {
     }

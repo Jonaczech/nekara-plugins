@@ -66,9 +66,23 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 3. Ověř hlavní úroveň 0, všech 15 přímých dovedností na úrovni 0 a schválené
    české názvy včetně `Obchodování`. Kliknutí na výplň ani spodní inventář nesmí
    přesunout item nebo zavřít GUI.
+3a. Otevři `/nrpg prehled` i položku `Můj přehled` v centrálním menu. Ověř životy,
+    poškození, zbroj, pohyb a aktivní perk bonusy podle právě nasazené zbraně a
+    kompletní zbroje. Sejmi výbavu, znovu otevři GUI a ověř, že podmíněné bojové
+    bonusy bezpečně ukazují nulu; tlačítko Dovednosti musí otevřít 54slotový přehled.
 4. Klikni na každou dovednost. Stezka musí obsahovat šest uzlů, přepínání
    předchozí/další dovednosti a návrat na přehled. Zamčený uzel musí vysvětlit
-   chybějící úroveň, body nebo předchůdce.
+   chybějící úroveň, body nebo předchůdce. Šedé sklo tvoří pozadí, bílá skla
+   nenaučené vazby a zelené sklo vazbu mezi naučenými perky. Osm ukotvených šipek
+   kompasu musí být v rozích a středech hran stromu a správně posunout viewport i
+   šikmo; na okraji zůstane šipka viditelná, ale neaktivní. Pevná spodní lišta
+   obsahuje pět ikon: zlaté šipky posunou nabídku o tři dovednosti, sousední ikony
+   o jednu a vybraná dovednost je vždy uprostřed. Vlevo dole je zlatá šipka zpět;
+   informační kniha je pouze v přehledu všech dovedností, nikoliv uvnitř stezky.
+   Po připsání XP action bar ukáže také aktuální postup, například
+   `+4 XP | ▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱ 28 %`; na úrovni 100 se zobrazí
+   plný pruh a `100 %`. Při dosažení další úrovně musí jednou zaznít zvuk level-upu.
+   Stejný pruh i řádek se zbývajícími XP ověř také v popisu dovednosti v přehledu a ve stezce.
 5. Na kopii profilu s hlavní úrovní a volnými body otevři dostupný perk, zruš
    potvrzení a ověř beze změny databáze. Potom nákup potvrď: přibude právě jeden
    rank a odečte se přesná cena. Rychlý dvojklik nesmí přečerpat body.
@@ -83,6 +97,8 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 10. Jako hráč bez `nekararpg.skills.admin` ověř odmítnutí i skryté admin
     našeptávání. Jako op spusť `inspect`, `grant-xp`, `grant-perk` a všechny tři
     varianty `reset`; konzole musí fungovat stejně.
+    Ověř také `points <hráč> add 10` a `points <hráč> remove 10`: změna musí být
+    auditovaná, perzistentní přes restart a nesmí odebrat přirozené body z Power.
 11. Zkontroluj, že každá skutečná změna zvýší revision právě o jednu a `inspect`
     ukáže správce, operaci, čas, detail a revision před/po. Opakovaná no-op změna
     revision ani audit nepřidá.
@@ -123,9 +139,11 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
     změny. Ověř cooldown, limit, dávkování a vanilla durability sekery.
 24. U Zeměrytectví ověř vážené nálezy z přirozené zeminy. `digging.archaeology`
     rozšíří tabulku, ale suspicious sand/gravel se samotným rozbitím neodměňuje.
-25. Sklízej jen plně zralé plodiny. Nezralá plodina, Creative/Spectator a zrušený
-    break nesmí dát Farming XP. `instant` znovu zasadí jen po úspěšném
-    `Player.breakBlock`; `field` zasáhne nejvýše 3×3 načtených bloků.
+25. U Hospodářství sklízej jen plně zralé plodiny a zralé sweet/glow berries. Nezralá
+    plodina, Creative/Spectator a zrušený break nesmí dát XP. Přírodní květina a malá
+    houba dají přesně konfigurované XP; osm přírodních trav dá jednu konfigurovanou
+    odměnu. Hráčem položená květina, houba nebo tráva nesmí dát nic. `instant` znovu
+    zasadí jen po úspěšném `Player.breakBlock`; `field` zasáhne nejvýše 3×3 načtených bloků.
 26. Dokonči běžný i deferred NekaraFishing úlovek. Každý dá Fishing XP právě
     jednou; neúspěšná minihra, reel bez itemu a zrušený catch nedají nic.
 27. Proveď trade, craft výbavy, smithing a enchant. Ověř jednu nakonfigurovanou XP
@@ -147,6 +165,22 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
     mob dropy, nástroje a zbroje nesmí bonus získat.
     Cake, hay block, storage bloky rud a jakýkoli
     craft z mob dropů nesmí dostat bonus.
+29a. S `Zapomenutými nákresy` vytvoř v crafting table Řemeslnickou soupravu ze
+    čtyř samostatných železných nugetů, papíru a provázku. S `Dílenskými úpravami`
+    ji drž v levé ruce, poškozenou výbavu v hlavní ruce a plíživě klikni na smithing
+    table: právě jedna souprava musí zmizet a opravit 25 % odolnosti. Bez perku,
+    bez plížení nebo s běžným bundle se nesmí stát nic.
+29b. Ověř tři řemeslné perky kvality na sérii vyrobených kovových předmětů: každý
+    výsledek má nejvýše o jeden Tier více než odpovídá úrovni Řemesla a pravděpodobnost
+    v popisu perku odpovídá počtu povýšených kusů ve větším vzorku.
+29c. S `Herbářem Nekary` vyrob Tonikum vitality z water bottle, sweet berries a glow
+    berries; musí dát Regeneration I na 45 sekund. `Spojené esence` spojí přes crafting
+    table dva pitné lektvary a ametystový střep, bez více než dvou odlišných účinků.
+29d. S `Úspornými trámy` ověř pět prken z jednoho kmene nebo stonku. S `Šípařovou
+    brašnou` vyrob čtyři Šípy průzkumníka ze čtyř šípů, glow ink sac a ametystového
+    střepu; zásah nepřátelské entity ji označí na osm sekund. Bez odpovídajícího perku
+    nesmí žádný z perk receptů zobrazit perk výsledek ani dát zvláštní efekt; recept
+    jednoho kmene bez perku naopak musí bezpečně zůstat na vanilla čtyřech prknech.
 30. Ručně vlož ingredienci do brewing standu a dokonči var. Potom opakuj pouze
     hopperem bez otevření stojanu; druhý var nesmí dostat vlastníka ani Alchemy XP.
 31. Každou bojovou dovednost testuj proti nepřátelské entitě. PvP alt, armor stand

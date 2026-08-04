@@ -1,0 +1,9 @@
+sources:
+  mature_harvest: 4
+  berry_harvest: 3
+  wild_flower: 2
+  wild_mushroom: 2
+  grass_bundle: 1
+  animal_breed: 8
+  animal_shear: 3
+  bonemeal_growth: 2

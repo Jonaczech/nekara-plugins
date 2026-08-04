@@ -39,4 +39,26 @@ class SmithingTierTest {
         assertFalse(ProductionPerkListener.isEfficientConstructionComponent(Material.IRON_SWORD));
         assertFalse(ProductionPerkListener.isEfficientConstructionComponent(Material.COOKED_BEEF));
     }
+
+    @Test
+    void craftsmanshipQualityCanPromoteOneTierButNeverMoreThanCertain() {
+        assertEquals(0.0, SmithingTier.qualityPromotionChance(1.0));
+        assertEquals(0.25, SmithingTier.qualityPromotionChance(1.25));
+        assertEquals(1.0, SmithingTier.qualityPromotionChance(5.0));
+    }
+
+    @Test
+    void perkRecipeIngredientsRequireTheWholeVanillaCraftingMatrix() {
+        assertTrue(ProductionPerkListener.isWorkshopKitIngredients(new Material[] {
+            Material.IRON_NUGGET, Material.IRON_NUGGET, Material.IRON_NUGGET, Material.IRON_NUGGET,
+            Material.PAPER, Material.STRING
+        }));
+        assertTrue(ProductionPerkListener.isScoutArrowIngredients(new Material[] {
+            Material.ARROW, Material.ARROW, Material.ARROW, Material.ARROW,
+            Material.GLOW_INK_SAC, Material.AMETHYST_SHARD
+        }));
+        assertFalse(ProductionPerkListener.isScoutArrowIngredients(new Material[] {
+            Material.ARROW, Material.GLOW_INK_SAC, Material.AMETHYST_SHARD
+        }));
+    }
 }

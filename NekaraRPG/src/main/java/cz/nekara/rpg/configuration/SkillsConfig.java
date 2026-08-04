@@ -5,6 +5,7 @@ public record SkillsConfig(
     long baseExperience,
     long linearGrowth,
     long quadraticGrowth,
+    NewGamePlusConfig newGamePlus,
     NativeMiningConfig mining,
     NativeGatheringConfig woodcutting,
     NativeGatheringConfig digging,

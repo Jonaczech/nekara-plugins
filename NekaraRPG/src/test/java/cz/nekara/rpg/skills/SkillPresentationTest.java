@@ -13,7 +13,7 @@ class SkillPresentationTest {
         assertEquals("Hornictví", SkillPresentation.czechName(SkillId.MINING));
         assertEquals("Rubačina", SkillPresentation.czechName(SkillId.WOODCUTTING));
         assertEquals("Zeměrytectví", SkillPresentation.czechName(SkillId.DIGGING));
-        assertEquals("Sedlačení", SkillPresentation.czechName(SkillId.FARMING));
+        assertEquals("Hospodářství", SkillPresentation.czechName(SkillId.FARMING));
         assertEquals("Sekání a bodání", SkillPresentation.czechName(SkillId.LIGHT_WEAPONS));
         assertEquals("Brutální boj", SkillPresentation.czechName(SkillId.HEAVY_WEAPONS));
         assertEquals("Umění dlaně", SkillPresentation.czechName(SkillId.MARTIAL_ARTS));

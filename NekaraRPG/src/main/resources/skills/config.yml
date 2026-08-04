@@ -10,6 +10,13 @@ progression:
   linear-growth: 35
   quadratic-growth: 2
 
+# Rebirth after level 100. Each rank returns this skill's spent perk points,
+# resets only this skill, and permanently strengthens its perk statistics once.
+new-game-plus:
+  enabled: true
+  experience-multiplier: 0.90
+  perk-stat-bonus-per-rank: 0.02
+
 # Small innate bonuses earned from level. Perks remain the dominant source of power.
 level-rewards:
   gathering:

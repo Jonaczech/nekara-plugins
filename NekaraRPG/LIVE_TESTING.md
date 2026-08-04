@@ -35,13 +35,24 @@ se upgradem záměrně automaticky nepřepisuje.
    ValhallaMMO není nainstalované.
 2. Otevři `/nrpg` a Dovednosti. Zkontroluj 54slotový přehled, všech 15 trénovaných
    dovedností, Power, volné body, návrat a blokaci přesunů itemů. Každá stezka musí
-   ukazovat i přesný celkový součet XP; informační kniha vysvětluje action-bar potvrzení.
+   ukazovat i přesný celkový součet XP; informační kniha v přehledu všech dovedností
+   vysvětluje action-bar potvrzení, barvy vazeb a ovládání stezky.
+   Pozadí stromu je šedé sklo, nenaučené vazby bílé a vazba mezi dvěma odemčenými
+   perky zelená. Osm ukotvených šipek v rozích a středech hran posouvá viewport
+   virtuálního stromu ve čtyřech hlavních i čtyřech šikmých směrech, pouze pokud tam
+   existuje další část; krajní šipka zůstane viditelná a klik nesmí zavřít GUI.
+   Spodní pevný posuvník má zlaté šipky pro skok o tři dovednosti, sousední dovednosti
+   po stranách a aktuální dovednost uprostřed. Samostatná zlatá šipka vlevo dole vrací
+   hráče na přehled; kniha se uvnitř jednotlivé stezky nezobrazuje.
 3. V čisté oblasti vytěž krumpáčem přirozený stone a několik rud. Hornictví musí
    získat právě jednu konfigurovanou XP odměnu a do 0,4 s ukázat například
-   `Kámen | +2 XP do Hornictví`; Power se pouze přepočítá z průměru. Rychle získané
+   `+2 XP | ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 2 %`; Power se pouze přepočítá z průměru. Rychle získané
    stejné odměny se smí sloučit, ale odmítnutý, duplicitní či uložením neúspěšný
    požadavek žádnou zprávu nevypíše.
    Creative, Spectator, položený blok a zrušený break odměnu nedají.
+   U Hospodářství ověř zralé sweet/glow berries, přírodní květinu, malou houbu a osm
+   přírodních trav. Berries, květina a houba dají právě jednu nakonfigurovanou odměnu;
+   tráva až po osmém bloku. Položené květiny, houby a tráva nesmí dát XP.
 4. Bez ValhallaMMO musí `/nrpg` otevřít nativní přehled dovedností a server nesmí
    logovat chybějící třídu ani vytvářet druhý postupový systém. Při volitelném
    kompatibilním průchodu stále ponech pouze Nekara Skills jako autoritu XP a perků.
@@ -51,6 +62,9 @@ se upgradem záměrně automaticky nepřepisuje.
    `grant-perk` a reset skillu/perků/celého profilu. Bez
    `nekararpg.skills.admin` musí být příkazy odmítnuté. Každá změna má zvýšit
    revision a objevit se v posledních auditních záznamech.
+   Přes `points <hráč> add 10` ověř deset testovacích volných bodů a přes
+   `points <hráč> remove 10` jejich odebrání; odebrání nesmí sahat na přirozené
+   Power body ani vytvořit záporný bonus.
 7. Na kopii v1 databáze ověř automatický přechod na schéma v2 bez ztráty XP,
    perků nebo revision. Souběžný admin reset a těžební XP nesmí vytvořit
    částečný profil či audit.
@@ -77,6 +91,11 @@ se upgradem záměrně automaticky nepřepisuje.
 15. Výrobní exploit průchod: shift-click crafting, dva hráči u jednoho vesničana,
     hopper brewing bez nového ručního vstupu a zrušený enchant/craft. Bonus ani XP
     nesmí vzniknout bez dokončené nativní události.
+15a. Pro perk recepty zkus shift-crafting, neúplnou mřížku, stack více ingrediencí
+    v jednom slotu, Creative a dvě postavy u stejné crafting table. Výsledek smí
+    vzniknout pouze z přesného rozložení ingrediencí, odpovídajícího zakoupeného perku
+    a jednoho dokončeného craftu; zvláštní šíp musí označit jen po výstřelu hráče,
+    který vlastní perk `Šípařova brašna`.
 16. Po upgradu ověř vznik všech 15 složek `skills/<skill>`. Vlastní hodnoty ze
     starého `skills/config.yml` musí být v nových souborech a woodcutting/digging
     nálezy v `loot-tables.yml`; databáze ani profily se migrací nemění.
