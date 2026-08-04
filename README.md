@@ -31,6 +31,10 @@ Paper/Purpur mannequin namísto ručně sestavovaných packetových metadat.
 Součástí releasu je také operátorská staging správa s transakčním auditem v
 SQLite schématu v2.
 
+Vývojová větev 2.2.0 navazuje live-readiness vrstvou: opravuje orientaci a
+duplicitní vybavení mannequin ležení, přidává měřitelné metriky XP fronty a
+konzistentní read-only export SQLite+CSV pro zálohu a budoucí mapování profilů.
+
 Všech 15 skillů je připraveno pro postupnou živou akceptaci, ale nativní modul
 zůstává výchozím stavem vypnutý. ValhallaMMO je produkční autoritou až do ověřené
 migrace, měření MSPT a rollbacku bez dvojího udělování XP nebo odměn. Aktuální rozsah a přesný další krok

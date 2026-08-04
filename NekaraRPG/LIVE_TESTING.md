@@ -5,8 +5,10 @@
 Použij samostatný staging server Purpur 26.1.2 s Javou 25. Svět i port odděl od
 produkce. Testuj ve dvou průchodech:
 
-1. Pouze Purpur a NekaraRPG, aby se izolovalo chování pluginu.
-2. Stejný server s CMI a ValhallaMMO pro ověření kompatibility.
+1. Pouze Purpur a NekaraRPG s aktivním nativním modulem `skills`; to je primární
+   produkční průchod.
+2. Volitelně stejný server s CMI a ValhallaMMO pouze pro ověření starých kompatibilních
+   bridge. Nativní postup je nezávislý a ValhallaMMO se pro něj nenasazuje.
 
 Sestavení a nasazení z adresáře `NekaraRPG`:
 
@@ -21,22 +23,28 @@ Deploy skript odmítne pokračovat, pokud vedle stabilního `NekaraRPG.jar` najd
 další `NekaraRPG*.jar` nebo starý `NekaraFishing*.jar`; nahlášený soubor nejdřív
 přesuň mimo `plugins`.
 
-Před prvním restartem do 2.0.0 si ponech ověřenou kopii stabilního 1.10.0 JARu i
-datové složky. Nativní Skills testuj s ValhallaMMO stále načteným a odstraň ho až
-po dokončení pozdější migrační fáze.
+Před nasazením si ponech ověřenou kopii aktivního JARu i datové složky. Při přechodu
+bez ValhallaMMO nastav v existujícím `plugins/NekaraRPG/config.yml` explicitně
+`modules.skills.enabled: true` a `modules.mining.enabled: false`; existující konfigurace
+se upgradem záměrně automaticky nepřepisuje.
 
-## Náhled Nekara Skills 2.0
+## Nativní Nekara Skills 2.2
 
-1. Na izolovaném staging serveru nastav `modules.skills.enabled: true`; výchozí
-   hodnota zůstává záměrně `false`.
+1. Na čistém serveru je `modules.skills.enabled: true` výchozí hodnota. U existující
+   datové složky zkontroluj hodnotu ručně a vypni `modules.mining.enabled`, pokud
+   ValhallaMMO není nainstalované.
 2. Otevři `/nrpg` a Dovednosti. Zkontroluj 54slotový přehled, všech 15 trénovaných
-   dovedností, Power, volné body, návrat a blokaci přesunů itemů.
+   dovedností, Power, volné body, návrat a blokaci přesunů itemů. Každá stezka musí
+   ukazovat i přesný celkový součet XP; informační kniha vysvětluje action-bar potvrzení.
 3. V čisté oblasti vytěž krumpáčem přirozený stone a několik rud. Hornictví musí
-   získat právě jednu konfigurovanou XP odměnu; Power se pouze přepočítá z průměru.
+   získat právě jednu konfigurovanou XP odměnu a do 0,4 s ukázat například
+   `Kámen | +2 XP do Hornictví`; Power se pouze přepočítá z průměru. Rychle získané
+   stejné odměny se smí sloučit, ale odmítnutý, duplicitní či uložením neúspěšný
+   požadavek žádnou zprávu nevypíše.
    Creative, Spectator, položený blok a zrušený break odměnu nedají.
-4. S ValhallaMMO ověř, že zapnutý nativní modul má v centrálním menu přednost.
-   ValhallaMMO zatím ponech zapnuté pouze na izolovaném stagingu; před produkcí
-   musí zůstat `modules.skills.enabled: false`, aby nevznikly dva postupové systémy.
+4. Bez ValhallaMMO musí `/nrpg` otevřít nativní přehled dovedností a server nesmí
+   logovat chybějící třídu ani vytvářet druhý postupový systém. Při volitelném
+   kompatibilním průchodu stále ponech pouze Nekara Skills jako autoritu XP a perků.
 5. Ověř `skills/data.db`, restart a reload. Při chybě storage se modul uzamkne a
    nesmí tiše vytvořit druhou databázi nebo přepsat profil.
 6. Přes `/nrpg skills admin` ověř `inspect`, zastropovaný `grant-xp`, validovaný
@@ -47,10 +55,10 @@ po dokončení pozdější migrační fáze.
    perků nebo revision. Souběžný admin reset a těžební XP nesmí vytvořit
    částečný profil či audit.
 8. Zakoupený `Hlas kamene` nebo `Srdce hory` musí násobit pouze skutečné finální
-   dropy jednoho přirozeného bloku. Ověř metadata, Fortune, Silk Touch, plný
-   inventář a současné ValhallaMMO odměny bez druhého loot průchodu.
-9. Neprováděj ruční úpravy živé SQLite databáze. Import ValhallaMMO v tomto milníku
-   ještě neexistuje.
+   dropy jednoho přirozeného bloku. Ověř metadata, Fortune, Silk Touch a plný
+   inventář bez druhého loot průchodu.
+9. Neprováděj ruční úpravy živé SQLite databáze. Nový nativní postup nevyžaduje
+   import z ValhallaMMO.
 10. Uděl staging profilu perky všech 15 dovedností. Ověř XP postupně po skupinách:
     pět sběrných, čtyři výrobní/obchodní a šest bojových/armor. Po každé skupině
     zkontroluj konzoli, TPS/MSPT a velikost `skills/data.db`.
@@ -79,6 +87,13 @@ po dokončení pozdější migrační fáze.
     `clientbound/minecraft:set_entity_data`. V první i třetí osobě a z pohledu
     druhého hráče ověř nativní sleeping mannequin, shodný skin/výbavu, odstranění
     po vstání, zásahu, teleportu a odpojení a pokračující nabíjení Rested bonusu.
+19. V třetí osobě ověř, že model leží ve směru předchozího pohledu a je vystředěný
+    na původním místě. Krumpáč, offhand ani armor nesmí být dvakrát. Pokud je
+    potřeba jemná korekce, uprav pouze `lying.mannequin.*` a reloaduj konfiguraci.
+20. Před a po zátěžovém průchodu ulož `/nrpg skills admin metrics`, potom spusť
+    `export`. Ověř nulovou frontu po doběhu, žádné queue reject/storage chyby,
+    shodný hash ZIPu a možnost otevřít exportovaný SQLite snapshot odděleně od
+    živé databáze.
 
 ## Profil pro rychlé testování
 
@@ -125,6 +140,7 @@ radius 24 bloků, jeden bod zdraví za pět sekund a jeden bod jídla za deset s
 1. Po prvním ulehnutí ověř v logu `Native mannequin lying visuals enabled`; nesmí se
    objevit chyba spawnu ani packet encoderu. Potom spusť `/nekararpg sit` na plných
    blocích, slabech, schodech a nerovném terénu.
+   Mannequin musí být ve směru pohledu a držené předměty se nesmí zobrazit dvakrát.
 2. Ověř dosednutí modelu na povrch s offsetem `0.20` bez průniku či levitování a odstranění sedadla přes `/nekararpg stand`.
 3. Sedni znovu a použij běžnou klávesu sesednutí; neviditelné sedadlo musí zmizet.
 4. Teleport, smrt, odpojení, poškození, reload a shutdown nesmí zanechat armor stand.

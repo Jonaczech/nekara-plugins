@@ -53,9 +53,9 @@ final class SkillEquipmentPolicy {
             }
             String name = material.name();
             light &= name.startsWith("LEATHER_") || name.startsWith("CHAINMAIL_")
-                || name.startsWith("GOLDEN_");
-            heavy &= name.startsWith("IRON_") || name.startsWith("DIAMOND_")
-                || name.startsWith("NETHERITE_");
+                || name.startsWith("DIAMOND_");
+            heavy &= name.startsWith("COPPER_") || name.startsWith("IRON_")
+                || name.startsWith("GOLDEN_") || name.startsWith("NETHERITE_");
         }
         if (light) {
             return Optional.of(SkillId.LIGHT_ARMOR);
@@ -64,6 +64,15 @@ final class SkillEquipmentPolicy {
             return Optional.of(SkillId.HEAVY_ARMOR);
         }
         return Optional.empty();
+    }
+
+    static boolean wearsLeatherArmor(PlayerInventory inventory) {
+        for (ItemStack item : inventory.getArmorContents()) {
+            if (item == null || item.getType().isAir() || !item.getType().name().startsWith("LEATHER_")) {
+                return false;
+            }
+        }
+        return true;
     }
 
     static boolean isSmithingProduct(ItemStack item) {

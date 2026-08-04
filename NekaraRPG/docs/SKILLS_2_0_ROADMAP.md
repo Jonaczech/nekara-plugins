@@ -67,7 +67,8 @@ předchůdcem, kolizí pozic nebo cizím stromem se při startu odmítne.
 - hotovo: slučitelné XP přírůstky procházejí omezenou frontou s kapacitou 8192 a
   dávkou nejvýše 256 zápisů,
 - hotovo: fail-closed chování při chybě storage,
-- zbývá: export a záloha bez editace za běhu.
+- hotovo v kandidátu 2.2.0: konzistentní SQLite+CSV export s manifestem a SHA-256
+  bez editace živé databáze; zbývá retenční politika a ověřený restore postup.
 
 ### 3. GUI a navigace — hotovo pro katalog 2.1.0
 
@@ -96,6 +97,10 @@ předchůdcem, kolizí pozic nebo cizím stromem se při startu odmítne.
   deduplikace zdroje a atomický zápis profilu pro všechny tři vertikály,
 - hotovo v kódu: dvojitý/trojitý výtěžek klonuje skutečné finální vanilla/custom
   dropy namísto opakovaného volání loot tabulky,
+- hotovo v kandidátu 2.2.0: úroveň dává malý zastropovaný vrozený bonus k
+  dvojitému výtěžku; Zeměrytectví má navíc vlastní šanci na vážený nález.
+  Tyto hodnoty jsou konfigurovatelné, skládají se s perky a nepřepisují vanilla
+  loot ani Fortune,
 - hotovo v kódu: rychlost nástroje, hornická pec, Žilobití, Řízený odstřel, Pád
   velikána, úsporná prkna a vzácné nálezy Zeměrytectví i listí,
 - hromadné schopnosti používají skutečný hráčský break pro každý blok, nevynucují
@@ -103,7 +108,8 @@ předchůdcem, kolizí pozic nebo cizím stromem se při startu odmítne.
   vanilla durability,
 - hotovo v kódu: Farming ověřuje zralost, násobí pouze finální dropy, umí bezpečně
   sklidit a znovu zasadit nejvýše devět bloků a zrychluje jen chunky s nedávným
-  hráčským správcem; Fishing navazuje na skutečně doručený deferred catch,
+  hráčským správcem; Fishing navazuje na skutečně doručený deferred catch a jeho
+  malé levelové poklady se přidávají vedle něj z vlastní vážené tabulky,
 - zbývá před produkcí: živá Purpur/Lands/exploit akceptace všech pěti vertikál.
 
 ### 6. Bojové dovednosti — runtime baseline v kódu
@@ -129,20 +135,23 @@ předchůdcem, kolizí pozic nebo cizím stromem se při startu odmítne.
 - zbývá před produkcí: ekonomické vyvážení a živé testy shift-clicku, hopperů,
   custom receptů a souběžných obchodů dvou hráčů.
 
-### 8. Migrace a vydání
+### 8. Nativní aktivace a vydání
 
-- hotovo: 2.1.0 je vydané jako bezpečně vypnutý staging baseline všech 15 vertikál,
-- read-only export současného postupu z podporovaného veřejného API nebo dat,
-- mapovací report a záloha před jediným importem,
-- období porovnávací telemetrie bez dvojího udělování odměn,
+- hotovo v kandidátu 2.2.0: výchozí profil zapíná nativní `skills` a vypíná starý
+  ValhallaMMO modul `mining`; všech 15 vertikál je autoritou vlastního postupu,
+- hotovo pro nativní data: read-only SQLite+CSV export profilů, XP, perků a auditu,
+- volitelné pro budoucí import starého postupu: read-only export/mapování současného
+  ValhallaMMO postupu z podporovaného veřejného API nebo dat,
+- hotovo: nativní export a záloha před produkční aktivací,
+- hotovo: runtime metriky nativní XP fronty; zbývá průběžné měření MSPT a balance,
 - BetonQuest podmínky a Power milestone pro NekaraMounts,
 - zátěžové, exploit a živé Purpur testy,
-- odstranění ValhallaMMO až po potvrzeném paritním provozu a rollback plánu.
+- živé Purpur testy po jednotlivých vertikálách a rollback ověřený z exportu.
 
-## Blokátory plné aktivace Nekara Skills
+## Akceptace nativních Nekara Skills
 
-Modul smí být ve výchozím stavu zapnutý a převzít autoritu od ValhallaMMO až poté,
-co všech patnáct dovedností má zdroj XP, původní perk strom, funkční efekty a
-živé exploit testy; GUI umí bezpečný nákup; a je ověřena migrace, restart, rollback a
-souběžný zápis profilu na živém Purpur prostředí. Release 2.1.0 vydává kompletní
-runtime baseline, ale ponechává jej bezpečně vypnutý pro řízené testování.
+Výchozí profil 2.2.0 zapíná nativní modul, protože všech patnáct dovedností má zdroj
+XP, původní perk strom a funkční efekty. Před ostrým restartem je však nutné projít
+živé exploit testy, bezpečný nákup v GUI, restart, export/rollback, souběžný zápis
+profilu a MSPT na Purpur prostředí. Selhání kteréhokoliv z nich znamená vrátit
+konfiguraci `modules.skills.enabled` na `false` a obnovit ověřenou zálohu.

@@ -3,6 +3,7 @@ skills-vein-mining-complete: "&aŽilobití dokončeno."
 skills-tree-feller-complete: "&aPád velikána dokončen."
 skills-drilling-ready: "&6Řízený odstřel je připraven."
 skills-ability-cooldown: "&eSchopnost bude připravena za &f%seconds% s&e."
+skills-experience-awarded: "<gray>%source%</gray> <dark_gray>|</dark_gray> <aqua>+%experience% XP</aqua> <gray>do</gray> <gold>%skill%</gold>"
 update-help: |-
   &f/nekararpg update check &7- zkontroluje a připraví aktualizaci
   &f/nekararpg update status &7- zobrazí stav aktualizace
@@ -186,6 +187,14 @@ skills-admin-usage: |-
   &f/nekararpg skills admin grant-xp <hráč> <skill> <množství>
   &f/nekararpg skills admin grant-perk <hráč> <perk-id> [rank]
   &f/nekararpg skills admin reset <hráč> <skill|perks|all>
+  &f/nekararpg skills admin metrics
+  &f/nekararpg skills admin export
+  &f/nekararpg skills admin xp-boost <hráč> <skill|all> <1-100>
+  &f/nekararpg skills admin xp-boost-clear <hráč> <skill|all>
+  &f/nekararpg skills admin xp-boost-status <hráč>
+skills-xp-boost-set: "%prefix%&aXP boost pro &f%player% &a(%skill%): &fx%multiplier%"
+skills-xp-boost-cleared: "%prefix%&eXP boost zrušen pro &f%player% &e(%skill%)."
+skills-xp-boost-status: "%prefix%&7XP boost pro &f%player%&7: globálně &fx%all%&7, výjimky: &f%overrides%&7."
 skills-admin-invalid-input: "%prefix%&cNeplatný vstup: &f%reason%"
 skills-admin-processing: "%prefix%&7Operace Nekara Skills byla přijata ke zpracování."
 skills-admin-busy: "%prefix%&ePro tohoto hráče už probíhá jiná administrativní změna."
@@ -202,3 +211,15 @@ skills-admin-inspect-audit: "&8- &7%time% &8| &f%actor% &8| &b%operation% &8| &7
 skills-admin-inspect-no-audit: |-
   &7Audit: &fžádné změny
   &8&m--------------------------------
+skills-admin-metrics: |-
+  %prefix%&bNekara Skills telemetrie &7(%uptime% s)
+  &7Požadavky: &f%submitted% &7| Hotovo: &f%completed% &7| Fronta: &f%queue%&7, maximum &f%queue_high%
+  &7Výsledek: &a%awarded% připsáno &7(&f%xp% XP&7), &e%denied% odmítnuto&7, &e%duplicate% duplicit&7, &e%capped% na stropu
+  &7Chyby: &c%failed% &7| Plná fronta: &c%queue_rejected% &7| Latence: &f%avg_ms% ms průměr / %max_ms% ms maximum
+skills-admin-export-started: "%prefix%&7Vytvářím konzistentní export Nekara Skills mimo hlavní serverové vlákno…"
+skills-admin-export-busy: "%prefix%&eJiný export Nekara Skills už probíhá."
+skills-admin-export-error: "%prefix%&cExport Nekara Skills selhal. Původní databáze zůstala beze změny."
+skills-admin-export-complete: |-
+  %prefix%&aExport Nekara Skills je hotový: &fskills/exports/%file%
+  &7Profily: &f%profiles% &7| Velikost: &f%size% B
+  &7SHA-256: &f%sha256%

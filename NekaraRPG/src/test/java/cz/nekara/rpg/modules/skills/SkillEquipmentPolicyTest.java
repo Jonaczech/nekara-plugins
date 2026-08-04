@@ -22,11 +22,11 @@ class SkillEquipmentPolicyTest {
     @Test
     void fullArmorSetsMustUseOneWeightClass() {
         assertEquals(SkillId.LIGHT_ARMOR, SkillEquipmentPolicy.armorSkill(new Material[]{
-            Material.LEATHER_BOOTS, Material.CHAINMAIL_LEGGINGS,
-            Material.GOLDEN_CHESTPLATE, Material.LEATHER_HELMET
+            Material.DIAMOND_BOOTS, Material.DIAMOND_LEGGINGS,
+            Material.DIAMOND_CHESTPLATE, Material.DIAMOND_HELMET
         }).orElseThrow());
         assertEquals(SkillId.HEAVY_ARMOR, SkillEquipmentPolicy.armorSkill(new Material[]{
-            Material.IRON_BOOTS, Material.DIAMOND_LEGGINGS,
+            Material.IRON_BOOTS, Material.GOLDEN_LEGGINGS,
             Material.NETHERITE_CHESTPLATE, Material.IRON_HELMET
         }).orElseThrow());
         assertTrue(SkillEquipmentPolicy.armorSkill(new Material[]{

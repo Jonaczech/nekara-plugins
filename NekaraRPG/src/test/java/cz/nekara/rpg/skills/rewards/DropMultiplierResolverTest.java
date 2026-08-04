@@ -38,6 +38,12 @@ class DropMultiplierResolverTest {
         assertEquals(1, resolver.resolve(statsWithBothChances(), new SequenceRoller(false, false)));
     }
 
+    @Test
+    void innateLevelChanceIsAddedOnlyToTheDoubleDropRoll() {
+        StatSnapshot noPerkChance = new StatEngine().resolve(List.of());
+        assertEquals(2, resolver.resolve(noPerkChance, 0.025, new SequenceRoller(false, true)));
+    }
+
     private static StatSnapshot statsWithBothChances() {
         return new StatEngine().resolve(List.of(
             new StatModifier("triple", StatId.TRIPLE_DROP_CHANCE, ModifierOperation.ADD, 0.5),

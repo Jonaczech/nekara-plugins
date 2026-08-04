@@ -28,10 +28,13 @@ modules:
   campfire:
     enabled: true
   mining:
-    enabled: true
+    # Legacy Echo Vein observes ValhallaMMO Mining. Native Žilobití now lives
+    # in the skills module, so this compatibility activity stays opt-in.
+    enabled: false
   mounts:
     enabled: true
-  # Preview foundation only. Keep disabled until XP listeners, perks and migration
-  # have completed their live acceptance.
+  # Nekara Skills is the native progression authority. XP, perks and active
+  # abilities are guarded by real events, player-placed block tracking and
+  # bounded async persistence.
   skills:
-    enabled: false
+    enabled: true

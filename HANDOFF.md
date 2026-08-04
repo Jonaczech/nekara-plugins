@@ -6,18 +6,25 @@ Repozitář je publikovaný jako
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 Výchozí větev je `main`.
 
-Vývoj verze **2.1.0** proběhl na větvi
-`codex/nekararpg-2.1.0-perk-trees` a byl zkontrolován v
-[pull requestu #31](https://github.com/Jonaczech/nekara-plugins/pull/31). Nejnovější
-stabilní a publikovaná verze je **NekaraRPG 2.1.0**:
+Nejnovější stabilní a publikovaná verze je **NekaraRPG 2.2.0**:
 
-- tag: `v2.1.0`
-- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v2.1.0>
+- tag: `v2.2.0`
+- GitHub release: <https://github.com/Jonaczech/nekara-plugins/releases/tag/v2.2.0>
 - nasazovaný soubor: `NekaraRPG.jar`
-- SHA-256 vydaného JARu:
-  `AC1946D319F46BB977C1B64F81FE17EE6B5E98F5693FD5854A50A294FDB70654`
-- velikost release assetu: `12618184` bajtů
-- automatické ověření: 159 úspěšných testů
+- SHA-256 vydaného i nasazeného JARu:
+  `5208354726F1E777D96328BB76196BB0999F59BB7FA7E0BC43EC0B24999CE9A0`
+- velikost release assetu: `12679445` bajtů
+- automatické ověření: 171 úspěšných testů
+
+Release 2.2.0 dokončuje live-readiness nativních Nekara Skills: opravuje orientaci
+ležícího mannequinu i duplicitní zobrazení výbavy, přidává bezpečný export profilů
+a telemetrii XP fronty, zobrazení zdrojů XP a kompletní nativní získávání XP pro
+všech 15 dovedností. Řemeslo nyní přidává Tier I–V přímo ve vanilla craftingu a
+kovové vybavení prochází zřetelně označeným procesem Blast Furnace → vodní cauldron
+→ grindstone. Stonecutter nabízí nativní dřevěné recepty a perk `Zapomenuté nákresy`
+škáluje výsledky crafting table i shift-craftingu, včetně sticků a dalších stavebních
+komponent. JAR byl bezpečně nasazen na zastavený server; předchozí verze je uložená
+lokálně i vzdáleně v `plugins/NekaraRPG/backups`.
 
 Release 2.1.0 rozšiřuje clean-room platformu Nekara Skills o schválené české názvy, původní
 katalog 90 perků, detailní 54slotovou stezku každé dovednosti, navigaci,
@@ -38,11 +45,12 @@ ProtocolLib byla po chybě v živém logu odstraněna. Vizuál ležení nyní po
 nativní Paper/Purpur `Mannequin` se skinem a výbavou hráče; při nepodporované póze
 nebo runtime chybě se aktivuje bezpečný serverový fallback.
 
-Nativní modul `skills` zůstává ve výchozím stavu vypnutý. ValhallaMMO je nadále
-produkční autoritou, dokud neproběhne živá akceptace všech 15 vertikál, migrace
-profilů, měření MSPT a ověření rollbacku bez dvojího udělování XP nebo odměn.
-Release artefakt je sestavený a automaticky ověřený; živá Purpur akceptace včetně
-mannequin vizuálu po restartu serveru stále zbývá.
+Kandidát 2.2.0 zapíná nativní modul `skills` jako výchozí autoritu postupu.
+ValhallaMMO se pro Nekara Skills nenasazuje; stará Echo Vein aktivita z modulu
+`mining` je výchozím stavem vypnutá a bez ValhallaMMO neregistruje tick task ani
+listenery. Před ostrým restartem vytvoř export profilů, ověř zálohu a projdi
+všech 15 vertikál včetně MSPT. Po restartu nejprve vytěž přirozený stone a ověř
+`Kámen | +2 XP do Hornictví`, celkový XP součet v GUI a čistý startovací log.
 
 Metadata GitHub release, hash zpětně staženého JARu, verze uvnitř `plugin.yml`,
 přítomnost SQLite ovladače, stabilní `latest` stav, jediný asset, cíl tagu a hash

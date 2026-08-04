@@ -99,8 +99,18 @@ public final class MiningModule implements NekaraModule, Listener {
             return;
         }
         config = plugin.configuration().get().echoVein();
-        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+        if (!plugin.getServer().getPluginManager().isPluginEnabled("ValhallaMMO")) {
+            plugin.getLogger().info("NekaraMining Echo Vein remains inactive because ValhallaMMO Mining is unavailable. "
+                    + "Use native Nekara Skills Žilobití instead.");
+            return;
+        }
         valhalla.register();
+        if (!valhalla.isAvailable()) {
+            plugin.getLogger().warning("NekaraMining Echo Vein remains inactive because the ValhallaMMO bridge "
+                    + "could not be initialized. Use native Nekara Skills Žilobití instead.");
+            return;
+        }
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
         ticker = plugin.getServer().getScheduler().runTaskTimer(
                 plugin, this::tick, 0L, config.pulseIntervalTicks());
         enabled = true;

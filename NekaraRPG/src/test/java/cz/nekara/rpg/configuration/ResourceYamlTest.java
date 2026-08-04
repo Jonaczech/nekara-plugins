@@ -36,7 +36,7 @@ class ResourceYamlTest {
                 "skills/light_armor/config.yml", "skills/light_armor/messages.yml",
                 "skills/heavy_armor/config.yml", "skills/heavy_armor/messages.yml",
                 "skills/woodcutting/loot-tables.yml",
-                "skills/digging/loot-tables.yml"}) {
+                "skills/digging/loot-tables.yml", "skills/fishing/loot-tables.yml"}) {
             InputStream stream = getClass().getClassLoader().getResourceAsStream(resource);
             assertNotNull(stream, resource + " is missing from the test classpath");
             try (stream; InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
@@ -56,7 +56,8 @@ class ResourceYamlTest {
         Map<String, Object> mining = loadYaml("mining/config.yml");
         Map<String, Object> fishing = loadYaml("fishing/config.yml");
         Map<String, Object> mountsConfig = loadYaml("mounts/config.yml");
-        Map<String, Object> skillsConfig = loadYaml("skills/config.yml");
+            Map<String, Object> skillsConfig = loadYaml("skills/config.yml");
+            Map<String, Object> fishingLoot = loadYaml("skills/fishing/loot-tables.yml");
         Map<String, Object> miningSkillConfig = loadYaml("skills/mining/config.yml");
         Map<String, Object> woodcuttingSkillConfig = loadYaml("skills/woodcutting/config.yml");
         Map<String, Object> diggingSkillConfig = loadYaml("skills/digging/config.yml");
@@ -105,6 +106,11 @@ class ResourceYamlTest {
             assertEquals(0.20, ((Number) sitting.get("seat-y-offset")).doubleValue(), 0.0001);
             assertTrue((Boolean) lying.get("enabled"));
             assertTrue((Boolean) lying.get("mannequin-visual-enabled"));
+            Map<String, Object> mannequin = (Map<String, Object>) lying.get("mannequin");
+            assertEquals(-90.0, ((Number) mannequin.get("yaw-offset-degrees")).doubleValue(), 0.0001);
+            assertEquals(-0.9, ((Number) mannequin.get("forward-offset")).doubleValue(), 0.0001);
+            assertEquals(0.0, ((Number) mannequin.get("side-offset")).doubleValue(), 0.0001);
+            assertEquals(0.0, ((Number) mannequin.get("y-offset")).doubleValue(), 0.0001);
             assertTrue((Boolean) lying.get("skip-night-when-alone"));
             assertEquals(5, ((Number) lying.get("fall-asleep-seconds")).intValue());
             assertTrue((Boolean) updater.get("enabled"));
@@ -113,7 +119,8 @@ class ResourceYamlTest {
             assertNotNull(modules.get("auth"));
             assertNotNull(modules.get("mounts"));
             assertNotNull(modules.get("skills"));
-            assertFalse((Boolean) ((Map<String, Object>) modules.get("skills")).get("enabled"));
+            assertFalse((Boolean) ((Map<String, Object>) modules.get("mining")).get("enabled"));
+            assertTrue((Boolean) ((Map<String, Object>) modules.get("skills")).get("enabled"));
             assertFalse(modules.containsKey("sitting"));
             assertFalse(root.containsKey("auth"));
             assertFalse(root.containsKey("campfire"));
@@ -192,6 +199,8 @@ class ResourceYamlTest {
             assertEquals(100, ((Number) skillProgression.get("base-experience")).intValue());
             assertEquals(35, ((Number) skillProgression.get("linear-growth")).intValue());
             assertEquals(2, ((Number) skillProgression.get("quadratic-growth")).intValue());
+            assertTrue((Boolean) fishingLoot.get("treasures-enabled"));
+            assertNotNull(fishingLoot.get("treasures"));
             assertNotNull(skillWoodcutting.get("experience"));
             assertNotNull(skillDigging.get("experience"));
             assertEquals(24, ((Number) ((Map<String, Object>)
@@ -240,10 +249,14 @@ class ResourceYamlTest {
             assertNotNull(messages.get("skills-admin-usage"));
             assertNotNull(messages.get("skills-admin-result"));
             assertNotNull(messages.get("skills-admin-inspect-audit"));
+            assertNotNull(messages.get("skills-admin-metrics"));
+            assertNotNull(messages.get("skills-admin-export-started"));
+            assertNotNull(messages.get("skills-admin-export-complete"));
             assertNotNull(messages.get("skills-vein-mining-complete"));
             assertNotNull(messages.get("skills-tree-feller-complete"));
             assertNotNull(messages.get("skills-drilling-ready"));
             assertNotNull(messages.get("skills-ability-cooldown"));
+            assertNotNull(messages.get("skills-experience-awarded"));
             assertEquals(
                     "<green>Odpočatý</green> <dark_gray>|</dark_gray> <white>%remaining_text%</white>",
                     messages.get("campfire-rested-timer")

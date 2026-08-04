@@ -131,19 +131,44 @@ NekaraRPG. Testovacímu hráči dej potřebná oprávnění a umísti ho do povo
 27. Proveď trade, craft výbavy, smithing a enchant. Ověř jednu nakonfigurovanou XP
     odměnu, slevový refund až po obchodu, úsporu až po craftu a žádnou odměnu za
     zrušenou událost nebo přejmenovaný nesouvisející item.
-28. Ručně vlož ingredienci do brewing standu a dokonči var. Potom opakuj pouze
+28. Vyrob kovovou zbroj i zbraň ve crafting table. Musí vzniknout s Tierem odpovídajícím
+    aktuálnímu Řemeslu a stavem `Nezpracovaný`; armor ani Nekara damage se před
+    dokončením nesmí aktivovat. S jedním uhlím ji nahřej v Blast Furnace a ve vodním
+    cauldronu opracuj. Zbroj tím dokonči; zbraň dokonči plížením u grindstone po dobu
+    dvou sekund. Ověř přerušení pohybem, výměnou předmětu, Creative/Spectator a prázdným
+    kotlem. Tier se při zpracování nesmí změnit. Dřevěná, kamenná a kožená výbava
+    výrobní stav ani omezení bonusu nezíská.
+29. S perkem `Zapomenuté nákresy` ověř běžný vanilla stavební recept na všech
+    Tiérech: výstup o čtyřech kusech musí postupovat 4/5/6/7/8. Totéž ověř na dřevě
+    ve stonecutteru po běžném vložení kmene, dřeva nebo prken a výběru receptu.
+    Počet musí být vidět již ve výsledkovém slotu crafting table; ověř i shift-crafting,
+    který musí dát stejný počet za každé jednotlivé zpracování.
+    Ověř také stick recipe; Tier V musí z vanilla čtyř sticků dát osm. Jídlo, plodiny,
+    mob dropy, nástroje a zbroje nesmí bonus získat.
+    Cake, hay block, storage bloky rud a jakýkoli
+    craft z mob dropů nesmí dostat bonus.
+30. Ručně vlož ingredienci do brewing standu a dokonči var. Potom opakuj pouze
     hopperem bez otevření stojanu; druhý var nesmí dostat vlastníka ani Alchemy XP.
-29. Každou bojovou dovednost testuj proti nepřátelské entitě. PvP alt, armor stand
+31. Každou bojovou dovednost testuj proti nepřátelské entitě. PvP alt, armor stand
     a pasivní zvíře nesmí udělit combat XP. Armor XP vzniká jen v plné lehké nebo
     těžké sadě po skutečném zásahu nepřítelem.
-30. Ověř parry, dodge, reflection, charged shot, coating, uppercut/dropkick/grapple
+32. Ověř parry, dodge, reflection, charged shot, coating, uppercut/dropkick/grapple
     a adrenalin/rage. Reflection nesmí rekurzivně spouštět další reflection ani XP.
-31. Proveď burst alespoň 1000 způsobilých akcí. Konzole nesmí hlásit zaplnění XP
+33. Proveď burst alespoň 1000 způsobilých akcí. Konzole nesmí hlásit zaplnění XP
     fronty, hlavní tick se nesmí blokovat SQLite zápisem a revision profilu musí
     zůstat monotónní.
-32. Po prvním lehnutí ověř log o nativním mannequin vizuálu, vlastní third-person
-    pohled i pohled druhého hráče. Vstání, teleport, poškození a odpojení musí
-    odstranit mannequin, obnovit viditelnost hráče a nezměnit skutečný svět.
+34. Po prvním lehnutí ověř log o nativním mannequin vizuálu, vlastní third-person
+    pohled i pohled druhého hráče. Tělo musí ležet ve směru původního pohledu,
+    být vystředěné na výchozí pozici a krumpáč, offhand ani armor se nesmí
+    vykreslit dvakrát. Vstání, teleport, poškození a odpojení musí odstranit
+    mannequin, obnovit viditelnost i vybavení hráče a nezměnit inventář ani svět.
+35. Během běžného průchodu a burstu sleduj `/nrpg skills admin metrics`. Počty
+    výsledků musí odpovídat akcím, queue high-water nesmí překročit 8192 a po
+    skončení burstu se aktuální fronta musí vrátit na nulu.
+34. Spusť `/nrpg skills admin export`. V `skills/exports` musí atomicky vzniknout
+    jediný ZIP se snapshotem `data.db`, manifestem a čtyřmi CSV. SHA-256 z příkazu
+    musí souhlasit se souborem, exportovaný profil s `inspect` a živá revision se
+    nesmí změnit. Druhý souběžný export se bezpečně odmítne.
 
 ### 1a. Centrální menu a účet
 

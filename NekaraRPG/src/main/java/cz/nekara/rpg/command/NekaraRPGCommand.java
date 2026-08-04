@@ -21,6 +21,7 @@ import cz.nekara.rpg.skills.admin.SkillAdminOperation;
 import cz.nekara.rpg.skills.admin.SkillAuditEntry;
 import cz.nekara.rpg.skills.admin.SkillAdminResult;
 import cz.nekara.rpg.skills.perks.PerkId;
+import cz.nekara.rpg.skills.telemetry.SkillRuntimeMetricsSnapshot;
 import cz.nekara.rpg.updater.UpdaterService;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -328,7 +329,22 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
             messages.send(sender, "module-disabled", Map.of("module", SkillsModule.ID));
             return;
         }
+        String requestedAction = args.length >= 3 ? args[2].toLowerCase(Locale.ROOT) : "";
+        if ("xp-boost".equals(requestedAction) || "xp-boost-clear".equals(requestedAction)
+            || "xp-boost-status".equals(requestedAction)) {
+            handleExperienceBoost(sender, args, requestedAction);
+            return;
+        }
         if (args.length < 4) {
+            String action = args[2].toLowerCase(Locale.ROOT);
+            if ("metrics".equals(action) && args.length == 3) {
+                sendSkillMetrics(sender, skillsModule.runtimeMetrics());
+                return;
+            }
+            if ("export".equals(action) && args.length == 3) {
+                dispatchSkillExport(sender);
+                return;
+            }
             messages.send(sender, "skills-admin-usage");
             return;
         }
@@ -463,6 +479,90 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
         sendAdminDispatchStatus(sender, status);
     }
 
+    private void handleExperienceBoost(CommandSender sender, String[] args, String action) {
+        int requiredLength = "xp-boost".equals(action) ? 6
+            : "xp-boost-clear".equals(action) ? 5 : 4;
+        if (args.length != requiredLength) {
+            messages.send(sender, "skills-admin-usage");
+            return;
+        }
+        OfflinePlayer target = findKnownPlayer(args[3]);
+        if (target == null || target.getName() == null) {
+            messages.send(sender, "player-not-found");
+            return;
+        }
+        try {
+            if ("xp-boost-status".equals(action)) {
+                String overrides = skillsModule.skillExperienceBoosts(target.getUniqueId()).entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey(java.util.Comparator.comparing(SkillId::id)))
+                    .map(entry -> SkillPresentation.czechName(entry.getKey()) + " x" + formatMultiplier(entry.getValue()))
+                    .reduce((left, right) -> left + ", " + right)
+                    .orElse("žádné");
+                messages.send(sender, "skills-xp-boost-status", Map.of("player", target.getName(),
+                    "all", formatMultiplier(skillsModule.allExperienceBoost(target.getUniqueId())),
+                    "overrides", overrides));
+                return;
+            }
+            SkillId skill = "all".equalsIgnoreCase(args[4]) ? null : parseGameplaySkill(args[4]);
+            if ("xp-boost-clear".equals(action)) {
+                skillsModule.clearExperienceBoost(target.getUniqueId(), skill);
+                messages.send(sender, "skills-xp-boost-cleared", Map.of("player", target.getName(),
+                    "skill", skill == null ? "vše" : SkillPresentation.czechName(skill)));
+                return;
+            }
+            double multiplier = Double.parseDouble(args[5]);
+            skillsModule.setExperienceBoost(target.getUniqueId(), skill, multiplier);
+            messages.send(sender, "skills-xp-boost-set", Map.of("player", target.getName(),
+                "skill", skill == null ? "vše" : SkillPresentation.czechName(skill),
+                "multiplier", formatMultiplier(multiplier)));
+        } catch (IllegalArgumentException exception) {
+            messages.send(sender, "skills-admin-invalid-input", Map.of("reason", exception.getMessage()));
+        }
+    }
+
+    private static String formatMultiplier(double multiplier) {
+        return String.format(Locale.ROOT, "%.2f", multiplier);
+    }
+
+    private void dispatchSkillExport(CommandSender sender) {
+        SkillsModule.AdminDispatchStatus status = skillsModule.exportAdmin(
+            result -> messages.send(sender, "skills-admin-export-complete", Map.of(
+                "file", result.archive().getFileName(),
+                "profiles", result.profileCount(),
+                "size", result.sizeBytes(),
+                "sha256", result.sha256()
+            )),
+            exception -> messages.send(sender, "skills-admin-export-error")
+        );
+        switch (status) {
+            case STARTED -> messages.send(sender, "skills-admin-export-started");
+            case MODULE_DISABLED -> messages.send(sender, "module-disabled", Map.of("module", SkillsModule.ID));
+            case STORAGE_UNAVAILABLE -> messages.send(sender, "skills-admin-storage-error");
+            case BUSY -> messages.send(sender, "skills-admin-export-busy");
+        }
+    }
+
+    private void sendSkillMetrics(CommandSender sender, SkillRuntimeMetricsSnapshot metrics) {
+        long uptimeSeconds = Math.max(0L,
+            (System.currentTimeMillis() - metrics.startedAtEpochMillis()) / 1_000L);
+        messages.send(sender, "skills-admin-metrics", Map.ofEntries(
+            Map.entry("uptime", uptimeSeconds),
+            Map.entry("submitted", metrics.submitted()),
+            Map.entry("queue_rejected", metrics.queueRejected()),
+            Map.entry("completed", metrics.completed()),
+            Map.entry("awarded", metrics.awarded()),
+            Map.entry("denied", metrics.denied()),
+            Map.entry("duplicate", metrics.duplicate()),
+            Map.entry("capped", metrics.capped()),
+            Map.entry("failed", metrics.failed()),
+            Map.entry("xp", metrics.awardedExperience()),
+            Map.entry("queue", metrics.queueDepth()),
+            Map.entry("queue_high", metrics.queueHighWater()),
+            Map.entry("avg_ms", String.format(Locale.ROOT, "%.3f", metrics.averageLatencyMicros() / 1_000.0)),
+            Map.entry("max_ms", String.format(Locale.ROOT, "%.3f", metrics.maximumLatencyMicros() / 1_000.0))
+        ));
+    }
+
     private void sendInspection(
         CommandSender sender,
         String targetName,
@@ -578,11 +678,15 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
         if (sender.hasPermission("nekararpg.skills.admin")
                 && args.length == 3 && "skills".equalsIgnoreCase(args[0])
                 && "admin".equalsIgnoreCase(args[1])) {
-            return prefix(List.of("inspect", "grant-xp", "grant-perk", "reset"), args[2]);
+            return prefix(List.of("inspect", "grant-xp", "grant-perk", "reset", "metrics", "export"), args[2]);
         }
         if (sender.hasPermission("nekararpg.skills.admin")
                 && args.length == 4 && "skills".equalsIgnoreCase(args[0])
                 && "admin".equalsIgnoreCase(args[1])) {
+            String action = args[2].toLowerCase(Locale.ROOT);
+            if ("metrics".equals(action) || "export".equals(action)) {
+                return List.of();
+            }
             return prefix(Bukkit.getOfflinePlayers().length == 0
                 ? List.of()
                 : java.util.Arrays.stream(Bukkit.getOfflinePlayers())

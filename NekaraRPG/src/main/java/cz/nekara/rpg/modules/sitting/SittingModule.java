@@ -330,6 +330,8 @@ public final class SittingModule implements Listener {
                 rise(playerId, false);
             } else if (LyingMovementPolicy.shouldRefreshPose(player.getPose())) {
                 player.setPose(Pose.SLEEPING, true);
+            }
+            if (player != null && player.isOnline() && !player.isDead()) {
                 lyingVisuals.show(player, trackedViewers(player));
             }
         }
@@ -389,7 +391,8 @@ public final class SittingModule implements Listener {
             return new ServerPoseLyingVisualService();
         }
         plugin.getLogger().info("Native mannequin lying visuals enabled.");
-        return new MannequinLyingVisualService(plugin);
+        return new MannequinLyingVisualService(
+            plugin, plugin.configuration().get().campfire().lying());
     }
 
 }

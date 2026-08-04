@@ -10,6 +10,20 @@ progression:
   linear-growth: 35
   quadratic-growth: 2
 
+# Small innate bonuses earned from level. Perks remain the dominant source of power.
+level-rewards:
+  gathering:
+    double-drop-chance-per-level: 0.00025
+    maximum-double-drop-chance: 0.025
+  digging:
+    rare-drop-chance-per-level: 0.00010
+    maximum-rare-drop-chance: 0.010
+  fishing:
+    # 0.5% from the first catch, rising to 2% at level 100.
+    base-treasure-chance: 0.005
+    treasure-chance-per-level: 0.00015
+    maximum-treasure-chance: 0.020
+
 # Shared event-driven XP controls. Per-skill XP values live in each skill folder.
 activities:
   enabled: true

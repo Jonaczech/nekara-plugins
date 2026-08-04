@@ -104,10 +104,15 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
 - BetonQuest vlastní questy, podmínky, dialogy a příběhové odměny. NekaraRPG může
   nabídnout úzký bezpečný vstup pro existující funkci, ale nevytváří paralelní
   quest engine ani vlastní questová GUI.
-- NekaraRPG 2.0 bude vlastnit skilly, jejich postup, perk stromy, statistiky a
-  bezpečné aktivní schopnosti. Do dokončení migrace zůstává ValhallaMMO pouze
-  dočasným produkčním zdrojem postupu; nesmí se zapnout dvojí udělování XP ani
-  odměn.
+- NekaraRPG 2.0 vlastní skilly, jejich postup, perk stromy, statistiky a bezpečné
+  aktivní schopnosti. Nativní modul `skills` je od kandidáta 2.2.0 výchozí
+  autoritou; ValhallaMMO se paralelně nenasazuje ani neuděluje druhé XP nebo odměny.
+  Starý modul `mining` pro Echo Vein je volitelná kompatibilní větev a bez
+  ValhallaMMO nezapojuje listenery ani ticker.
+- Hráčské potvrzení XP vzniká výhradně z výsledku `AWARDED` po atomickém zápisu
+  profilu. Stejné rychlé odměny se pro action bar spojí do jednoho krátkého okna;
+  komponenta nemá trvalý ticker, nevytváří zprávu pro odmítnutý ani duplicitní event
+  a při vypnutí modulu ruší čekající task.
 - Implementace je clean-room. Z ValhallaMMO, AuraSkills ani mcMMO se nepřebírá
   zdrojový kód, konfigurace, texty, hodnoty, názvy perků nebo rozložení stromů.
   Veřejné zdroje slouží pouze jako žánrová a integrační reference.
@@ -167,6 +172,27 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
   výbavou hráče. Ručně sestavovaná entity metadata přes ProtocolLib se nepoužívají;
   nepodporovaná póza nebo runtime chyba musí aktivovat bezpečný fallback a všechny
   vizuální entity se musí při ukončení ležení nebo pluginu odstranit.
+- Sleeping mannequin vyžaduje samostatnou transformaci vůči hráčské entitě.
+  Výchozí korekce je yaw `-90°` a posun `-0.9` bloku po směru pohledu; všechny
+  offsety zůstávají typovaně konfigurovatelné. Původní neviditelná entita nesmí
+  zobrazit druhou výbavu: viewer-specific Paper equipment změna ji skrývá pouze
+  klientsky, nikdy nemaže ani nepřesouvá skutečný inventář a při vstání se obnoví.
+- Live-readiness export Nekara Skills je pouze lokální operátorská operace. Vytváří
+  konzistentní SQLite snapshot a CSV/manifest do atomicky dokončeného ZIPu, běží
+  mimo main thread, současně nejvýše jednou a živou databázi neupravuje. Výstup
+  obsahuje SHA-256 pro ověření před migrací nebo rollbackem.
+- Tier Řemesla se určuje při vytvoření itemu podle aktuální úrovně a nemění se
+  následným zpracováním. Výrobní postup Blast Furnace → vodní cauldron → grindstone
+  se týká pouze kovových zbraní a zbrojí; dřevěné, kamenné a kožené vybavení vždy
+  zachovává vanilla chování. Stav je vždy čitelný z barevného lore a postupu.
+- `Zapomenuté nákresy` upravují výsledek již v náhledu vanilla crafting table,
+  proto fungují stejně pro běžné i shift-crafting. Stonecutter registruje skutečné
+  recepty pro dřevo a prkna. Bonus je určen pro stavební materiály a jejich základní
+  komponenty (např. stick, bowl, clay ball a cihly), nikoli pro jídlo, plodiny,
+  mob dropy, vybavení ani ekonomicky citlivé úložné bloky.
+- Provozní rozhodnutí o zapnutí skillů se nesmí opírat jen o TPS. XP pipeline
+  zveřejňuje počty přijatých/odmítnutých/duplicitních požadavků, chyby, hloubku
+  fronty a latenci; tato telemetrie je runtime, ne trvalá hráčská statistika.
 - Změny Mounts statistik za economy a questové získávání nejsou aktuální rozsah.
 
 ## Pravidla NekaraAuth

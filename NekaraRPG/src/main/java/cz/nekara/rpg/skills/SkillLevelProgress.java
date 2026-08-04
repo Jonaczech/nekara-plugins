@@ -27,4 +27,15 @@ public record SkillLevelProgress(
     public boolean capped() {
         return experienceForNextLevel == 0;
     }
+
+    /**
+     * The cumulative XP threshold for the following level. A capped skill uses its
+     * own stored total, so the UI never displays an artificial next-level target.
+     */
+    public long totalExperienceForNextLevel() {
+        if (capped()) {
+            return totalExperience;
+        }
+        return Math.addExact(totalExperience, experienceForNextLevel - experienceIntoLevel);
+    }
 }

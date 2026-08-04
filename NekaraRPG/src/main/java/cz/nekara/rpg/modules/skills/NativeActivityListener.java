@@ -195,7 +195,9 @@ final class NativeActivityListener implements Listener {
         ExperienceContext context = new ExperienceContext(
             skill, false, false, false, false, false, false, 0);
         module.awardExperience(player.getUniqueId(), new ExperienceAwardRequest(
-            player.getUniqueId().toString(), skill, baseExperience, context, fingerprint), result -> { });
+            player.getUniqueId().toString(), skill, baseExperience, context, fingerprint),
+            result -> module.showExperienceFeedback(player.getUniqueId(), skill,
+                ExperienceSourcePresentation.activity(sourceType), result));
     }
 
     private static Player attackingPlayer(Entity damager) {

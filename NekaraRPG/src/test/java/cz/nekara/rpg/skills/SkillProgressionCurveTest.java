@@ -19,6 +19,7 @@ class SkillProgressionCurveTest {
         assertEquals(1, before.level());
         assertEquals(136, before.experienceIntoLevel());
         assertEquals(137, before.experienceForNextLevel());
+        assertEquals(237, before.totalExperienceForNextLevel());
 
         SkillLevelProgress exact = curve.resolve(237);
         assertEquals(2, exact.level());
@@ -33,6 +34,7 @@ class SkillProgressionCurveTest {
         assertEquals(100, progress.level());
         assertTrue(progress.capped());
         assertEquals(cap + 1_000_000, progress.totalExperience());
+        assertEquals(cap + 1_000_000, progress.totalExperienceForNextLevel());
         assertEquals(0, progress.experienceIntoLevel());
     }
 
