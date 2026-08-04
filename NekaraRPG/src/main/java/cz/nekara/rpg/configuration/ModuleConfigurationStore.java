@@ -47,6 +47,8 @@ final class ModuleConfigurationStore {
                 "skills.woodcutting.rewards", List.of(), List.of()));
         files.add(new ModuleFile("skills/digging/loot-tables.yml",
                 "skills.digging.rewards", List.of(), List.of()));
+        files.add(new ModuleFile("skills/fishing/loot-tables.yml",
+                "skills.fishing.rewards", List.of(), List.of()));
         return List.copyOf(files);
     }
 

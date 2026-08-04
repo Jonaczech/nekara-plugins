@@ -706,6 +706,10 @@ public final class CampfireModule implements NekaraModule, Listener {
     }
 
     private boolean canShowRestedActionBar(Player player, long now, CampfireConfig config) {
+        if (plugin.skillsModule() != null
+                && plugin.skillsModule().isExperienceFeedbackVisible(player.getUniqueId())) {
+            return false;
+        }
         CampfireRestSession session = restingSessions.get(player.getUniqueId());
         boolean campfireCharging = session != null
                 && session.elapsedSeconds(now) <= config.restedChargeSeconds();

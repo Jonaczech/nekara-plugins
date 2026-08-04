@@ -16,6 +16,8 @@ import cz.nekara.rpg.skills.experience.ExperienceAwardResult;
 import cz.nekara.rpg.skills.experience.ExperienceGrantGuard;
 import cz.nekara.rpg.skills.experience.ExperiencePolicy;
 import cz.nekara.rpg.skills.experience.SkillExperienceService;
+import cz.nekara.rpg.skills.export.SkillExportResult;
+import cz.nekara.rpg.skills.export.SkillExportService;
 import cz.nekara.rpg.skills.perks.DefaultPerkTree;
 import cz.nekara.rpg.skills.perks.PerkDefinition;
 import cz.nekara.rpg.skills.perks.PerkId;
@@ -29,6 +31,8 @@ import cz.nekara.rpg.skills.profile.SkillProgressSnapshot;
 import cz.nekara.rpg.skills.profile.SqliteSkillProfileRepository;
 import cz.nekara.rpg.skills.profile.SkillStorageException;
 import cz.nekara.rpg.skills.stats.PerkStatResolver;
+import cz.nekara.rpg.skills.telemetry.SkillRuntimeMetrics;
+import cz.nekara.rpg.skills.telemetry.SkillRuntimeMetricsSnapshot;
 import java.io.File;
 import java.io.IOException;
 import java.time.Clock;
@@ -59,13 +63,17 @@ public final class SkillsModule implements NekaraModule {
     private final MessageService messages;
     private final DefaultPerkTree perkTree;
     private final SkillsMenu menu;
+    private final SkillExperienceFeedback experienceFeedback;
     private final Set<UUID> pendingPurchases = ConcurrentHashMap.newKeySet();
     private final Set<UUID> pendingAdminMutations = ConcurrentHashMap.newKeySet();
     private final Map<UUID, SkillProfile> profileCache = new ConcurrentHashMap<>();
+    private final Map<UUID, Double> allExperienceBoosts = new ConcurrentHashMap<>();
+    private final Map<ExperienceBoostKey, Double> skillExperienceBoosts = new ConcurrentHashMap<>();
     private final Map<RuntimeStateKey, SkillRuntimeState> runtimeStateCache = new ConcurrentHashMap<>();
     private final ConcurrentLinkedQueue<PendingExperienceAward> experienceQueue = new ConcurrentLinkedQueue<>();
     private final AtomicInteger queuedExperienceAwards = new AtomicInteger();
     private final AtomicBoolean experienceDrainScheduled = new AtomicBoolean();
+    private final AtomicBoolean exportInProgress = new AtomicBoolean();
     private final AtomicLong nextQueueWarningAt = new AtomicLong();
     private final PerkStatResolver perkStats;
     private final PerkMechanicResolver perkMechanics;
@@ -74,6 +82,9 @@ public final class SkillsModule implements NekaraModule {
     private volatile PerkPurchaseService purchaseService;
     private volatile SkillExperienceService experienceService;
     private volatile SkillAdministrationService administrationService;
+    private volatile SkillExportService exportService;
+    private volatile SkillRuntimeMetrics runtimeMetrics =
+        new SkillRuntimeMetrics(System.currentTimeMillis());
     private volatile NativeGatheringListener nativeGatheringListener;
     private volatile GatheringAbilityListener gatheringAbilityListener;
     private volatile GatheringUtilityPerkListener gatheringUtilityPerkListener;
@@ -91,6 +102,7 @@ public final class SkillsModule implements NekaraModule {
         this.perkStats = new PerkStatResolver(perkTree.catalog());
         this.perkMechanics = new PerkMechanicResolver(perkTree.catalog());
         this.menu = new SkillsMenu(plugin, this, perkTree);
+        this.experienceFeedback = new SkillExperienceFeedback(plugin, messages);
     }
 
     @Override
@@ -104,6 +116,7 @@ public final class SkillsModule implements NekaraModule {
             return;
         }
         generation++;
+        runtimeMetrics = new SkillRuntimeMetrics(System.currentTimeMillis());
         SkillsConfig config = plugin.configuration().get().skills();
         SkillProgressionCurve progressionCurve = new SkillProgressionCurve(
             SkillProgressionCurve.DEFAULT_MAX_LEVEL,
@@ -147,11 +160,18 @@ public final class SkillsModule implements NekaraModule {
                 Clock.systemUTC(),
                 3
             );
+            exportService = new SkillExportService(
+                sqliteRepository,
+                new File(plugin.getDataFolder(), "skills/exports").toPath(),
+                plugin.getDescription().getVersion(),
+                Clock.systemUTC()
+            );
         } catch (IOException | RuntimeException exception) {
             repository = null;
             purchaseService = null;
             experienceService = null;
             administrationService = null;
+            exportService = null;
             storageFailure = exception.getMessage();
             plugin.getLogger().severe("Nekara Skills storage is unavailable; progression is locked: "
                 + exception.getMessage());
@@ -217,8 +237,12 @@ public final class SkillsModule implements NekaraModule {
         purchaseService = null;
         experienceService = null;
         administrationService = null;
+        exportService = null;
         pendingPurchases.clear();
         pendingAdminMutations.clear();
+        experienceFeedback.clear();
+        allExperienceBoosts.clear();
+        skillExperienceBoosts.clear();
         profileCache.clear();
         runtimeStateCache.clear();
         experienceQueue.clear();
@@ -345,6 +369,14 @@ public final class SkillsModule implements NekaraModule {
         return Optional.ofNullable(profileCache.get(playerId));
     }
 
+    int skillLevel(SkillProfile profile, SkillId skill) {
+        SkillProgressResolver resolver = progressResolver;
+        if (resolver == null) {
+            return 0;
+        }
+        return resolver.resolve(profile).skill(skill).level();
+    }
+
     Optional<SkillRuntimeState> runtimeState(UUID playerId, SkillId skill) {
         SkillProfile profile = profileCache.get(playerId);
         if (profile == null) {
@@ -383,8 +415,12 @@ public final class SkillsModule implements NekaraModule {
         if (!enabled || activeService == null) {
             return;
         }
-        if (queuedExperienceAwards.incrementAndGet() > MAX_QUEUED_EXPERIENCE_AWARDS) {
+        SkillRuntimeMetrics activeMetrics = runtimeMetrics;
+        int queueDepth = queuedExperienceAwards.incrementAndGet();
+        activeMetrics.recordSubmitted(Math.min(queueDepth, MAX_QUEUED_EXPERIENCE_AWARDS));
+        if (queueDepth > MAX_QUEUED_EXPERIENCE_AWARDS) {
             queuedExperienceAwards.decrementAndGet();
+            activeMetrics.recordQueueRejected();
             long now = System.currentTimeMillis();
             long next = nextQueueWarningAt.get();
             if (now >= next && nextQueueWarningAt.compareAndSet(next, now + 60_000L)) {
@@ -394,9 +430,68 @@ public final class SkillsModule implements NekaraModule {
             return;
         }
         long requestGeneration = generation;
+        ExperienceAwardRequest boostedRequest = applyExperienceBoost(playerId, request);
         experienceQueue.add(new PendingExperienceAward(
-            playerId, request, callback, activeService, requestGeneration));
+            playerId, boostedRequest, callback, activeService, activeMetrics,
+            System.nanoTime(), requestGeneration));
         scheduleExperienceDrain();
+    }
+
+    public void setExperienceBoost(UUID playerId, SkillId skill, double multiplier) {
+        if (!Double.isFinite(multiplier) || multiplier < 1.0 || multiplier > 100.0) {
+            throw new IllegalArgumentException("Násobitel musí být od 1 do 100.");
+        }
+        if (skill == null) allExperienceBoosts.put(playerId, multiplier);
+        else skillExperienceBoosts.put(new ExperienceBoostKey(playerId, skill), multiplier);
+    }
+
+    public void clearExperienceBoost(UUID playerId, SkillId skill) {
+        if (skill == null) allExperienceBoosts.remove(playerId);
+        else skillExperienceBoosts.remove(new ExperienceBoostKey(playerId, skill));
+    }
+
+    public double experienceBoost(UUID playerId, SkillId skill) {
+        return skillExperienceBoosts.getOrDefault(new ExperienceBoostKey(playerId, skill),
+            allExperienceBoosts.getOrDefault(playerId, 1.0));
+    }
+
+    public double allExperienceBoost(UUID playerId) {
+        return allExperienceBoosts.getOrDefault(playerId, 1.0);
+    }
+
+    public Map<SkillId, Double> skillExperienceBoosts(UUID playerId) {
+        Map<SkillId, Double> result = new java.util.EnumMap<>(SkillId.class);
+        skillExperienceBoosts.forEach((key, value) -> {
+            if (key.playerId().equals(playerId)) {
+                result.put(key.skill(), value);
+            }
+        });
+        return Map.copyOf(result);
+    }
+
+    private ExperienceAwardRequest applyExperienceBoost(UUID playerId, ExperienceAwardRequest request) {
+        double multiplier = experienceBoost(playerId, request.skill());
+        if (multiplier == 1.0) return request;
+        long boosted = Math.max(1L, Math.min(100_000_000L,
+            Math.round(request.baseExperience() * multiplier)));
+        return new ExperienceAwardRequest(request.playerKey(), request.skill(), boosted,
+            request.context(), request.fingerprint());
+    }
+
+    void showExperienceFeedback(
+        UUID playerId,
+        SkillId skill,
+        String source,
+        ExperienceAwardResult result
+    ) {
+        if (!enabled) {
+            return;
+        }
+        experienceFeedback.record(playerId, skill, source, result);
+    }
+
+    public boolean isExperienceFeedbackVisible(UUID playerId) {
+        return enabled && experienceFeedback.isDisplaying(playerId);
     }
 
     private void cacheProfile(UUID playerId, SkillProfile profile) {
@@ -502,6 +597,50 @@ public final class SkillsModule implements NekaraModule {
         return perkTree.catalog().require(perkId).maxRank();
     }
 
+    public AdminDispatchStatus exportAdmin(
+        Consumer<SkillExportResult> success,
+        Consumer<RuntimeException> failure
+    ) {
+        SkillExportService activeService = exportService;
+        if (!enabled) {
+            return AdminDispatchStatus.MODULE_DISABLED;
+        }
+        if (activeService == null) {
+            return AdminDispatchStatus.STORAGE_UNAVAILABLE;
+        }
+        if (!exportInProgress.compareAndSet(false, true)) {
+            return AdminDispatchStatus.BUSY;
+        }
+        long requestGeneration = generation;
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                SkillExportResult result = activeService.export();
+                exportInProgress.set(false);
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (enabled && generation == requestGeneration) {
+                        success.accept(result);
+                    }
+                });
+            } catch (IOException | RuntimeException exception) {
+                exportInProgress.set(false);
+                plugin.getLogger().severe(
+                    "Could not export Nekara Skills data: " + exception.getMessage());
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (enabled && generation == requestGeneration) {
+                        failure.accept(exception instanceof RuntimeException runtime
+                            ? runtime
+                            : new SkillStorageException("Could not export Nekara Skills data", exception));
+                    }
+                });
+            }
+        });
+        return AdminDispatchStatus.STARTED;
+    }
+
+    public SkillRuntimeMetricsSnapshot runtimeMetrics() {
+        return runtimeMetrics.snapshot(queuedExperienceAwards.get());
+    }
+
     private void handleAdminFailure(
         long requestGeneration,
         RuntimeException exception,
@@ -554,9 +693,13 @@ public final class SkillsModule implements NekaraModule {
                 }
                 queuedExperienceAwards.updateAndGet(value -> Math.max(0, value - 1));
                 try {
-                    completed.add(new CompletedExperienceAward(
-                        pending, pending.service().award(pending.request()), null));
+                    ExperienceAwardResult result = pending.service().award(pending.request());
+                    pending.metrics().recordCompleted(
+                        result, System.nanoTime() - pending.enqueuedAtNanos());
+                    completed.add(new CompletedExperienceAward(pending, result, null));
                 } catch (SkillStorageException | IllegalStateException exception) {
+                    pending.metrics().recordFailure(
+                        System.nanoTime() - pending.enqueuedAtNanos());
                     completed.add(new CompletedExperienceAward(pending, null, exception));
                 }
             }
@@ -592,11 +735,16 @@ public final class SkillsModule implements NekaraModule {
     private record RuntimeStateKey(UUID playerId, SkillId skill) {
     }
 
+    private record ExperienceBoostKey(UUID playerId, SkillId skill) {
+    }
+
     private record PendingExperienceAward(
         UUID playerId,
         ExperienceAwardRequest request,
         Consumer<ExperienceAwardResult> callback,
         SkillExperienceService service,
+        SkillRuntimeMetrics metrics,
+        long enqueuedAtNanos,
         long generation
     ) {
     }

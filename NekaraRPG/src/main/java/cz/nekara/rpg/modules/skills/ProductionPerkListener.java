@@ -13,11 +13,13 @@ import com.destroystokyo.paper.entity.villager.ReputationType;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BrewingStand;
 import org.bukkit.block.data.Ageable;
+import org.bukkit.block.data.Levelled;
 import org.bukkit.block.data.type.Beehive;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.FishHook;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -37,8 +39,10 @@ import org.bukkit.event.inventory.BrewEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.inventory.SmithItemEvent;
 import org.bukkit.event.player.PlayerFishEvent;
+import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.inventory.EnchantingInventory;
@@ -47,6 +51,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionType;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -65,6 +70,8 @@ final class ProductionPerkListener implements Listener {
 
     private final NekaraRPGPlugin plugin;
     private final SkillsModule module;
+    private final SmithingTier.Keys smithingTierKeys;
+    private final Map<UUID, BukkitTask> sharpeningTasks = new HashMap<>();
     private final Map<BlockKey, BrewingActor> brewingActors = new HashMap<>();
     private final Map<ChunkKey, CropCaretaker> cropCaretakers = new LinkedHashMap<>() {
         @Override
@@ -78,6 +85,7 @@ final class ProductionPerkListener implements Listener {
     ProductionPerkListener(NekaraRPGPlugin plugin, SkillsModule module) {
         this.plugin = plugin;
         this.module = module;
+        this.smithingTierKeys = SmithingTier.keys(plugin);
     }
 
     void enable() {
@@ -96,6 +104,8 @@ final class ProductionPerkListener implements Listener {
         HandlerList.unregisterAll(this);
         brewingActors.clear();
         cropCaretakers.clear();
+        sharpeningTasks.values().forEach(BukkitTask::cancel);
+        sharpeningTasks.clear();
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -148,7 +158,8 @@ final class ProductionPerkListener implements Listener {
             return;
         }
         module.runtimeState(player.getUniqueId(), SkillId.SMITHING).ifPresent(state -> {
-            improveQuality(event.getCurrentItem(), state.stats().value(StatId.ITEM_QUALITY));
+            module.cachedProfile(player.getUniqueId()).ifPresent(profile -> SmithingTier.apply(
+                event.getCurrentItem(), module.skillLevel(profile, SkillId.SMITHING), smithingTierKeys));
             refundCraftingIngredient(player, event.getInventory().getMatrix(),
                 state.stats().value(StatId.RESOURCE_COST_REDUCTION));
         });
@@ -161,10 +172,115 @@ final class ProductionPerkListener implements Listener {
             return;
         }
         module.runtimeState(player.getUniqueId(), SkillId.SMITHING).ifPresent(state -> {
-            improveQuality(event.getCurrentItem(), state.stats().value(StatId.ITEM_QUALITY));
+            module.cachedProfile(player.getUniqueId()).ifPresent(profile -> SmithingTier.apply(
+                event.getCurrentItem(), module.skillLevel(profile, SkillId.SMITHING), smithingTierKeys));
             refundCraftingIngredient(player, event.getInventory().getContents(),
                 state.stats().value(StatId.RESOURCE_COST_REDUCTION));
         });
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void processCraftedEquipment(PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND || event.getAction() != Action.RIGHT_CLICK_BLOCK
+            || event.getClickedBlock() == null || !supported(event.getPlayer())) {
+            return;
+        }
+        Player player = event.getPlayer();
+        if (!plugin.configuration().get().worlds().isEnabled(player.getWorld().getName())) {
+            return;
+        }
+        ItemStack item = player.getInventory().getItemInMainHand();
+        Material station = event.getClickedBlock().getType();
+        SmithingTier.ProcessingState state = SmithingTier.state(item, smithingTierKeys);
+        if (station == Material.BLAST_FURNACE && state == SmithingTier.ProcessingState.UNPROCESSED) {
+            if (!consumeFuel(player)) {
+                player.sendActionBar(net.kyori.adventure.text.Component.text(
+                    "Na nahřátí potřebuješ jeden kus uhlí.", net.kyori.adventure.text.format.NamedTextColor.RED));
+                return;
+            }
+            SmithingTier.advanceProcessing(item, smithingTierKeys,
+                SmithingTier.ProcessingState.UNPROCESSED, SmithingTier.ProcessingState.HEATED);
+            player.getWorld().spawnParticle(Particle.LAVA, event.getClickedBlock().getLocation().add(0.5, 1.0, 0.5), 6,
+                0.25, 0.25, 0.25, 0.0);
+            player.playSound(player.getLocation(), Sound.BLOCK_BLASTFURNACE_FIRE_CRACKLE, 0.7F, 1.1F);
+            player.sendActionBar(net.kyori.adventure.text.Component.text(
+                "Výkov je nahřátý. Ochlaď jej ve vodním kotli.", net.kyori.adventure.text.format.NamedTextColor.GOLD));
+            event.setCancelled(true);
+            return;
+        }
+        if (station == Material.WATER_CAULDRON && state == SmithingTier.ProcessingState.HEATED) {
+            if (!SmithingTier.advanceProcessing(item, smithingTierKeys,
+                SmithingTier.ProcessingState.HEATED, SmithingTier.ProcessingState.TEMPERED)) {
+                return;
+            }
+            consumeCauldronWater(event.getClickedBlock());
+            player.getWorld().spawnParticle(Particle.SPLASH, event.getClickedBlock().getLocation().add(0.5, 0.8, 0.5), 12,
+                0.25, 0.1, 0.25, 0.08);
+            player.playSound(player.getLocation(), Sound.BLOCK_FIRE_EXTINGUISH, 0.8F, 1.1F);
+            String message = SmithingTier.isWeapon(item.getType())
+                ? "Výkov je opracovaný. Naostři jej na brusu."
+                : "Výkov je opracovaný a jeho ochrana je aktivní.";
+            player.sendActionBar(net.kyori.adventure.text.Component.text(message,
+                net.kyori.adventure.text.format.NamedTextColor.GREEN));
+            event.setCancelled(true);
+            return;
+        }
+        if (station == Material.GRINDSTONE && player.isSneaking()
+            && SmithingTier.isWeapon(item.getType()) && state == SmithingTier.ProcessingState.TEMPERED) {
+            startSharpening(player, event.getClickedBlock());
+            event.setCancelled(true);
+        }
+    }
+
+    private void startSharpening(Player player, Block grindstone) {
+        if (sharpeningTasks.containsKey(player.getUniqueId())) {
+            player.sendActionBar(net.kyori.adventure.text.Component.text(
+                "Ostření už probíhá.", net.kyori.adventure.text.format.NamedTextColor.YELLOW));
+            return;
+        }
+        Material weaponType = player.getInventory().getItemInMainHand().getType();
+        org.bukkit.Location station = grindstone.getLocation().add(0.5, 0.5, 0.5);
+        player.sendActionBar(net.kyori.adventure.text.Component.text(
+            "Ostříš zbraň…", net.kyori.adventure.text.format.NamedTextColor.AQUA));
+        player.getWorld().spawnParticle(Particle.CRIT, station, 8, 0.2, 0.2, 0.2, 0.05);
+        BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            sharpeningTasks.remove(player.getUniqueId());
+            ItemStack current = player.getInventory().getItemInMainHand();
+            if (!player.isOnline() || !player.isSneaking() || current.getType() != weaponType
+                || player.getLocation().distanceSquared(station) > 9.0
+                || SmithingTier.state(current, smithingTierKeys) != SmithingTier.ProcessingState.TEMPERED) {
+                if (player.isOnline()) {
+                    player.sendActionBar(net.kyori.adventure.text.Component.text(
+                        "Ostření bylo přerušeno.", net.kyori.adventure.text.format.NamedTextColor.RED));
+                }
+                return;
+            }
+            if (SmithingTier.advanceProcessing(current, smithingTierKeys,
+                SmithingTier.ProcessingState.TEMPERED, SmithingTier.ProcessingState.SHARPENED)) {
+                player.getWorld().spawnParticle(Particle.CRIT, station, 20, 0.25, 0.25, 0.25, 0.12);
+                player.playSound(player.getLocation(), Sound.BLOCK_GRINDSTONE_USE, 0.9F, 1.1F);
+                player.sendActionBar(net.kyori.adventure.text.Component.text(
+                    "Zbraň je naostřená. Její Nekara damage je aktivní.",
+                    net.kyori.adventure.text.format.NamedTextColor.GREEN));
+            }
+        }, 40L);
+        sharpeningTasks.put(player.getUniqueId(), task);
+    }
+
+    private static boolean consumeFuel(Player player) {
+        if (!player.getInventory().containsAtLeast(new ItemStack(Material.COAL), 1)) return false;
+        player.getInventory().removeItem(new ItemStack(Material.COAL, 1));
+        return true;
+    }
+
+    private static void consumeCauldronWater(Block cauldron) {
+        if (!(cauldron.getBlockData() instanceof Levelled levelled)) return;
+        int next = levelled.getLevel() - 1;
+        if (next <= levelled.getMinimumLevel()) cauldron.setType(Material.CAULDRON, false);
+        else {
+            levelled.setLevel(next);
+            cauldron.setBlockData(levelled, false);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -390,6 +506,7 @@ final class ProductionPerkListener implements Listener {
 
     private void rewardFishingPerks(Player player, ItemStack catchItem, int vanillaExperience) {
         module.runtimeState(player.getUniqueId(), SkillId.FISHING).ifPresent(state -> {
+            rewardFishingLevelTreasure(player);
             int extraExperience = (int) Math.floor(vanillaExperience
                 * Math.max(0.0, state.stats().value(StatId.EXPERIENCE_ORB_MULTIPLIER) - 1.0));
             if (extraExperience > 0) {
@@ -409,6 +526,76 @@ final class ProductionPerkListener implements Listener {
                     ThreadLocalRandom.current().nextInt(1, 4)));
             }
         });
+    }
+
+    /**
+     * Replaces the crafting preview before vanilla takes the result. This keeps
+     * the amount visible in a crafting table and also makes shift-crafting use
+     * the same output safely once per vanilla craft operation.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void previewBulkCraftingResult(PrepareItemCraftEvent event) {
+        if (event.isRepair() || !(event.getView().getPlayer() instanceof Player player)
+            || !supported(player) || !(event.getRecipe() instanceof org.bukkit.Keyed keyed)
+            || !"minecraft".equals(keyed.getKey().getNamespace())
+            || containsExcludedBulkIngredient(event.getInventory().getMatrix())) {
+            return;
+        }
+        ItemStack vanillaResult = event.getRecipe().getResult();
+        if (vanillaResult.getType().isAir() || !isEfficientConstructionOutput(vanillaResult.getType())) {
+            return;
+        }
+        module.runtimeState(player.getUniqueId(), SkillId.SMITHING).ifPresent(state -> {
+            if (!state.has(MechanicId.BULK_CRAFTING)) return;
+            module.cachedProfile(player.getUniqueId()).ifPresent(profile -> {
+                ItemStack result = vanillaResult.clone();
+                result.setAmount(SmithingTier.efficientOutput(vanillaResult.getAmount(),
+                    module.skillLevel(profile, SkillId.SMITHING)));
+                event.getInventory().setResult(result);
+            });
+        });
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void preserveCraftedToolDurability(PlayerItemDamageEvent event) {
+        Double chance = event.getItem().getPersistentDataContainer().get(
+            smithingTierKeys.durabilitySave(), org.bukkit.persistence.PersistentDataType.DOUBLE);
+        if (chance != null && chance > 0.0 && ThreadLocalRandom.current().nextDouble() < chance) {
+            event.setCancelled(true);
+        }
+    }
+
+    private void rewardFishingLevelTreasure(Player player) {
+        var rewards = plugin.configuration().get().skills().fishingRewards();
+        if (!rewards.treasureEnabled() || rewards.treasureWeights().isEmpty()) {
+            return;
+        }
+        Optional<cz.nekara.rpg.skills.profile.SkillProfile> profile = module.cachedProfile(player.getUniqueId());
+        if (profile.isEmpty()) {
+            return;
+        }
+        int level = module.skillLevel(profile.get(), SkillId.FISHING);
+        double chance = plugin.configuration().get().skills().levelRewards().fishingTreasureChance(level);
+        if (chance <= 0.0 || ThreadLocalRandom.current().nextDouble() >= chance) {
+            return;
+        }
+        selectWeighted(rewards.treasureWeights()).ifPresent(material ->
+            giveLater(player, new ItemStack(material)));
+    }
+
+    private static Optional<Material> selectWeighted(Map<Material, Integer> weights) {
+        int total = weights.values().stream().mapToInt(Integer::intValue).sum();
+        if (total <= 0) {
+            return Optional.empty();
+        }
+        int roll = ThreadLocalRandom.current().nextInt(total);
+        for (Map.Entry<Material, Integer> entry : weights.entrySet()) {
+            roll -= entry.getValue();
+            if (roll < 0) {
+                return Optional.of(entry.getKey());
+            }
+        }
+        return Optional.empty();
     }
 
     private void replantAfterBreak(Player player, Block block) {
@@ -453,13 +640,55 @@ final class ProductionPerkListener implements Listener {
         }
     }
 
-    private static void improveQuality(ItemStack item, double quality) {
-        if (item == null || item.getType().isAir() || quality <= 1.0
-            || ThreadLocalRandom.current().nextDouble() >= Math.min(1.0, quality - 1.0)) {
-            return;
+    static boolean isEfficientConstructionOutput(Material material) {
+        if (isEfficientConstructionComponent(material)) {
+            return true;
         }
-        int current = item.getEnchantmentLevel(Enchantment.UNBREAKING);
-        item.addUnsafeEnchantment(Enchantment.UNBREAKING, Math.min(4, current + 1));
+        if (!material.isBlock()) return false;
+        String name = material.name();
+        if (name.endsWith("_ORE") || name.startsWith("RAW_") || name.endsWith("_CROP")
+            || name.endsWith("_STEM") || name.endsWith("_BUSH") || name.endsWith("_SAPLING")) {
+            return false;
+        }
+        return switch (material) {
+            case CAKE, HAY_BLOCK, DRIED_KELP_BLOCK, MELON, PUMPKIN,
+                COAL_BLOCK, IRON_BLOCK, GOLD_BLOCK, COPPER_BLOCK, DIAMOND_BLOCK,
+                EMERALD_BLOCK, LAPIS_BLOCK, REDSTONE_BLOCK, NETHERITE_BLOCK,
+                RAW_IRON_BLOCK, RAW_GOLD_BLOCK, RAW_COPPER_BLOCK -> false;
+            default -> true;
+        };
+    }
+
+    /** Non-block construction components deliberately covered by the bulk-crafting perk. */
+    static boolean isEfficientConstructionComponent(Material material) {
+        return switch (material) {
+            case STICK, BOWL, CLAY_BALL, BRICK, NETHER_BRICK, RESIN_BRICK -> true;
+            default -> false;
+        };
+    }
+
+    private static boolean containsExcludedBulkIngredient(ItemStack[] ingredients) {
+        for (ItemStack ingredient : ingredients) {
+            if (ingredient != null && isCropOrMobDrop(ingredient.getType())) return true;
+        }
+        return false;
+    }
+
+    private static boolean isCropOrMobDrop(Material material) {
+        String name = material.name();
+        if (name.endsWith("_SEEDS") || name.endsWith("_SAPLING") || name.endsWith("_CROP")
+            || name.endsWith("_BERRIES") || name.endsWith("_MUSHROOM") || name.endsWith("_FLOWER")) {
+            return true;
+        }
+        return switch (material) {
+            case WHEAT, CARROT, POTATO, BEETROOT, KELP, BAMBOO, SUGAR_CANE,
+                MELON_SLICE, PUMPKIN, COCOA_BEANS, CACTUS, CHORUS_FRUIT,
+                STRING, BONE, ROTTEN_FLESH, SPIDER_EYE, SLIME_BALL, LEATHER,
+                FEATHER, RABBIT_HIDE, RABBIT_FOOT, GUNPOWDER, ENDER_PEARL,
+                BLAZE_ROD, GHAST_TEAR, MAGMA_CREAM, SHULKER_SHELL,
+                PHANTOM_MEMBRANE, INK_SAC, GLOW_INK_SAC, ARMADILLO_SCUTE -> true;
+            default -> false;
+        };
     }
 
     private static void improvePotion(ItemStack item, double power) {

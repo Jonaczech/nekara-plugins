@@ -5,12 +5,17 @@ zůstávají v `PROJECT_MEMORY.md` a aktuální release stav v `HANDOFF.md`.
 
 ## Aktuální stav
 
-- Nejnovější stabilní release: **NekaraRPG 2.1.0** s 90 původními perky,
-  chráněnými runtime vertikálami všech 15 trénovaných dovedností, rozdělenými
-  konfiguracemi skillů a bezpečným mannequin vizuálem ležení.
-- Release je dostupný updateru; živá akceptace skillů, migrace SQLite, brašny a pathfinding
-  ještě vyžadují živou Purpur akceptaci.
+- Nejnovější stabilní release: **NekaraRPG 2.2.0**. Nativní Nekara Skills jsou
+  výchozí autoritou postupu a 2.2.0 opravuje mannequin ležení, zobrazení XP,
+  výrobu Tierů i škálovaný výnos stavebních materiálů.
+- Všech 15 trénovaných dovedností má chráněnou runtime vertikálu, rozdělené
+  konfigurace, 90 původních perků a vlastní SQLite úložiště. Živá Purpur akceptace
+  a vyvážení zůstávají povinnou součástí nasazení.
 - Modul zůstane součástí jediného `NekaraRPG.jar` a bude samostatně zapínatelný.
+- Release 2.2.0 opravuje živě nalezenou orientaci/duplicitní výbavu mannequin
+  ležení, přidává export profilů a XP telemetrii, vypíná ve výchozím profilu
+  starou ValhallaMMO Echo Vein aktivitu ve prospěch nativního Žilobití a zavádí
+  nativní stonecutter recepty i bezpečně škálovaný crafting stavebních materiálů.
 
 ## Nekara Skills 2.0 — aktuální priorita
 
@@ -25,11 +30,11 @@ Aktuálně je hotové čisté doménové jádro, SQLite adaptér s optimistic re
 transakční nákup za Power body. Všech 15 trénovaných dovedností zapisuje nativní
 XP z validovaných událostí a provádí vlastní runtime efekty. Sběrné vertikály
 sledují původ bloků, používají omezené grafové průchody a chrání vanilla i custom
-loot před druhým odměnovým průchodem. Auditovaná staging správa používá SQLite
-schéma v2 a bezpečnou migraci profilů z v1. Verze 2.1.0 je publikovaná, ale modul
-zůstává ve výchozím stavu vypnutý.
+  loot před druhým odměnovým průchodem. Auditovaná správa používá SQLite schéma v2
+  a bezpečnou migraci profilů z v1. Release 2.2.0 je nasazený jako nativní
+  výchozí profil; další iterace stále vyžadují živé testy a průběžné vyvažování.
 
-### Bezprostřední další krok po release 2.1.0
+### Bezprostřední další krok po release 2.2.0
 
 1. Hotovo v kódu: všech 15 trénovaných dovedností používá validované eventové
    zdroje XP napojené na společný `SkillExperienceService`.
@@ -47,11 +52,15 @@ zůstává ve výchozím stavu vypnutý.
    itemy, aktivní schopnosti a kompatibilitu s ValhallaMMO bez druhého loot
    průchodu. Potom na kopii stagingu provést čistě nativní test všech 15 vertikál
    bez ValhallaMMO a měřit MSPT.
+6. Hotovo v kandidátu 2.2.0: `/nrpg skills admin metrics` měří provoz omezené XP
+   fronty a `/nrpg skills admin export` vytváří konzistentní SQLite+CSV snapshot
+   s hashem bez ruční editace živé databáze. Zbývá mapovací vrstva pro ValhallaMMO
+   profily a porovnávací report obou systémů.
 
-ValhallaMMO zůstane na produkčním serveru až do ověřené migrace a nebude se
-odstraňovat ani paralelně odměňovat bez exportu, zálohy, rollback plánu a živé
-akceptace. Release 2.1.0 proto vydává modul `skills` vypnutý a ponechává
-ValhallaMMO jako autoritativní produkční systém.
+Nekara Skills jsou od release 2.2.0 výchozí autoritou postupu. ValhallaMMO se
+nenasazuje ani paralelně neodměňuje; starý modul `mining` zůstává jen jako vypnutá
+kompatibilní Echo Vein volba. Před výměnou JARu vždy vytvoř export, ověř zálohu a
+na živém Purpuru projdi XP, perk efekty, restart a MSPT.
 
 ## NekaraMounts — aktuální rozsah
 

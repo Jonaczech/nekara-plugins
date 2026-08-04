@@ -242,14 +242,17 @@ final class NativeGatheringListener implements Listener {
         }
 
         List<BonusDrop> bonusDrops = new ArrayList<>();
+        int level = module.skillLevel(profile, definition.skill());
         if (definition.config().finalDropMultiplierEnabled()
             && definition.config().experience(material) > 0 && !event.getItems().isEmpty()) {
             int multiplier = dropMultiplier.resolve(
-                stats, new RandomChanceRoller(ThreadLocalRandom.current()));
+                stats,
+                plugin.configuration().get().skills().levelRewards().gatheringDoubleDropChance(level),
+                new RandomChanceRoller(ThreadLocalRandom.current()));
             bonusDrops.addAll(createBonusDrops(event.getItems(), multiplier - 1));
         }
         try {
-            rareDrop(definition, profile, stats, material, block.getLocation())
+            rareDrop(definition, profile, level, stats, material, block.getLocation())
                 .ifPresent(bonusDrops::add);
         } catch (RuntimeException exception) {
             module.invalidateProfile(player.getUniqueId(), exception);
@@ -326,12 +329,15 @@ final class NativeGatheringListener implements Listener {
         ExperienceAwardRequest request = new ExperienceAwardRequest(
             fact.playerId().toString(), fact.skill(), fact.baseExperience(), context,
             fingerprint(fact.playerId(), fact.skill(), "block_break", fact.sourceKey()));
-        module.awardExperience(fact.playerId(), request, result -> { });
+        module.awardExperience(fact.playerId(), request,
+            result -> module.showExperienceFeedback(fact.playerId(), fact.skill(),
+                ExperienceSourcePresentation.gathering(fact.material()), result));
     }
 
     private Optional<BonusDrop> rareDrop(
         Definition definition,
         SkillProfile profile,
+        int level,
         StatSnapshot stats,
         Material source,
         Location location
@@ -348,6 +354,11 @@ final class NativeGatheringListener implements Listener {
             return Optional.empty();
         }
         double chance = stats.value(StatId.RARE_DROP_CHANCE);
+        if (definition.skill() == SkillId.DIGGING) {
+            chance += plugin.configuration().get().skills().levelRewards()
+                .diggingRareDropChance(level);
+        }
+        chance = Math.min(1.0, chance);
         if (chance <= 0 || ThreadLocalRandom.current().nextDouble() >= chance) {
             return Optional.empty();
         }

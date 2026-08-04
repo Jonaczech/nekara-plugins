@@ -108,6 +108,18 @@ public final class ConfigurationService {
         LyingConfig lying = new LyingConfig(
                 config.getBoolean("campfire.lying.enabled", true),
                 config.getBoolean("campfire.lying.mannequin-visual-enabled", true),
+                validateDouble(config.getDouble("campfire.lying.mannequin.yaw-offset-degrees", -90.0),
+                        -180.0, 180.0, -90.0,
+                        "campfire.lying.mannequin.yaw-offset-degrees", warning),
+                validateDouble(config.getDouble("campfire.lying.mannequin.forward-offset", -0.9),
+                        -2.0, 2.0, -0.9,
+                        "campfire.lying.mannequin.forward-offset", warning),
+                validateDouble(config.getDouble("campfire.lying.mannequin.side-offset", 0.0),
+                        -2.0, 2.0, 0.0,
+                        "campfire.lying.mannequin.side-offset", warning),
+                validateDouble(config.getDouble("campfire.lying.mannequin.y-offset", 0.0),
+                        -1.0, 1.0, 0.0,
+                        "campfire.lying.mannequin.y-offset", warning),
                 config.getBoolean("campfire.lying.wake-on-damage", true),
                 config.getBoolean("campfire.lying.skip-night-when-alone", true),
                 validateInt(config.getInt("campfire.lying.fall-asleep-seconds", 5),
@@ -397,6 +409,10 @@ public final class ConfigurationService {
                 NativeGatheringConfig.defaultDiggingExperience(),
                 NativeGatheringConfig.defaultDiggingRareDrops(),
                 warning);
+        LevelRewardConfig levelRewards = parseLevelRewards(config, warning);
+        FishingRewardConfig fishingRewards = new FishingRewardConfig(
+                config.getBoolean("skills.fishing.rewards.treasures-enabled", true),
+                parseMaterialIntTable(config, "skills.fishing.rewards.treasures", Map.of(), warning));
 
         SkillsConfig skills = new SkillsConfig(
                 validateRelativeStoragePath(
@@ -411,6 +427,8 @@ public final class ConfigurationService {
                 nativeMining,
                 nativeWoodcutting,
                 nativeDigging,
+                levelRewards,
+                fishingRewards,
                 parseGatheringAbility(config, "mining", "vein-mining", 24, 6, 8, warning),
                 parseGatheringAbility(config, "mining", "drilling", 64, 8, 20, warning),
                 parseGatheringAbility(config, "woodcutting", "tree-feller", 64, 8, 12, warning),
@@ -730,6 +748,47 @@ public final class ConfigurationService {
                 config.getBoolean(root + ".rewards.rare-drops-enabled", true),
                 parseMaterialLongTable(config, root + ".experience.blocks", defaultExperience, warning),
                 parseMaterialIntTable(config, root + ".rewards.rare-drops", defaultRareDrops, warning)
+        );
+    }
+
+    private LevelRewardConfig parseLevelRewards(
+            FileConfiguration config,
+            Consumer<String> warning
+    ) {
+        double gatheringMaximum = validateDouble(config.getDouble(
+                        "skills.level-rewards.gathering.maximum-double-drop-chance", 0.025),
+                0.0, 1.0, 0.025,
+                "skills.level-rewards.gathering.maximum-double-drop-chance", warning);
+        double diggingMaximum = validateDouble(config.getDouble(
+                        "skills.level-rewards.digging.maximum-rare-drop-chance", 0.010),
+                0.0, 1.0, 0.010,
+                "skills.level-rewards.digging.maximum-rare-drop-chance", warning);
+        double fishingMaximum = validateDouble(config.getDouble(
+                        "skills.level-rewards.fishing.maximum-treasure-chance", 0.020),
+                0.0, 1.0, 0.020,
+                "skills.level-rewards.fishing.maximum-treasure-chance", warning);
+        double fishingBase = validateDouble(config.getDouble(
+                        "skills.level-rewards.fishing.base-treasure-chance", 0.005),
+                0.0, fishingMaximum, Math.min(0.005, fishingMaximum),
+                "skills.level-rewards.fishing.base-treasure-chance", warning);
+        return new LevelRewardConfig(
+                validateDouble(config.getDouble(
+                                "skills.level-rewards.gathering.double-drop-chance-per-level", 0.00025),
+                        0.0, gatheringMaximum, Math.min(0.00025, gatheringMaximum),
+                        "skills.level-rewards.gathering.double-drop-chance-per-level", warning),
+                gatheringMaximum,
+                validateDouble(config.getDouble(
+                                "skills.level-rewards.digging.rare-drop-chance-per-level", 0.00010),
+                        0.0, diggingMaximum, Math.min(0.00010, diggingMaximum),
+                        "skills.level-rewards.digging.rare-drop-chance-per-level", warning),
+                diggingMaximum,
+                fishingBase,
+                validateDouble(config.getDouble(
+                                "skills.level-rewards.fishing.treasure-chance-per-level", 0.00015),
+                        0.0, fishingMaximum - fishingBase,
+                        Math.min(0.00015, fishingMaximum - fishingBase),
+                        "skills.level-rewards.fishing.treasure-chance-per-level", warning),
+                fishingMaximum
         );
     }
 

@@ -105,7 +105,8 @@ final class SkillsMenu implements Listener {
         inventory.setItem(INFO_SLOT, GuiItems.item(
             Material.WRITABLE_BOOK,
             Component.text("Stezky rozvoje", NamedTextColor.GOLD),
-            Component.text("Každá dovednost dosáhne nejvýše úrovně 100", NamedTextColor.GRAY),
+            Component.text("V action baru uvidíš zdroj i připsané XP", NamedTextColor.GRAY),
+            Component.text("Např. Kámen | +2 XP do Hornictví", NamedTextColor.DARK_GRAY),
             Component.text("Dílčí úrovně zvyšují hlavní úroveň", NamedTextColor.GRAY),
             Component.text("Hlavní úroveň dává body do perků", NamedTextColor.GOLD)
         ));
@@ -120,7 +121,9 @@ final class SkillsMenu implements Listener {
             material(skill),
             Component.text(SkillPresentation.czechName(skill), NamedTextColor.AQUA)
                 .decoration(TextDecoration.BOLD, true),
-            Component.text("Úroveň " + progress.level() + "/100", NamedTextColor.GRAY),
+            Component.text("Úroveň: " + progress.level() + "/100", NamedTextColor.GRAY),
+            totalExperienceLine(progress),
+            progressBarLine(progress),
             Component.text("Volné body: " + availablePoints(profile, snapshot), NamedTextColor.GOLD)
         ));
         for (PerkDefinition perk : perkTree.catalog().forSkill(skill)) {
@@ -136,14 +139,20 @@ final class SkillsMenu implements Listener {
             Component.text("Předchozí stezka", NamedTextColor.YELLOW),
             Component.text(SkillPresentation.czechName(adjacent(skill, -1)), NamedTextColor.GRAY)
         ));
-        inventory.setItem(INFO_SLOT, GuiItems.item(
-            Material.BOOK,
-            Component.text("Jak stezka funguje", NamedTextColor.GOLD),
-            Component.text("Zelená: naučeno", NamedTextColor.GREEN),
-            Component.text("Zlatá: lze naučit", NamedTextColor.GOLD),
-            Component.text("Šedá: chybí podmínka", NamedTextColor.GRAY),
-            Component.text("Kliknutí otevře potvrzení", NamedTextColor.DARK_GRAY)
-        ));
+        List<Component> information = new ArrayList<>();
+        information.add(Component.text("Jak stezka funguje", NamedTextColor.GOLD));
+        information.add(Component.text(experienceSource(skill), NamedTextColor.GRAY));
+        if (skill == SkillId.SMITHING) {
+            information.add(Component.text("Tiery výroby: I 0 | II 20 | III 40", NamedTextColor.AQUA));
+            information.add(Component.text("IV 70 | V 100 — tier vzniká při craftu", NamedTextColor.LIGHT_PURPLE));
+        }
+        information.add(Component.text("Zelená: naučeno", NamedTextColor.GREEN));
+        information.add(Component.text("Zlatá: lze naučit", NamedTextColor.GOLD));
+        information.add(Component.text("Šedá: chybí podmínka", NamedTextColor.GRAY));
+        information.add(Component.text("Kliknutí otevře potvrzení", NamedTextColor.DARK_GRAY));
+        Component informationTitle = information.removeFirst();
+        inventory.setItem(INFO_SLOT, GuiItems.item(Material.BOOK, informationTitle,
+            information.toArray(Component[]::new)));
         inventory.setItem(NEXT_SLOT, GuiItems.item(
             Material.SPECTRAL_ARROW,
             Component.text("Další stezka", NamedTextColor.YELLOW),
@@ -259,17 +268,53 @@ final class SkillsMenu implements Listener {
     }
 
     private ItemStack skillItem(SkillId skill, SkillLevelProgress progress) {
-        Component next = progress.capped()
-            ? Component.text("Stezka je završena", NamedTextColor.GOLD)
-            : Component.text("XP " + progress.experienceIntoLevel() + "/"
-                + progress.experienceForNextLevel(), NamedTextColor.DARK_GRAY);
         return GuiItems.item(
             material(skill),
             Component.text(SkillPresentation.czechName(skill), NamedTextColor.AQUA),
-            Component.text("Úroveň " + progress.level() + "/100", NamedTextColor.GRAY),
-            next,
+            Component.text("Úroveň: " + progress.level() + "/100", NamedTextColor.GRAY),
+            totalExperienceLine(progress),
+            progressBarLine(progress),
             Component.text("Klikni pro otevření stezky", NamedTextColor.YELLOW)
         );
+    }
+
+    private Component totalExperienceLine(SkillLevelProgress progress) {
+        if (progress.capped()) {
+            return Component.text("Celkem zkušeností: " + progress.totalExperience() + " XP (maximum)",
+                NamedTextColor.GOLD);
+        }
+        return Component.text("Celkem zkušeností: " + progress.totalExperience() + "/"
+            + progress.totalExperienceForNextLevel() + " XP", NamedTextColor.DARK_AQUA);
+    }
+
+    private Component progressBarLine(SkillLevelProgress progress) {
+        if (progress.capped()) {
+            return Component.text("[::::::::::::::::::::]", NamedTextColor.GREEN);
+        }
+        int length = 20;
+        int filled = (int) Math.floor((double) progress.experienceIntoLevel()
+            / progress.experienceForNextLevel() * length);
+        String bar = "[" + ":".repeat(Math.max(0, Math.min(length, filled)))
+            + ".".repeat(Math.max(0, length - filled)) + "]";
+        return Component.text(bar, NamedTextColor.DARK_AQUA);
+    }
+
+    private String experienceSource(SkillId skill) {
+        return switch (skill) {
+            case MINING -> "XP: ruční těžba kamene a rud krumpáčem";
+            case WOODCUTTING -> "XP: ruční kácení dřeva sekerou";
+            case DIGGING -> "XP: ruční kopání přírodních zemin lopatou";
+            case FISHING -> "XP: skutečně doručený rybářský úlovek";
+            case FARMING -> "XP: sklizeň, péče o úrodu a hospodářství";
+            case SMITHING -> "XP: výroba a práce s kovem";
+            case ENCHANTING -> "XP: očarování předmětů";
+            case ALCHEMY -> "XP: vaření lektvarů";
+            case TRADING -> "XP: obchodování s vesničany";
+            case ARCHERY -> "XP: zásahy z luku";
+            case MARTIAL_ARTS, LIGHT_WEAPONS, HEAVY_WEAPONS,
+                LIGHT_ARMOR, HEAVY_ARMOR -> "XP: odpovídající bojová činnost";
+            case POWER -> "XP: nelze získat přímo";
+        };
     }
 
     private ItemStack perkItem(
@@ -283,10 +328,19 @@ final class SkillsMenu implements Listener {
         Material material = PerkIconResolver.resolve(perk);
         NamedTextColor color = maxed ? NamedTextColor.GREEN
             : decision.allowed() ? NamedTextColor.GOLD : NamedTextColor.GRAY;
+        int skillLevel = snapshot.skill(perk.skill()).level();
+        int freePoints = availablePoints(profile, snapshot);
         PerkPresentation presentation = perkTree.presentation(perk.id());
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text(presentation.description(), NamedTextColor.GRAY));
         lore.add(Component.empty());
+        lore.add(Component.text(perkStateText(maxed, decision.status()), perkStateColor(maxed, decision.status())));
+        lore.add(Component.text(skillLevel >= perk.requiredSkillLevel()
+            ? "Úroveň dovednosti splněna" : "Chybí úroveň dovednosti", skillLevel >= perk.requiredSkillLevel()
+                ? NamedTextColor.GREEN : NamedTextColor.RED));
+        lore.add(Component.text(maxed || freePoints >= perk.pointCostPerRank()
+            ? "Dostatek volných bodů" : "Chybí volné body", maxed || freePoints >= perk.pointCostPerRank()
+                ? NamedTextColor.GOLD : NamedTextColor.RED));
         lore.add(Component.text("Hodnost " + rank + "/" + perk.maxRank(), color));
         lore.add(Component.text("Cena další hodnosti: " + perk.pointCostPerRank(), NamedTextColor.GOLD));
         lore.add(Component.text("Potřebná úroveň: " + perk.requiredSkillLevel(), NamedTextColor.DARK_GRAY));
@@ -311,6 +365,31 @@ final class SkillsMenu implements Listener {
             case LEVEL_REQUIRED -> "Chybí úroveň dovednosti";
             case PREREQUISITE_REQUIRED -> "Chybí předchozí perk";
             case INSUFFICIENT_POINTS -> "Chybí volné body";
+        };
+    }
+
+    private String perkStateText(boolean maxed, PerkPurchaseStatus status) {
+        if (maxed) {
+            return "Stav: Odemčeno";
+        }
+        return switch (status) {
+            case PURCHASED -> "Stav: Připraveno k odemčení";
+            case MAX_RANK -> "Stav: Odemčeno";
+            case LEVEL_REQUIRED -> "Stav: Zamčeno — chybí úroveň";
+            case PREREQUISITE_REQUIRED -> "Stav: Zamčeno — chybí předchozí perk";
+            case INSUFFICIENT_POINTS -> "Stav: Zamčeno — chybí body";
+        };
+    }
+
+    private NamedTextColor perkStateColor(boolean maxed, PerkPurchaseStatus status) {
+        if (maxed || status == PerkPurchaseStatus.MAX_RANK) {
+            return NamedTextColor.GREEN;
+        }
+        return switch (status) {
+            case PURCHASED -> NamedTextColor.GOLD;
+            case LEVEL_REQUIRED, PREREQUISITE_REQUIRED -> NamedTextColor.RED;
+            case INSUFFICIENT_POINTS -> NamedTextColor.YELLOW;
+            case MAX_RANK -> NamedTextColor.GREEN;
         };
     }
 

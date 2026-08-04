@@ -8,7 +8,12 @@ NekaraMounts s jedním trvalým vanilla koněm na hráče.
 Plugin je záměrně konzervativní: nenahrazuje vanilla loot tabulky, nevytváří
 syntetické fishing eventy a nevyžaduje ValhallaMMO ani jiný plugin.
 
-## Nekara Skills 2.1 — staging
+## Nekara Skills 2.2 — native progression
+
+Pro rychlé testování lze použít dočasný admin boost bez zásahu do profilu:
+`/nrpg skills admin xp-boost <hráč> <skill|all> <1-100>` a zrušení přes
+`/nrpg skills admin xp-boost-clear <hráč> <skill|all>`. Boost se po restartu
+automaticky smaže.
 
 Větev 2.0 staví vlastní autoritativní RPG postup: 15 přímo trénovaných dovedností
 a odvozený Powerlevel, vše se stropem 100. Součástí základu je validovaný perk
@@ -29,14 +34,14 @@ Každá dovednost má šest uzlů ve dvou větvích; GUI vysvětluje rank, cenu,
 a předchůdce. Všech 15 dovedností má nativní validovaný zdroj XP a živou runtime
 vertikálu. Sběr, výroba, obchod, rybaření i boj používají sdílenou cache profilu,
 omezenou asynchronní frontu zápisů a eventové efekty bez per-tick skenování světa.
-Modul `skills` přesto zůstává výchozím stavem vypnutý, dokud neproběhne živá akceptace,
-měření MSPT, migrace profilů a ověřený rollback; ValhallaMMO je do té doby produkční
-autorita.
+Modul `skills` je výchozím stavem zapnutý a je nativní autoritou postupu. ValhallaMMO
+není pro něj potřeba; zbývající kompatibilní bridge se při chybějícím pluginu pouze
+bezpečně neaktivují.
 
 ## Moduly
 
-Produkční moduly jsou výchozím stavem zapnuté a ovládají se v `config.yml`.
-Vývojový modul `skills` zůstává bezpečně vypnutý:
+Nativní moduly se ovládají v `config.yml`. Výchozí profil používá Nekara Skills a
+neaktivuje starou ValhallaMMO Echo Vein aktivitu:
 
 ```yml
 modules:
@@ -47,11 +52,11 @@ modules:
   campfire:
     enabled: true
   mining:
-    enabled: true
+    enabled: false
   mounts:
     enabled: true
   skills:
-    enabled: false
+    enabled: true
 ```
 
 Kořenový `config.yml` obsahuje pouze jádro, updater a přepínače modulů. Podrobné
@@ -69,9 +74,9 @@ Aktuální moduly:
 | `auth` | testovací | Registrace, přihlášení a ochrana nicku pro offline-mode server. |
 | `fishing` | produkční | Nenásilná časovací rybářská minihra kompatibilní s vanilla a ValhallaMMO. |
 | `campfire` | produkční | Sezení, ležení, léčení, Rested bonus, skupinové škálování a roleplay u zapáleného ohně. |
-| `mining` | testovací | Aktivity NekaraMining, aktuálně prostorová výzva Echo Vein s nativními ValhallaMMO odměnami. |
+| `mining` | kompatibilní | Starší Echo Vein pro servery s ValhallaMMO; ve výchozím nativním profilu je vypnutý. |
 | `mounts` | testovací | Jeden trvalý vanilla kůň na hráče s píšťalkou, brašnami a ochranou proti duplikaci. |
-| `skills` | staging | Přehled 16 dovedností, 90 perků, transakční nákup a runtime vertikály všech 15 trénovaných skillů. |
+| `skills` | nativní | Přehled 16 dovedností, 90 perků, transakční nákup a runtime vertikály všech 15 trénovaných skillů. |
 
 Ležení nepoužívá ručně sestavená entity metadata. Na Purpur/Paper 26.1 vykresluje
 nativní nekolizní mannequin se skinem a výbavou hráče; lze ho vypnout přes
@@ -80,9 +85,15 @@ odpočinek funkční na bezpečné serverové póze.
 
 ### Nativní sběrné vertikály
 
-Při ručně zapnutém `modules.skills.enabled` používají Hornictví, Rubačina a
+Při zapnutém `modules.skills.enabled` používají Hornictví, Rubačina a
 Zeměrytectví vlastní tabulky pod `mining`, `woodcutting` a `digging` v
 `skills/<skill>/config.yml`; vážené nálezy jsou v příslušném `loot-tables.yml`.
+Rybaření má vlastní tabulku bonusových pokladů, která nikdy nenahrazuje skutečný
+vanilla úlovek. Má 0,5 % základní šanci, která na levelu 100 dosáhne 2 %.
+`skills/config.yml` obsahuje malé, zastropované vrozené bonusy
+podle úrovně: až 2,5 % na dvojitý výtěžek ze sběru, až 1 % na nález ze
+Zeměrytectví a až 1,5 % na rybářský poklad. Perky se k nim přičítají a zůstávají
+hlavním zdrojem specializace.
 Odměna vznikne až další
 tick po skutečné změně vytěženého bloku, takže samotné syntetické vyvolání eventu
 nestačí. Creative, Spectator, zakázaný svět a hráčem položený blok jsou odmítnuté.
@@ -95,7 +106,7 @@ aktivace bude vyžadovat předchozí období sledování.
 
 Perky dvojitého a trojitého výtěžku používají jediný vzájemně výlučný hod. Bonus
 klonuje ItemStacky z reálného `BlockDropItemEvent`, zachová metadata a nespouští
-znovu loot tabulku, Fortune ani ValhallaMMO odměny. Držení odpovídajícího nástroje
+znovu loot tabulku ani Fortune. Držení odpovídajícího nástroje
 aktivuje perk rychlosti; horník s otevřenou pecí zkracuje pouze vanilla dobu receptu
 a nepřepisuje rychlejší cizí úpravu.
 
@@ -106,6 +117,28 @@ nenačítají. `Řízený odstřel` omezeně posílí TNT zapálené vlastníkem
 počet ovlivněných bloků. Rubačina dále nabízí pět prken z vanilla receptu a nálezy
 v přírodním listí; Zeměrytectví používá váženou tabulku nálezů rozšířenou perkem
 `Paměť střepů`.
+
+### Výkovy přímo ve vanilla craftingu
+
+Kovové zbroje a zbraně vytvořené ve crafting table získají Tier I–V podle aktuální úrovně
+Řemesla, ale vznikají jako `Nezpracované`; dřevěné, kamenné a kožené kusy zůstávají
+bez výrobního procesu. Pravý klik s kovovým výkovem na Blast Furnace
+spotřebuje jedno uhlí a nastaví `Nahřátý`; vodní cauldron jej změní na `Opracovaný` a
+aktivuje armor bonus. Zbraně je pak nutné při plížení dokončit u grindstone: dvě sekundy
+u brusu aktivují jejich Nekara damage. Tier se tím nezvyšuje a vanilla enchanty zůstávají
+zcela oddělené.
+
+Každý takový předmět má v lore barevný řádek `Stav výkovu` a grafický postup
+`[◆◇◇◇]`. Součástí ukazatele je vždy konkrétní další krok, například Blast Furnace,
+vodní cauldron nebo plížení u grindstone; hotový kus jasně hlásí aktivní bonus.
+
+Perk `Zapomenuté nákresy` zvyšuje pouze výnos běžných vanilla stavebních bloků podle
+Tieru Řemesla. Například recept s normálním výstupem čtyř kusů dává Tier I–V postupně
+4, 5, 6, 7 a 8 kusů. Upravený počet je vidět přímo ve výsledkovém slotu crafting table
+a funguje stejně při běžném i shift-craftingu. Kromě bloků se týká i základních stavebních
+komponent: sticků, bowls, clay balls, běžných, netherových a resinových cihel. Neplatí pro jídlo, plodiny,
+mob dropy ani skladovací bloky cenných surovin. Stonecutter pro kmeny, dřevo a prkna nabízí nativní dřevěné recepty v běžném
+seznamu; hráči s perkem `Zapomenuté nákresy` v jejich výsledku uvidí stejnou škálu.
 
 ### Další nativní vertikály
 
@@ -138,6 +171,12 @@ změna uloží společně profil, správce, operaci, detail, čas a revision př
 `inspect` ukazuje profil i posledních pět auditních změn; běžní hráči nemají
 oprávnění ani našeptávání podřízených admin příkazů.
 
+`metrics` ukazuje provozní stav omezené XP fronty od posledního zapnutí modulu:
+požadavky, výsledky, chyby, připsaná XP, aktuální i nejvyšší hloubku fronty a
+latenci. `export` asynchronně vytvoří pod `skills/exports` ZIP s konzistentním
+SQLite snapshotem, CSV profily/XP/perky/auditem a manifestem s SHA-256. Cestu
+neurčuje hráč, současně běží nejvýše jeden export a živá databáze se nemění.
+
 Campfire přijímá sedadla NekaraRPG i nakonfigurovaná externí vehicle sedadla.
 Při upgradu se vlastní hodnoty ze starého `sitting/config.yml` jednou převezmou
 do sekce `sitting` v `campfire/config.yml`; starý soubor zůstane jako záloha.
@@ -149,8 +188,7 @@ zobrazuje jen moduly, které jsou právě zapnuté v `config.yml` a ke kterým m
 oprávnění. Rybaření, Táboření a Těžbu sdružuje pod dlaždicí Činnosti; v Tábořišti
 lze sednout, vstát, lehnout si i ukončit ležení. Původní příkazy zůstávají jako fallback
 a pro administraci. Zapnutý nativní modul `skills` nabídne vlastní přehled a
-perk stezky; jinak při načteném ValhallaMMO zůstává přímý vstup do jeho nabídky přes
-`/skills`. Přístup k nabídce řídí oprávnění
+perk stezky. Přístup k nabídce řídí oprávnění
 `nekararpg.menu.use`.
 
 Ikona osobního přehledu spojuje stav účtu, Rested, právě probíhající činnost a
@@ -242,8 +280,12 @@ vypnutí modulu, čištění při reloadu a ukončení serveru.
 Příkaz `/nekararpg lay` nebo tlačítko na hlavní obrazovce či v Tábořišti uloží
 hráče do spánkové pózy na zemi. Nejde o vanilla spánek: světový blok ani spawn se
 nemění a plugin nevolá příkaz CMI. Purpur/Paper 26.1 vykreslí nativní mannequin
-se skinem a výbavou hráče v podporované sleeping póze; při vypnutí pojistky nebo
-runtime chybě zůstane bezpečný serverový fallback. Během ležení je poziční pohyb
+se skinem a výbavou hráče v podporované sleeping póze. Výchozí yaw korekce `-90°`
+a forward offset `-0.9` tělo zarovnají se směrem hráče a vystředí na původní
+pozici; `lying.mannequin.*` dovoluje jemné doladění. Skutečné vybavení původní
+neviditelné entity se skrývá pouze klientsky, takže nevzniká druhý krumpáč a
+inventář se nemění. Při vypnutí pojistky nebo runtime chybě zůstane bezpečný
+serverový fallback. Během ležení je poziční pohyb
 zablokovaný, ale hráč se může rozhlížet. Přikrčení, teleport, smrt, odpojení,
 poškození podle konfigurace nebo `/nekararpg rise` jej znovu postaví.
 
@@ -486,6 +528,8 @@ upozornění při přípravě releasu a znovu při připojení před restartem.
 | `/nekararpg skills admin grant-xp <hráč> <skill> <množství>` | `nekararpg.skills.admin` |
 | `/nekararpg skills admin grant-perk <hráč> <perk-id> [rank]` | `nekararpg.skills.admin` |
 | `/nekararpg skills admin reset <hráč> <skill\|perks\|all>` | `nekararpg.skills.admin` |
+| `/nekararpg skills admin metrics` | `nekararpg.skills.admin` |
+| `/nekararpg skills admin export` | `nekararpg.skills.admin` |
 | `/nekararpg test [fishing|vein]` | `nekararpg.command.test` |
 | `/nekararpg cancel [player]` | `nekararpg.command.cancel` |
 | `/nekaraauth` | žádné; otevře účetní GUI |

@@ -62,6 +62,9 @@ final class CombatPerkListener implements Listener {
     private final NamespacedKey chargedArrowKey;
     private final NamespacedKey lightMobilityKey;
     private final NamespacedKey heavyStabilityKey;
+    private final NamespacedKey smithingWeaponDamageKey;
+    private final NamespacedKey smithingArmorKey;
+    private final SmithingTier.Keys smithingTierKeys;
     private final NamespacedKey coatingTypeKey;
     private final NamespacedKey coatingDurationKey;
     private final NamespacedKey coatingAmplifierKey;
@@ -77,6 +80,9 @@ final class CombatPerkListener implements Listener {
         this.chargedArrowKey = new NamespacedKey(plugin, "skills_charged_arrow");
         this.lightMobilityKey = new NamespacedKey(plugin, "skills_light_mobility");
         this.heavyStabilityKey = new NamespacedKey(plugin, "skills_heavy_stability");
+        this.smithingWeaponDamageKey = new NamespacedKey(plugin, "smithing_weapon_damage");
+        this.smithingArmorKey = new NamespacedKey(plugin, "smithing_armor");
+        this.smithingTierKeys = SmithingTier.keys(plugin);
         this.coatingTypeKey = new NamespacedKey(plugin, "skills_coating_type");
         this.coatingDurationKey = new NamespacedKey(plugin, "skills_coating_duration");
         this.coatingAmplifierKey = new NamespacedKey(plugin, "skills_coating_amplifier");
@@ -293,13 +299,18 @@ final class CombatPerkListener implements Listener {
             return;
         }
         if (armorSkill.get() == SkillId.LIGHT_ARMOR) {
-            double mobility = state.get().stats().value(StatId.MOVEMENT_PENALTY_REDUCTION);
+            // Leather has no baseline penalty. Chainmail and diamond begin slightly
+            // restrictive; training can turn a full light set into mobility.
+            double mobility = (SkillEquipmentPolicy.wearsLeatherArmor(player.getInventory()) ? 0.0 : -0.05)
+                + state.get().stats().value(StatId.MOVEMENT_PENALTY_REDUCTION);
             if (state.get().has(MechanicId.LIGHT_ARMOR_SET_BONUS)) {
                 mobility += 0.03;
             }
             addModifier(player, Attribute.MOVEMENT_SPEED, lightMobilityKey, mobility);
         } else {
-            double stability = state.get().stats().value(StatId.MOVEMENT_PENALTY_REDUCTION) * 0.5;
+            double burdenReduction = state.get().stats().value(StatId.MOVEMENT_PENALTY_REDUCTION);
+            addModifier(player, Attribute.MOVEMENT_SPEED, lightMobilityKey, -0.12 + burdenReduction);
+            double stability = 0.05 + burdenReduction * 0.5;
             if (state.get().has(MechanicId.HEAVY_ARMOR_SET_BONUS)) {
                 stability += 0.05;
             }
@@ -336,7 +347,14 @@ final class CombatPerkListener implements Listener {
             && arrow.getPersistentDataContainer().has(chargedArrowKey, PersistentDataType.BYTE)) {
             multiplier *= 1.25;
         }
-        event.setDamage(event.getDamage() * Math.max(0.0, multiplier));
+        ItemStack craftedWeapon = attacker.getInventory().getItemInMainHand();
+        double craftedDamage = SmithingTier.weaponBonusActive(craftedWeapon, smithingTierKeys)
+            ? itemDouble(craftedWeapon, smithingWeaponDamageKey) : 0.0;
+        double weaponCondition = switch (SmithingTier.state(craftedWeapon, smithingTierKeys)) {
+            case UNPROCESSED, HEATED -> 0.75;
+            default -> 1.0;
+        };
+        event.setDamage(event.getDamage() * Math.max(0.0, multiplier) * weaponCondition + craftedDamage);
         double bleedChance = runtime.stats().value(StatId.BLEED_CHANCE);
         if (bleedChance > 0.0 && ThreadLocalRandom.current().nextDouble() < bleedChance) {
             double damagePerTick = Math.min(4.0, Math.max(0.25,
@@ -414,10 +432,21 @@ final class CombatPerkListener implements Listener {
             event.setCancelled(true);
             return;
         }
-        double armorMultiplier = runtime.stats().value(StatId.ARMOR_MULTIPLIER);
-        if (armorMultiplier > 1.0) {
-            event.setDamage(event.getDamage() / armorMultiplier);
+        double baseArmorEffectiveness = SkillEquipmentPolicy.wearsLeatherArmor(defender.getInventory())
+            ? 1.0 : 0.90;
+        int unfinishedPieces = 0;
+        double craftedArmor = 0.0;
+        for (ItemStack item : defender.getInventory().getArmorContents()) {
+            if (SmithingTier.armorBonusActive(item, smithingTierKeys)) {
+                craftedArmor += itemDouble(item, smithingArmorKey);
+            } else if (SmithingTier.state(item, smithingTierKeys) != SmithingTier.ProcessingState.NONE) {
+                unfinishedPieces++;
+            }
         }
+        baseArmorEffectiveness *= Math.max(0.65, 1.0 - unfinishedPieces * 0.12);
+        double armorMultiplier = baseArmorEffectiveness * runtime.stats().value(StatId.ARMOR_MULTIPLIER)
+            * (1.0 + craftedArmor * 0.04);
+        event.setDamage(event.getDamage() / armorMultiplier);
         double reflection = runtime.stats().value(StatId.DAMAGE_REFLECTION);
         if (reflection > 0.0) {
             livingDamager(event.getDamager()).ifPresent(attacker -> {
@@ -497,7 +526,7 @@ final class CombatPerkListener implements Listener {
         NamespacedKey key,
         double amount
     ) {
-        if (amount <= 0.0) {
+        if (amount == 0.0) {
             return;
         }
         AttributeInstance instance = player.getAttribute(attribute);
@@ -512,6 +541,12 @@ final class CombatPerkListener implements Listener {
         if (instance != null) {
             instance.removeModifier(key);
         }
+    }
+
+    private static double itemDouble(ItemStack item, NamespacedKey key) {
+        if (item == null || item.getType().isAir()) return 0.0;
+        Double value = item.getPersistentDataContainer().get(key, PersistentDataType.DOUBLE);
+        return value == null ? 0.0 : Math.max(0.0, value);
     }
 
     private static Player attackingPlayer(Entity damager) {

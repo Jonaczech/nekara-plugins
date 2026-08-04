@@ -1,5 +1,73 @@
 # Přehled změn
 
+## 2.2.0
+
+- Kovářská dílna `/nrpg forge` byla odstraněna. Výbava vzniká přímo ve vanilla
+  crafting table jako `Nezpracovaný` výkov s Tierem podle aktuální úrovně Řemesla.
+  Blast Furnace s jedním uhlím ji nahřeje, vodní kotel ji opracuje a aktivuje armor
+  bonus; zbraň se následně při plížení dvě sekundy ostří na brusu, čímž aktivuje
+  vlastní Nekara damage. Stav i Tier jsou uloženy přímo v předmětu.
+- Výkovy mají barevný a grafický ukazatel procesu v lore (`[◆◇◇◇]`) včetně
+  konkrétního dalšího kroku a jasného potvrzení aktivního armor/damage bonusu.
+- Perk `Zapomenuté nákresy` nyní odemyká efektivní craftění vanilla stavebních
+  bloků. Výnos škáluje podle Tieru Řemesla: výstup o čtyřech kusech roste od 4 do 8;
+  úložišťové bloky cenných rud, plodiny, jídlo a mob dropy jsou výslovně vyloučeny.
+  Stonecutter nabízí nativní recepty pro kmeny, dřevo a prkna přímo v běžném seznamu;
+  výstup s perkem se zobrazí již po vybrání receptu.
+- Výrobní proces Blast Furnace → vodní cauldron → grindstone se týká jen kovových
+  zbraní a zbrojí. Dřevěné, kamenné a kožené vybavení zachovává vanilla chování.
+- Opraven efektivní crafting stavebních bloků: výsledek se nyní upraví již v náhledu
+  crafting table a funguje i při shift-craftingu, bez dodatečného duplicitního dropu.
+- Bonus nyní zahrnuje také neblokové stavební komponenty: sticky, bowls, clay balls,
+  běžné, netherové a resinové cihly. Stejné pojistky dále vylučují jídlo, plodiny,
+  mob dropy, nástroje, zbroje a ekonomicky citlivé úložné bloky.
+- Pro live balance testy přidán dočasný administrátorský XP boost po hráči a
+  skillu (nebo `all`) v rozsahu 1–100×. Aplikuje se před jednotnou XP pipeline,
+  není perzistentní a po restartu serveru se smaže.
+- Kované předměty nyní dostávají vlastní Nekara atributy a lore pro `Tier I–V`;
+  tier se určuje podle Kovářství, nemění vanilla enchanty a ukládá se jen na
+  vlastnoručně vyrobené výstroji. Zbraně získají vlastní damage, zbroje vlastní
+  armor efekt a nástroje šanci nevyčerpat odolnost.
+- Rybaření má od první úrovně 0,5 % šanci na bonusový poklad; s úrovní roste
+  o 0,015 procentního bodu a na levelu 100 se zastaví na 2 %. Tabulka zůstává
+  ve `skills/fishing/loot-tables.yml` a nikdy nenahrazuje skutečný úlovek.
+- Perky v GUI teď srozumitelně barevně rozlišují odemčený stav, připravené
+  odemčení, chybějící úroveň/perk a chybějící volné body.
+- Každá karta dovednosti nyní rozlišuje `Úroveň` a `Celkem zkušeností` včetně
+  celkového prahu pro následující úroveň. Detail stezky navíc popisuje skutečný
+  zdroj XP dané dovednosti.
+- XP action bar má krátkou přednost před Rested timerem, aby se získané Mining XP
+  u ohniště okamžitě neztratily pod jinou vizuální hláškou.
+- Úroveň nyní přidává malé konfigurovatelné baseline bonusy: sběr až 2,5 % na
+  dvojitý výtěžek, Zeměrytectví až 1 % na nález a Rybaření až 1,5 % na poklad.
+  Perkové bonusy se sčítají; dvojitý/trojitý výtěžek zůstává vzájemně výlučný.
+- Přidána `skills/fishing/loot-tables.yml`. Její vážený poklad se přidává pouze
+  vedle reálně doručeného vanilla úlovku a nikdy jej nerolluje ani nenahrazuje.
+- Přehled i detail Nekara Skills nyní ukazují přesný celkový počet získaných XP pro
+  každou dovednost. Po skutečně úspěšném, atomicky uloženém připsání se hráči krátce
+  zobrazí zdroj a hodnota v action baru (např. `Kámen | +2 XP do Hornictví`); rychlé
+  stejné odměny se slučují, aby se GUI ani chat nespamovaly.
+- Nekara Skills jsou výchozím nativním systémem postupu: `modules.skills.enabled`
+  je `true`. Hornictví, Rubačina, Zeměrytectví i zbývající vertikály tak udělují
+  vlastní XP ze skutečných událostí a zakoupené perky aktivují vlastní efekty.
+- Starší modul `mining` pro ValhallaMMO Echo Vein je výchozím stavem vypnutý. Pokud
+  jej administrátor zapne bez dostupného ValhallaMMO, neregistruje listenery ani
+  periodický task; nativní náhradou je perk `Žilobití` v Hornictví.
+- Nativní mannequin ležení koriguje orientaci o `-90°` a kotevní bod o `-0.9`
+  bloku ve směru hráče, takže tělo leží ve směru původního pohledu a je
+  vystředěné na výchozí pozici. Rotaci i prostorové offsety lze doladit v
+  `campfire/config.yml` bez nové kompilace.
+- Skutečná hráčská entita během mannequin vizuálu klientsky skrývá vybavení přes
+  Paper API. Inventář se nemění a po vstání se vybavení obnoví; tím mizí druhý
+  plovoucí krumpáč nebo jiný držený předmět.
+- Přidána provozní telemetrie omezené XP fronty přes
+  `/nrpg skills admin metrics`: počet požadavků, odmítnutí, duplicit, chyb,
+  připsaných XP, aktuální/nejvyšší hloubka fronty a průměrná/maximální latence.
+- `/nrpg skills admin export` vytváří mimo hlavní serverové vlákno konzistentní
+  read-only ZIP pod `skills/exports`. Obsahuje SQLite snapshot, CSV profilů, XP,
+  perků a auditu, manifest, počty a SHA-256; živá databáze se neupravuje a současně
+  může běžet nejvýše jeden export.
+
 ## 2.1.0
 
 - Všech 15 trénovaných dovedností má nativní runtime zdroj XP. Nové eventové

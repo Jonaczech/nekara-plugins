@@ -47,7 +47,7 @@ public final class DefaultPerkTree {
         builder.tree(SkillId.SMITHING,
             node("craft", "Poctivé řemeslo", "Vlastnoručně vyrobená výbava získává vyšší kvalitu.", stat(StatId.ITEM_QUALITY, 0.05)),
             node("economy", "Úsporný výkovek", "Při výrobě a úpravách se šetří materiál.", stat(StatId.RESOURCE_COST_REDUCTION, 0.012)),
-            node("recipes", "Zapomenuté nákresy", "Odemkne nové recepty výstroje.", mechanic(MechanicId.SMITHING_RECIPES)),
+            node("recipes", "Zapomenuté nákresy", "Odemkne efektivní výrobu stavebních bloků a zpracovaných surovin.", mechanic(MechanicId.SMITHING_RECIPES), mechanic(MechanicId.BULK_CRAFTING)),
             node("fine_work", "Jemná práce", "Další zlepšení vlastností vyrobených předmětů.", stat(StatId.ITEM_QUALITY, 0.08)),
             node("tinkering", "Dílenské úpravy", "Odemkne bezpečné ladění vlastností výbavy.", mechanic(MechanicId.TINKERING)),
             node("masterwork", "Mistrovský kus", "Vrcholné výrobky dosahují nejlepší možné jakosti.", stat(StatId.ITEM_QUALITY, 0.20)));

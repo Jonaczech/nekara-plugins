@@ -101,7 +101,7 @@ public final class PerkIconResolver {
             case MEDITATION -> Material.AMETHYST_SHARD;
             case VILLAGER_ORDERING, VILLAGER_UPGRADING, VILLAGER_TRAINING,
                     VILLAGER_GIFTS, BLACK_MARKET -> Material.EMERALD;
-            case SMITHING_RECIPES, TINKERING -> Material.SMITHING_TABLE;
+            case SMITHING_RECIPES, BULK_CRAFTING, TINKERING -> Material.SMITHING_TABLE;
             case WOOD_RECIPES -> Material.CRAFTING_TABLE;
             case RARE_LEAF_DROPS -> Material.OAK_LEAVES;
             case ARCHAEOLOGY_FINDS -> Material.BRUSH;

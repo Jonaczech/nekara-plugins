@@ -5,10 +5,12 @@ import cz.nekara.rpg.skills.admin.SkillAdminActor;
 import cz.nekara.rpg.skills.admin.SkillAdministrationRepository;
 import cz.nekara.rpg.skills.admin.SkillAuditEntry;
 import cz.nekara.rpg.skills.admin.SkillAuditRecord;
+import cz.nekara.rpg.skills.export.SkillSnapshotRepository;
 import cz.nekara.rpg.skills.perks.PerkId;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -21,7 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public final class SqliteSkillProfileRepository implements SkillAdministrationRepository {
+public final class SqliteSkillProfileRepository
+    implements SkillAdministrationRepository, SkillSnapshotRepository {
     private static final int SCHEMA_VERSION = 2;
 
     private final Connection connection;
@@ -181,6 +184,30 @@ public final class SqliteSkillProfileRepository implements SkillAdministrationRe
             connection.close();
         } catch (SQLException exception) {
             throw storage("Could not close Nekara Skills storage", exception);
+        }
+    }
+
+    @Override
+    public synchronized void createConsistentSnapshot(Path target) throws IOException {
+        Path absoluteTarget = target.toAbsolutePath().normalize();
+        Path parent = absoluteTarget.getParent();
+        if (parent == null) {
+            throw new IOException("Nekara Skills snapshot requires a parent directory");
+        }
+        Files.createDirectories(parent);
+        if (Files.exists(absoluteTarget)) {
+            throw new IOException("Nekara Skills snapshot target already exists");
+        }
+        String escapedPath = absoluteTarget.toString().replace("'", "''");
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("VACUUM INTO '" + escapedPath + "'");
+        } catch (SQLException | RuntimeException exception) {
+            try {
+                Files.deleteIfExists(absoluteTarget);
+            } catch (IOException cleanupFailure) {
+                exception.addSuppressed(cleanupFailure);
+            }
+            throw new IOException("Could not create a consistent Nekara Skills snapshot", exception);
         }
     }
 

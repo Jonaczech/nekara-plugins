@@ -8,6 +8,8 @@ public record SkillsConfig(
     NativeMiningConfig mining,
     NativeGatheringConfig woodcutting,
     NativeGatheringConfig digging,
+    LevelRewardConfig levelRewards,
+    FishingRewardConfig fishingRewards,
     GatheringAbilityConfig veinMining,
     GatheringAbilityConfig drilling,
     GatheringAbilityConfig treeFeller,
