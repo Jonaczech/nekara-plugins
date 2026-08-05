@@ -85,7 +85,7 @@ public final class PerkEffectPresentation {
             case RARE_DROP_CHANCE -> "šance na vzácný nález " + signedPercentagePoints(value);
             case ANIMAL_DAMAGE_MULTIPLIER -> "poškození proti zvířatům " + signedPercent(value);
             case BEEKEEPING_YIELD -> "výtěžek včelaření " + signedPercent(value);
-            case FISHING_LUCK -> "rybářské štěstí " + signedPercent(value);
+            case LUCK -> "globální štěstí +" + number(value);
             case FISHING_SPEED -> "rychlost záběru " + signedPercent(value);
             case EXPERIENCE_ORB_MULTIPLIER -> "získané zkušenostní koule " + signedPercent(value);
             case ACCURACY -> "přesnost střel " + signedPercentagePoints(value);
@@ -106,7 +106,6 @@ public final class PerkEffectPresentation {
             case TREE_FELLER -> "při plížení poražení propojeného přírodního stromu";
             case INSTANT_HARVEST -> "sklizeň a opětovné zasazení jedním dotykem";
             case FIELD_HARVEST -> "při plížení sklizeň zralých plodin v oblasti nejvýše 3×3";
-            case PARRY -> "odražení útoku a krátké omráčení útočníka";
             case WEAPON_COATING -> "nanesení jednoho neokamžitého účinku lektvaru na 3 zásahy zbraně";
             case CHARGED_SHOT -> "nabité střely při plně nataženém luku nebo kuši";
             case ADRENALINE -> "Adrenalin při nízkém zdraví";

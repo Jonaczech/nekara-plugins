@@ -14,14 +14,15 @@ progression:
 # resets only this skill, and permanently strengthens its perk statistics once.
 new-game-plus:
   enabled: true
-  experience-multiplier: 0.90
-  perk-stat-bonus-per-rank: 0.02
+  experience-multiplier: 0.75
+  perk-stat-bonus-per-rank: 0.10
+  innate-gathering-double-drop-multiplier-per-rank: 1.25
 
 # Small innate bonuses earned from level. Perks remain the dominant source of power.
 level-rewards:
   gathering:
-    double-drop-chance-per-level: 0.00025
-    maximum-double-drop-chance: 0.025
+    double-drop-chance-per-level: 0.002
+    maximum-double-drop-chance: 0.20
   digging:
     rare-drop-chance-per-level: 0.00010
     maximum-rare-drop-chance: 0.010
@@ -35,6 +36,12 @@ level-rewards:
 activities:
   enabled: true
   deduplication-milliseconds: 750
+
+# Global Luck applies only when Nekara rolls an entry from its own rare-loot table.
+# It never changes crafting, normal drops, vanilla chest loot or vanilla fishing loot.
+luck:
+  maximum-points: 2
+  rare-loot-chance-bonus-per-point: 0.02
 
 # Weapon-family combat effects are always resolved server-side. Values are
 # added to the selected weapon skill's perk statistics, never stored in items.

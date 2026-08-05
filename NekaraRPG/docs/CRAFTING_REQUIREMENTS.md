@@ -1,0 +1,68 @@
+# Požadavky výroby výbavy
+
+Tento přehled popisuje aktuálně vynucované požadavky NekaraRPG. Nezavádí další
+recepty ani nemění vanilla suroviny.
+
+## Řemeslo podle materiálu
+
+| Materiál | Požadovaný level Řemesla | Platí pro |
+| --- | ---: | --- |
+| Dřevo, kůže | 0 | zbraně, nástroje, zbroje |
+| Kámen | 5 | zbraně a nástroje |
+| Měď | 10 | zbraně, nástroje, zbroje |
+| Zlato | 15 | zbraně, nástroje, zbroje |
+| Železo, chainmail | 20 | zbraně, nástroje, zbroje |
+| Diamant | 50 | zbraně, nástroje, zbroje |
+| Netherite | 80 | zbraně, nástroje, zbroje |
+
+Nekara kontroluje náhled i dokončení craftu, proto požadavek nelze obejít
+shift-craftem nebo stonecutterem. Nezařazené vanilla předměty bez materiálového
+tieru (luk, kuše, trojzubec a palcát) nemají další levelový požadavek.
+
+## Zbraně a nástroje
+
+- Vanilla meče, sekery a kopí používají tabulku materiálů výše.
+- Vlastní dýky, obouruční meče a kladiva používají stejnou tabulku ve všech
+  sedmi materiálových variantách.
+- Krumpáče, lopaty a motyky používají stejnou tabulku materiálů.
+- Vlastní zbraně se vyrábějí z příslušného materiálu a klacků:
+
+| Vlastní zbraň | Schéma |
+| --- | --- |
+| Dýka | ` A ` / ` S ` |
+| Obouruční meč | `AAA` / ` B ` / ` S ` |
+| Kladivo | ` A ` / `ASA` / ` S ` |
+
+`A` a `B` jsou příslušný materiál tieru; `S` je klacek.
+
+## Zbroje a kvalita
+
+- Helma, chestplate, leggings a boots jsou řízené materiálovou tabulkou.
+- Po vyrobení získá výbava Řemeslný tier podle aktuální úrovně Řemesla:
+  I (0), II (20), III (40), IV (70), V (100).
+- Kovové zbraně a zbroje dále procházejí dílenským zpracováním; neopracovaný
+  kus nemá aktivní plný Nekara bonus.
+
+## Používání podle dovednosti
+
+Vyrobit předmět a umět jej používat jsou dvě samostatné podmínky. Materiálová
+tabulka výše určuje požadovaný level pro použití v příslušné dovednosti.
+
+| Výbava | Požadovaná dovednost |
+| --- | --- |
+| Kožená, chainmail a diamantová zbroj | Stínový oděv |
+| Měděná, zlatá, železná a netheritová zbroj | Plátová ochrana |
+| Meče, dýky a kopí | Lehké zbraně |
+| Obouruční meče a kladiva | Brutální boj |
+| Krumpáče | Těžba |
+| Lopaty | Kopání |
+| Motyky | Statkářství |
+| Sekery při držení a kácení | Lesnictví |
+| Sekery při útoku | Brutální boj |
+
+Při nedostatečné úrovni zůstává předmět použitelný, ale hra zobrazí vysvětlení:
+
+- zbroj: pohybový postih a až o 60 % slabší dodatečná ochrana při čtyřech
+  neovládnutých kusech;
+- zbraně a nástroje: postih pohybu, 60 % snížení poškození při útoku a 85 %
+  snížení rychlosti ničení bloků u nástrojů.

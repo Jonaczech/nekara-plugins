@@ -11,21 +11,21 @@ class PowerLevelCalculatorTest {
     private final PowerLevelCalculator calculator = new PowerLevelCalculator(100);
 
     @Test
-    void powerIsFloorAverageOfAllActiveGameplaySkills() {
+    void powerUsesTheCrossSkillAverageAfterTheOnboardingLevel() {
         EnumMap<SkillId, Integer> levels = allAt(50);
         PowerProgress power = calculator.calculate(levels);
 
         assertEquals(50, power.level());
         assertEquals(650, power.contributingLevelTotal());
-        assertEquals(13, power.levelsUntilNext());
+        assertEquals(1, power.levelsUntilNext());
     }
 
     @Test
     void missingSkillsCountAsZeroAndNoSingleSkillCanDominatePower() {
         PowerProgress power = calculator.calculate(Map.of(SkillId.MINING, 100));
 
-        assertEquals(7, power.level());
-        assertEquals(4, power.levelsUntilNext());
+        assertEquals(8, power.level());
+        assertEquals(5, power.levelsUntilNext());
     }
 
     @Test
@@ -33,7 +33,7 @@ class PowerLevelCalculatorTest {
         PowerProgress power = calculator.calculate(allAt(100));
 
         assertEquals(100, power.level());
-        assertEquals(13, power.levelsUntilNext());
+        assertEquals(1, power.levelsUntilNext());
     }
 
     @Test
@@ -50,6 +50,14 @@ class PowerLevelCalculatorTest {
     void outOfRangeSkillLevelIsRejected() {
         assertThrows(IllegalArgumentException.class,
             () -> calculator.calculate(Map.of(SkillId.FISHING, 101)));
+    }
+
+    @Test
+    void firstSkillLevelUnlocksTheFirstPowerMilestone() {
+        PowerProgress power = calculator.calculate(Map.of(SkillId.FISHING, 1));
+
+        assertEquals(1, power.level());
+        assertEquals(13, power.levelsUntilNext());
     }
 
     private static EnumMap<SkillId, Integer> allAt(int level) {

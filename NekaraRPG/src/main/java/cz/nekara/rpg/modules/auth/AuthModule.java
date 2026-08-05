@@ -240,8 +240,7 @@ public final class AuthModule implements NekaraModule, Listener {
             inventory.setItem(slot, filler);
         }
         if (loggedIn) {
-            inventory.setItem(BACK_SLOT, item(Material.ARROW,
-                    Component.text("Zpět do NekaraRPG", NamedTextColor.YELLOW)));
+            inventory.setItem(BACK_SLOT, GuiItems.back("Zpět do NekaraRPG"));
             inventory.setItem(CHANGE_PASSWORD_SLOT, item(Material.NAME_TAG,
                     Component.text("Změnit heslo", NamedTextColor.GOLD),
                     Component.text("Nejdřív ověříš současné heslo.", NamedTextColor.GRAY),

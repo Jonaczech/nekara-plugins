@@ -136,6 +136,7 @@ mount-admin-dispatched: "%prefix%&7Hráč &f%player% &7může navázat pouto se 
 mount-storage-error: "%prefix%&cPouto s tvým koněm na chvíli zesláblo. Zkus to za okamžik."
 mount-already-owned: "%prefix%&cJedno věrné pouto už máš. Další kůň by tě nepřijal."
 mount-not-owned: "%prefix%&7Zatím nemáš vlastního koně. Otevři výběr přes &f/nekararpg mount&7."
+mount-milestone-locked: "%prefix%&7Vlastního mounta odemkneš na &fHlavní úrovni %level%&7."
 mount-grant-started: "%prefix%&aVyber barvu a jméno svého nového koně."
 mount-created: "%prefix%&a%name% je od této chvíle tvým společníkem."
 mount-world-blocked: "%prefix%&cV tomto světě nelze koně vytvořit ani přivolat."

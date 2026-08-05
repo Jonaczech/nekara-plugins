@@ -34,7 +34,9 @@ public final class GuiItems {
     }
 
     public static ItemStack back(String label) {
-        return item(Material.ARROW, Component.text(label, NamedTextColor.YELLOW));
+        return modeledItem("skills/tree/button_return_to_menu", Material.SPECTRAL_ARROW,
+            Component.text(label, NamedTextColor.GOLD),
+            Component.text("Vrátit se na předchozí obrazovku", NamedTextColor.GRAY));
     }
 
     public static ItemStack info(String title, Component... lore) {

@@ -27,8 +27,8 @@ public final class PowerMilestoneCatalog {
     }
 
     public List<PowerMilestone> unlockedAt(int powerLevel) {
-        if (powerLevel < 0 || powerLevel > 100) {
-            throw new IllegalArgumentException("Power level must be between 0 and 100");
+        if (powerLevel < 0) {
+            throw new IllegalArgumentException("Power level cannot be negative");
         }
         return milestones.stream()
             .filter(milestone -> milestone.requiredPowerLevel() <= powerLevel)

@@ -12,6 +12,7 @@ import cz.nekara.rpg.modules.mounts.MountsModule;
 import cz.nekara.rpg.modules.skills.SkillsModule;
 import cz.nekara.rpg.modules.sitting.SittingModule;
 import cz.nekara.rpg.sitting.SitResult;
+import cz.nekara.rpg.skills.milestones.PowerMilestoneId;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -34,7 +35,6 @@ import java.util.UUID;
 public final class NekaraRPGMenu implements Listener {
     private static final int AUTH_SLOT = 10;
     private static final int FISHING_SLOT = 11;
-    private static final int ACTIVITIES_SLOT = 13;
     private static final int CAMPFIRE_SLOT = 14;
     private static final int MINING_SLOT = 15;
     private static final int MOUNTS_SLOT = 16;
@@ -90,7 +90,7 @@ public final class NekaraRPGMenu implements Listener {
         inventory.setItem(OVERVIEW_SLOT, item(Material.COMPASS,
                 Component.text("Můj přehled", NamedTextColor.AQUA),
                 Component.text("To nejdůležitější na jednom místě", NamedTextColor.GRAY),
-                Component.text("Odpočinek, činnost a tvůj kůň", NamedTextColor.DARK_GRAY)));
+                Component.text("Odpočinek, výbava a tvůj kůň", NamedTextColor.DARK_GRAY)));
 
         int visibleModules = 0;
         if (canShow(player, AuthModule.ID, null)) {
@@ -98,13 +98,6 @@ public final class NekaraRPGMenu implements Listener {
                     Component.text("Účet", NamedTextColor.AQUA),
                     Component.text("Přihlášen jako " + player.getName(), NamedTextColor.GRAY),
                     Component.text("Tvé jméno, heslo a bezpečný návrat", NamedTextColor.DARK_GRAY)));
-            visibleModules++;
-        }
-        if (hasVisibleActivity(player)) {
-            inventory.setItem(ACTIVITIES_SLOT, item(Material.MAP,
-                    Component.text("Činnosti", NamedTextColor.GREEN),
-                    Component.text("Rybaření, táboření a těžba", NamedTextColor.GRAY),
-                    Component.text("Nahlédni do cest, které právě znáš", NamedTextColor.DARK_GRAY)));
             visibleModules++;
         }
         if (canShow(player, CampfireModule.ID, "nekararpg.sitting.use")) {
@@ -122,7 +115,8 @@ public final class NekaraRPGMenu implements Listener {
                             NamedTextColor.GRAY),
                     Component.text("U ohně získáváš Odpočatý", NamedTextColor.DARK_GRAY)));
         }
-        if (canShow(player, MountsModule.ID, "nekararpg.mount.use")) {
+        if (canShow(player, MountsModule.ID, "nekararpg.mount.use")
+                && skills.hasPowerMilestone(player.getUniqueId(), PowerMilestoneId.MOUNT)) {
             inventory.setItem(MOUNTS_SLOT, item(Material.SADDLE,
                     Component.text("Můj kůň", NamedTextColor.GOLD),
                     Component.text("Pouto, výbava, brašny a píšťalka", NamedTextColor.GRAY),
@@ -132,7 +126,7 @@ public final class NekaraRPGMenu implements Listener {
         if (canShow(player, SkillsModule.ID, "nekararpg.skills.use")) {
             inventory.setItem(SKILLS_SLOT, item(Material.NETHER_STAR,
                     Component.text("Dovednosti", NamedTextColor.LIGHT_PURPLE),
-                    Component.text("Moc a patnáct cest rozvoje", NamedTextColor.GRAY),
+                    Component.text("Moc a třináct cest rozvoje", NamedTextColor.GRAY),
                     Component.text("Nahlédni do své kroniky", NamedTextColor.DARK_GRAY)));
             visibleModules++;
         }
@@ -229,11 +223,11 @@ public final class NekaraRPGMenu implements Listener {
                     auth.openMenu(player);
                 }
             }
-            case ACTIVITIES_SLOT -> openActivities(player);
             case FISHING_SLOT -> toggleSitting(player);
             case MINING_SLOT -> toggleLying(player);
             case MOUNTS_SLOT -> {
-                if (canShow(player, MountsModule.ID, "nekararpg.mount.use")) {
+                if (canShow(player, MountsModule.ID, "nekararpg.mount.use")
+                        && skills.hasPowerMilestone(player.getUniqueId(), PowerMilestoneId.MOUNT)) {
                     mounts.openMenu(player);
                 }
             }

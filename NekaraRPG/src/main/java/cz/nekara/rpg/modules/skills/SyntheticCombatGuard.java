@@ -1,22 +1,34 @@
 package cz.nekara.rpg.modules.skills;
 
 final class SyntheticCombatGuard {
-    private static final ThreadLocal<Boolean> ACTIVE = ThreadLocal.withInitial(() -> false);
+    private enum DamageOrigin { NONE, GENERIC, BLEED }
+
+    private static final ThreadLocal<DamageOrigin> ORIGIN = ThreadLocal.withInitial(() -> DamageOrigin.NONE);
 
     private SyntheticCombatGuard() {
     }
 
     static boolean isActive() {
-        return ACTIVE.get();
+        return ORIGIN.get() != DamageOrigin.NONE;
     }
 
+    static boolean isBleed() { return ORIGIN.get() == DamageOrigin.BLEED; }
+
     static void run(Runnable action) {
-        boolean previous = ACTIVE.get();
-        ACTIVE.set(true);
+        run(DamageOrigin.GENERIC, action);
+    }
+
+    static void runBleed(Runnable action) {
+        run(DamageOrigin.BLEED, action);
+    }
+
+    private static void run(DamageOrigin origin, Runnable action) {
+        DamageOrigin previous = ORIGIN.get();
+        ORIGIN.set(origin);
         try {
             action.run();
         } finally {
-            ACTIVE.set(previous);
+            ORIGIN.set(previous);
         }
     }
 }

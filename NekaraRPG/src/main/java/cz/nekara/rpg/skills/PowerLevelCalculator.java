@@ -35,10 +35,11 @@ public final class PowerLevelCalculator {
         }
 
         int skillCount = SkillId.activeGameplaySkills().size();
-        int powerLevel = Math.min(maxLevel * 2, total / skillCount);
-        int levelsUntilNext = powerLevel == maxLevel * 2
-            ? 0
-            : skillCount - (total % skillCount);
+        // The first trained skill is an onboarding milestone. Afterwards, each power level
+        // still represents one full cross-skill average and cannot be farmed from one activity.
+        int powerLevel = total == 0 ? 0 : Math.min(maxLevel * 2, 1 + (total - 1) / skillCount);
+        int levelsUntilNext = powerLevel == maxLevel * 2 ? 0
+            : total == 0 ? 1 : skillCount - ((total - 1) % skillCount);
         return new PowerProgress(powerLevel, total, levelsUntilNext);
     }
 }
