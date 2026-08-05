@@ -6,18 +6,13 @@
 
 ## Context
 
-NekaraRPG needs to become the authoritative RPG progression system instead of
-depending on ValhallaMMO for skills, perk trees, combat statistics and gathering
-bonuses. The target is sixteen player-facing skills with level 100 caps, a shared
+NekaraRPG is the authoritative RPG progression system for skills, perk trees,
+combat statistics and gathering bonuses. The target is sixteen player-facing skills with level 100 caps, a shared
 Power level, data-driven perk graphs, custom item support and exploit-resistant
 experience and reward processing.
 
-ValhallaMMO is a design reference only. Its public repository does not declare a
-software license and the installed Premium JAR must not be decompiled or copied.
-AuraSkills and mcMMO are GPL projects, while NekaraRPG is MIT; their source code
-must not be copied into this project. Public documentation and ordinary gameplay
-concepts may be used to understand the problem space. All names, trees, values,
-text, layouts and implementation in NekaraRPG must remain original.
+All names, trees, values, text, layouts and implementation in NekaraRPG remain
+original. External code and assets are never copied into this project.
 
 ## Decision
 
@@ -142,7 +137,7 @@ Empty/filler clicks remain inside the current screen.
 5. Gathering skills and bounded active abilities.
 6. Combat, armor and secondary-effect pipeline.
 7. Crafting, alchemy, enchanting, custom items and Trading.
-8. Controlled migration, dual-run telemetry, staging soak and ValhallaMMO removal.
+8. Controlled migration, staging soak and independent operation.
 
 NekaraRPG 2.0.0 may publish the foundation for controlled testing only while the
 native skills module remains disabled by default and does not award experience,
@@ -155,5 +150,4 @@ exploit tests and live Purpur acceptance.
 This is a large multi-release implementation, but it creates an explicit and
 testable core instead of coupling unrelated listeners. Current Fishing,
 Campfire, Mining and Mounts mechanics will migrate through stable internal APIs.
-ValhallaMMO remains fail-soft during development and is removed only after data
-migration and parity acceptance.
+NekaraRPG operates independently after data migration and parity acceptance.

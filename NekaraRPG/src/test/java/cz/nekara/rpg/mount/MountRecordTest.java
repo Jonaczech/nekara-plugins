@@ -63,7 +63,7 @@ class MountRecordTest {
         List<org.bukkit.inventory.ItemStack> supplied = new ArrayList<>();
         supplied.add(null);
         MountRecord record = new MountRecord("name:hrac", "Hrac", UUID.randomUUID(), UUID.randomUUID(),
-                null, "Stín", 30.0, 30.0, 0.225, 0.72,
+                null, "StĂ„â€šĂ‚Â­n", 30.0, 30.0, 0.225, 0.72,
                 Horse.Color.BLACK, Horse.Style.NONE, null, null, null, supplied,
                 0, 0, 300, List.of(), null, null, null, NOW);
 
@@ -75,7 +75,7 @@ class MountRecordTest {
 
     private MountRecord record(double health, double maxHealth, UUID entityUuid) {
         return new MountRecord("name:hrac", "Hrac", UUID.randomUUID(), UUID.randomUUID(),
-                entityUuid, "Stín", health, maxHealth, 0.225, 0.72,
+                entityUuid, "StĂ„â€šĂ‚Â­n", health, maxHealth, 0.225, 0.72,
                 Horse.Color.BLACK, Horse.Style.WHITE_DOTS, null, null, null, List.of(),
                 80, 20, 200, List.of(), null, null, null, NOW);
     }

@@ -12,12 +12,12 @@ class ConfigurationServiceTagTest {
     @Test
     void copiesAnImmutableConfiguredBlockTableBeforeProcessingTags() {
         YamlConfiguration configuration = new YamlConfiguration();
-        configuration.set("skills.digging.experience-sources.tags.UNKNOWN_TAG", 2);
+        configuration.set("skills.kopani.experience-sources.tags.UNKNOWN_TAG", 2);
         AtomicInteger warnings = new AtomicInteger();
 
         Map<Material, Long> experience = ConfigurationService.applyMaterialTags(
             configuration,
-            "skills.digging.experience-sources.tags",
+            "skills.kopani.experience-sources.tags",
             Map.of(Material.DIRT, 7L),
             ignored -> warnings.incrementAndGet()
         );

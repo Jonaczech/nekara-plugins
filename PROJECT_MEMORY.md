@@ -5,6 +5,12 @@ pokud budoucí release některé z těchto rozhodnutí záměrně změní.
 
 ## Podoba produktu
 
+- NekaraRPG je samostatná nativní autorita pro RPG postup. Externí skill bridge
+  ani paralelní XP/reward pipeline se do pluginu nevrací.
+- Perk-tree grafika a vlastní modely zbraní patří do samostatného repozitáře
+  `Jonaczech/nekara-resourcepack`; NekaraRPG na ně odkazuje pouze namespaced ID.
+  Bez packu musí zůstat GUI a gameplay bezpečně použitelné s vanilla fallbackem.
+
 - `NekaraRPG` je centrální plugin pro propojené hráčské RPG a imerzivní systémy.
 - Funkce patří do NekaraRPG, pokud sdílí hráčský stav, životní cyklus,
   konfiguraci, příkazy nebo integrace. Skutečně nezávislý systém může vzniknout

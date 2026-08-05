@@ -10,7 +10,7 @@ public record PluginConfig(
         HookParticleConfig hookParticles,
         OutcomeEffectConfig successEffect,
         OutcomeEffectConfig failureEffect,
-        ValhallaFishingConfig valhallaFishing,
+        FishingDifficultyConfig fishingDifficulty,
         FishingConfig fishing,
         SittingConfig sitting,
         CampfireConfig campfire,

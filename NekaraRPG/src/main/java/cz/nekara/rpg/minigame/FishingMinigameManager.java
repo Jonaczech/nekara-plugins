@@ -6,8 +6,9 @@ import cz.nekara.rpg.configuration.MinigameConfig;
 import cz.nekara.rpg.configuration.OutcomeEffectConfig;
 import cz.nekara.rpg.fishing.FishingCatchDeliveredEvent;
 import cz.nekara.rpg.configuration.PluginConfig;
-import cz.nekara.rpg.configuration.ValhallaFishingConfig;
-import cz.nekara.rpg.compatibility.ValhallaExperienceBridge;
+import cz.nekara.rpg.NekaraRPGPlugin;
+import cz.nekara.rpg.configuration.FishingDifficultyConfig;
+import cz.nekara.rpg.configuration.FishingDifficultyTier;
 import cz.nekara.rpg.fishing.DeferredCatchCompatibilityStrategy;
 import cz.nekara.rpg.fishing.FishingCompatibilityStrategy;
 import cz.nekara.rpg.messages.MessageService;
@@ -28,7 +29,6 @@ import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.command.CommandSender;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.Location;
 import org.bukkit.util.RayTraceResult;
@@ -41,7 +41,7 @@ import java.util.UUID;
 
 public final class FishingMinigameManager {
     private static final int SUPPRESSED_BITE_WAIT_TICKS = 1_000_000;
-    private final JavaPlugin plugin;
+    private final NekaraRPGPlugin plugin;
     private final MessageService messages;
     private final SoundService sounds;
     private final FishingCompatibilityStrategy compatibilityStrategy = new DeferredCatchCompatibilityStrategy();
@@ -52,13 +52,12 @@ public final class FishingMinigameManager {
     private HookParticleConfig hookParticleConfig;
     private OutcomeEffectConfig successEffect;
     private OutcomeEffectConfig failureEffect;
-    private ValhallaFishingConfig valhallaFishingConfig;
+    private FishingDifficultyConfig fishingDifficultyConfig;
     private boolean debug;
     private BukkitTask tickTask;
     private long effectTick;
-    private ValhallaExperienceBridge valhallaExperienceBridge;
 
-    public FishingMinigameManager(JavaPlugin plugin, MessageService messages, SoundService sounds) {
+    public FishingMinigameManager(NekaraRPGPlugin plugin, MessageService messages, SoundService sounds) {
         this.plugin = plugin;
         this.messages = messages;
         this.sounds = sounds;
@@ -69,13 +68,9 @@ public final class FishingMinigameManager {
         this.hookParticleConfig = config.hookParticles();
         this.successEffect = config.successEffect();
         this.failureEffect = config.failureEffect();
-        this.valhallaFishingConfig = config.valhallaFishing();
+        this.fishingDifficultyConfig = config.fishingDifficulty();
         this.fishingConfig = config.fishing();
         this.debug = config.debug();
-    }
-
-    public void setValhallaExperienceBridge(ValhallaExperienceBridge bridge) {
-        this.valhallaExperienceBridge = bridge;
     }
 
     public void startTicker() {
@@ -119,11 +114,23 @@ public final class FishingMinigameManager {
     }
 
     private MinigameConfig effectiveMinigameConfig(Player player) {
-        if (valhallaExperienceBridge == null || valhallaFishingConfig == null) {
+        if (fishingDifficultyConfig == null || !fishingDifficultyConfig.enabled()) {
             return minigameConfig;
         }
-        return valhallaExperienceBridge.applyFishingDifficulty(
-                player, minigameConfig, valhallaFishingConfig);
+        int level = plugin.skillsModule().cachedSkillLevel(player.getUniqueId(),
+                cz.nekara.rpg.skills.SkillId.FISHING);
+        if (level <= 0) {
+            return minigameConfig;
+        }
+        FishingDifficultyTier tier = fishingDifficultyConfig.tierForLevel(level);
+        if (level >= 100) {
+            return minigameConfig.withDifficulty(
+                    fishingDifficultyConfig.maxLevelRequiredHits(),
+                    fishingDifficultyConfig.maxLevelRequiredHits(),
+                    fishingDifficultyConfig.maxLevelMaxMisses());
+        }
+        return minigameConfig.withDifficulty(
+                tier.requiredHitsMin(), tier.requiredHitsMax(), tier.maxMisses());
     }
 
     private void begin(Player player, FishingMinigameSession session) {
@@ -397,9 +404,6 @@ public final class FishingMinigameManager {
             return true;
         }
         session.deferCatch(item, event.getExpToDrop());
-        if (valhallaExperienceBridge != null) {
-            valhallaExperienceBridge.capturePreparedLoot(event.getPlayer(), session);
-        }
         event.setCancelled(true);
         item.remove();
         suppressVanillaBites(session.hook(), true);
@@ -414,7 +418,6 @@ public final class FishingMinigameManager {
     public void prepareDeferredCatch(PlayerFishEvent event) {
         FishingMinigameSession session = findSession(event);
         if (session != null && session.state() == FishingSessionState.WAITING_FOR_BITE) {
-            session.prepareValhallaExperience();
         }
     }
 
@@ -486,29 +489,15 @@ public final class FishingMinigameManager {
             for (ItemStack leftover : leftovers.values()) {
                 player.getWorld().dropItemNaturally(player.getLocation(), leftover);
             }
-            int extraDropCount = 0;
-            if (valhallaExperienceBridge != null) {
-                var extraDrops = session.takeDeferredValhallaExtraDrops();
-                extraDropCount = extraDrops.size();
-                for (ItemStack extraDrop : extraDrops) {
-                    Map<Integer, ItemStack> extraLeftovers = player.getInventory().addItem(extraDrop);
-                    for (ItemStack leftover : extraLeftovers.values()) {
-                        player.getWorld().dropItemNaturally(player.getLocation(), leftover);
-                    }
-                }
-            }
             if (session.vanillaExpToDrop() > 0) {
                 player.giveExp(session.vanillaExpToDrop());
-            }
-            if (valhallaExperienceBridge != null) {
-                valhallaExperienceBridge.deliver(player, session);
             }
             Bukkit.getPluginManager().callEvent(new FishingCatchDeliveredEvent(
                     player, originalCatch, session.vanillaExpToDrop(), UUID.randomUUID()));
             debug("Delivered original deferred catch to " + player.getName()
                     + "; item=" + originalCatch.getType()
                     + ", exp=" + session.vanillaExpToDrop()
-                    + ", valhallaExtraDrops=" + extraDropCount + ".");
+                    + ".");
         }
         Bukkit.getScheduler().runTask(plugin, () -> removeCompletedSession(player.getUniqueId(), session));
     }

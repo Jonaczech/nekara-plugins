@@ -109,7 +109,7 @@ public final class SkillExportService {
     private ExportCounts readCounts(Connection connection) throws SQLException, IOException {
         String schemaVersion = scalarText(connection,
             "SELECT value FROM metadata WHERE key='schema-version'");
-        if (!"4".equals(schemaVersion)) {
+        if (!"5".equals(schemaVersion)) {
             throw new IOException("Unsupported Nekara Skills export schema " + schemaVersion);
         }
         return new ExportCounts(

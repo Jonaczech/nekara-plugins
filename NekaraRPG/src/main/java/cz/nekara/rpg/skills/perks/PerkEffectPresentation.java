@@ -135,6 +135,16 @@ public final class PerkEffectPresentation {
             case CUSTOM_ARROW_RECIPES -> "4 Šípy průzkumníka: 4 šípy + glow ink sac + ametystový střep; zásah označí cíl na 8 s";
             case LIGHT_ARMOR_SET_BONUS -> "bonus kompletní lehké výstroje";
             case HEAVY_ARMOR_SET_BONUS -> "bonus kompletní těžké výstroje";
+            case LIGHT_ARMOR_CHAINMAIL_MOBILITY -> "volný pohyb v chainmailové lehké výstroji";
+            case LIGHT_ARMOR_DIAMOND_MOBILITY -> "volný pohyb v diamantové lehké výstroji";
+            case HEAVY_ARMOR_IRON_MOBILITY -> "volný pohyb v železné a zlaté těžké výstroji";
+            case HEAVY_ARMOR_NETHERITE_MOBILITY -> "volný pohyb v netheritové těžké výstroji";
+            case LIGHT_WEAPON_IRON_MOBILITY -> "volný pohyb se železnými a zlatými lehkými zbraněmi";
+            case LIGHT_WEAPON_DIAMOND_MOBILITY -> "volný pohyb s diamantovými lehkými zbraněmi";
+            case LIGHT_WEAPON_NETHERITE_MOBILITY -> "volný pohyb s netheritovými lehkými zbraněmi";
+            case HEAVY_WEAPON_IRON_MOBILITY -> "volný pohyb se železnými a zlatými těžkými zbraněmi";
+            case HEAVY_WEAPON_DIAMOND_MOBILITY -> "volný pohyb s diamantovými těžkými zbraněmi";
+            case HEAVY_WEAPON_NETHERITE_MOBILITY -> "volný pohyb s netheritovými těžkými zbraněmi";
         };
     }
 

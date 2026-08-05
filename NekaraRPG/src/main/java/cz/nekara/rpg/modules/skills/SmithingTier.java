@@ -97,6 +97,9 @@ enum SmithingTier {
         if (item == null || item.getType().isAir() || state(item, keys) != expected) return false;
         ItemMeta meta = item.getItemMeta();
         meta.getPersistentDataContainer().set(keys.processingState(), PersistentDataType.BYTE, next.id());
+        // The temporary glint makes a heated metal workpiece recognizable in an inventory.
+        // Clearing the override later preserves the normal glint behaviour of real enchantments.
+        meta.setEnchantmentGlintOverride(next == ProcessingState.HEATED ? true : null);
         List<Component> lore = new ArrayList<>(meta.lore() == null ? List.of() : meta.lore());
         lore.removeIf(component -> {
             String text = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(component);
@@ -196,7 +199,7 @@ enum SmithingTier {
     }
 
     static boolean isArmor(Material material) { String n = material.name(); return n.endsWith("_HELMET") || n.endsWith("_CHESTPLATE") || n.endsWith("_LEGGINGS") || n.endsWith("_BOOTS"); }
-    static boolean isWeapon(Material material) { String n = material.name(); return n.endsWith("_SWORD") || n.endsWith("_AXE") || n.equals("MACE") || material == Material.TRIDENT || material == Material.BOW || material == Material.CROSSBOW; }
+    static boolean isWeapon(Material material) { String n = material.name(); return n.endsWith("_SWORD") || n.endsWith("_AXE") || n.endsWith("_SPEAR") || n.equals("MACE") || material == Material.TRIDENT || material == Material.BOW || material == Material.CROSSBOW; }
     static boolean isTool(Material material) { String n = material.name(); return n.endsWith("_PICKAXE") || n.endsWith("_SHOVEL") || n.endsWith("_HOE"); }
 
     /**

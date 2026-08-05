@@ -1,6 +1,7 @@
 package cz.nekara.rpg.modules.skills;
 
 import cz.nekara.rpg.skills.SkillId;
+import cz.nekara.rpg.items.weapons.WeaponCatalog;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -12,21 +13,17 @@ final class SkillEquipmentPolicy {
     }
 
     static Optional<SkillId> meleeSkill(ItemStack item) {
-        return meleeSkill(item == null ? Material.AIR : item.getType());
+        if (item == null || item.getType().isAir()) {
+            return Optional.of(SkillId.MARTIAL_ARTS);
+        }
+        return WeaponCatalog.resolve(item).map(definition -> definition.family().skill());
     }
 
     static Optional<SkillId> meleeSkill(Material material) {
         if (material == Material.AIR) {
             return Optional.of(SkillId.MARTIAL_ARTS);
         }
-        String name = material.name();
-        if (name.endsWith("_SWORD") || material == Material.TRIDENT) {
-            return Optional.of(SkillId.LIGHT_WEAPONS);
-        }
-        if (name.endsWith("_AXE") || name.equals("MACE")) {
-            return Optional.of(SkillId.HEAVY_WEAPONS);
-        }
-        return Optional.empty();
+        return WeaponCatalog.resolveVanilla(material).map(definition -> definition.family().skill());
     }
 
     static Optional<SkillId> armorSkill(PlayerInventory inventory) {
@@ -79,7 +76,7 @@ final class SkillEquipmentPolicy {
         if (item == null || item.getType().isAir()) {
             return false;
         }
-        return isSmithingProduct(item.getType());
+        return WeaponCatalog.isCustomWeapon(item) || isSmithingProduct(item.getType());
     }
 
     static boolean isSmithingProduct(Material material) {
@@ -90,7 +87,7 @@ final class SkillEquipmentPolicy {
         return name.endsWith("_SWORD") || name.endsWith("_AXE") || name.endsWith("_PICKAXE")
             || name.endsWith("_SHOVEL") || name.endsWith("_HOE") || name.endsWith("_HELMET")
             || name.endsWith("_CHESTPLATE") || name.endsWith("_LEGGINGS") || name.endsWith("_BOOTS")
-            || name.equals("MACE") || material == Material.TRIDENT
+            || name.endsWith("_SPEAR") || name.equals("MACE") || material == Material.TRIDENT
             || material == Material.SHIELD || material == Material.BOW
             || material == Material.CROSSBOW;
     }

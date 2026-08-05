@@ -59,7 +59,7 @@ class ModuleConfigurationStoreTest {
     @Test
     void legacyMiningValuesMoveIntoTheMiningFolder() {
         YamlConfiguration shared = new YamlConfiguration();
-        shared.set("mining.experience.chunk-soft-limit", 77);
+        shared.set("tezba.experience.chunk-soft-limit", 77);
         shared.set("abilities.vein-mining.maximum-blocks", 42);
         YamlConfiguration mining = new YamlConfiguration();
 
@@ -67,7 +67,7 @@ class ModuleConfigurationStoreTest {
                 shared, mining, SkillId.MINING));
         assertEquals(77, mining.getInt("experience.chunk-soft-limit"));
         assertEquals(42, mining.getInt("abilities.vein-mining.maximum-blocks"));
-        assertFalse(shared.contains("mining", true));
+        assertFalse(shared.contains("tezba", true));
         assertFalse(shared.contains("abilities.vein-mining", true));
     }
 

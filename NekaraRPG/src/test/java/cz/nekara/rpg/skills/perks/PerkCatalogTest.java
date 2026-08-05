@@ -13,9 +13,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class PerkCatalogTest {
     @Test
     void validGraphIsIndexedAndSortedByViewportPosition() {
-        PerkDefinition root = perk("mining.prospector", SkillId.MINING, Set.of(), 4, 1);
+        PerkDefinition root = perk("tezba.prospector", SkillId.MINING, Set.of(), 4, 1);
         PerkDefinition branch = perk(
-            "mining.deep_vein",
+            "tezba.deep_vein",
             SkillId.MINING,
             Set.of(new PerkRequirement(root.id(), 2)),
             2,
@@ -32,17 +32,17 @@ class PerkCatalogTest {
     @Test
     void unknownAndCrossSkillPrerequisitesAreRejected() {
         PerkDefinition unknown = perk(
-            "mining.deep_vein",
+            "tezba.deep_vein",
             SkillId.MINING,
-            Set.of(new PerkRequirement(new PerkId("mining.missing"), 1)),
+            Set.of(new PerkRequirement(new PerkId("tezba.missing"), 1)),
             1,
             1
         );
         assertThrows(IllegalArgumentException.class, () -> new PerkCatalog(List.of(unknown)));
 
-        PerkDefinition mining = perk("mining.prospector", SkillId.MINING, Set.of(), 1, 1);
+        PerkDefinition mining = perk("tezba.prospector", SkillId.MINING, Set.of(), 1, 1);
         PerkDefinition farming = perk(
-            "farming.harvester",
+            "statkarstvi.harvester",
             SkillId.FARMING,
             Set.of(new PerkRequirement(mining.id(), 1)),
             2,
@@ -53,15 +53,15 @@ class PerkCatalogTest {
 
     @Test
     void cyclesAndDuplicatePositionsAreRejected() {
-        PerkId firstId = new PerkId("mining.first");
-        PerkId secondId = new PerkId("mining.second");
+        PerkId firstId = new PerkId("tezba.first");
+        PerkId secondId = new PerkId("tezba.second");
         PerkDefinition first = perk(firstId.value(), SkillId.MINING,
             Set.of(new PerkRequirement(secondId, 1)), 1, 1);
         PerkDefinition second = perk(secondId.value(), SkillId.MINING,
             Set.of(new PerkRequirement(firstId, 1)), 2, 1);
         assertThrows(IllegalArgumentException.class, () -> new PerkCatalog(List.of(first, second)));
 
-        PerkDefinition duplicatePosition = perk("mining.third", SkillId.MINING, Set.of(), 1, 1);
+        PerkDefinition duplicatePosition = perk("tezba.third", SkillId.MINING, Set.of(), 1, 1);
         assertThrows(IllegalArgumentException.class,
             () -> new PerkCatalog(List.of(firstWithoutRequirements(), duplicatePosition)));
     }
@@ -73,7 +73,7 @@ class PerkCatalogTest {
     }
 
     private static PerkDefinition firstWithoutRequirements() {
-        return perk("mining.first", SkillId.MINING, Set.of(), 1, 1);
+        return perk("tezba.first", SkillId.MINING, Set.of(), 1, 1);
     }
 
     private static PerkDefinition perk(

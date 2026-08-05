@@ -21,7 +21,7 @@ class PerkTreeViewportTest {
         assertTrue(viewport.contains(new PerkPosition(0, 0)));
         assertFalse(viewport.canMove(-1, 0, perks));
         assertTrue(viewport.canMove(1, 0, perks));
-        assertEquals(new PerkTreeViewport(4, 4, 9, 4), viewport.move(99, 99, perks));
+        assertEquals(new PerkTreeViewport(5, 5, 9, 4), viewport.move(99, 99, perks));
     }
 
     @Test
@@ -44,9 +44,21 @@ class PerkTreeViewportTest {
         assertEquals(new PerkTreeViewport(1, 1, 9, 4), viewport.move(1, 1, perks));
     }
 
+    @Test
+    void keepsOneCellOfPaddingAroundTheGraphWhenPossible() {
+        List<PerkDefinition> perks = List.of(
+            perk("top", new PerkPosition(4, 1)),
+            perk("bottom", new PerkPosition(4, 7))
+        );
+
+        assertEquals(new PerkTreeViewport(0, 0, 9, 5), PerkTreeViewport.initial(perks, 9, 5));
+        assertEquals(new PerkTreeViewport(0, 4, 9, 5),
+            PerkTreeViewport.initial(perks, 9, 5).move(0, 99, perks));
+    }
+
     private PerkDefinition perk(String id, PerkPosition position) {
         return new PerkDefinition(
-            new PerkId("mining." + id), SkillId.MINING, 1, 1, 0, Set.of(),
+            new PerkId("tezba." + id), SkillId.MINING, 1, 1, 0, Set.of(),
             List.of(new MechanicPerkEffect(MechanicId.VEIN_MINING)), position
         );
     }

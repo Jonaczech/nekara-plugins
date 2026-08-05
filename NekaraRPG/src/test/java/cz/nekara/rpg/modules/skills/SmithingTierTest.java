@@ -21,6 +21,7 @@ class SmithingTierTest {
     @Test
     void workshopProcessingAppliesOnlyToMetalLikeEquipment() {
         assertTrue(SmithingTier.requiresProcessing(Material.IRON_SWORD));
+        assertTrue(SmithingTier.requiresProcessing(Material.IRON_SPEAR));
         assertTrue(SmithingTier.requiresProcessing(Material.DIAMOND_CHESTPLATE));
         assertTrue(SmithingTier.requiresProcessing(Material.CHAINMAIL_BOOTS));
         assertFalse(SmithingTier.requiresProcessing(Material.WOODEN_SWORD));

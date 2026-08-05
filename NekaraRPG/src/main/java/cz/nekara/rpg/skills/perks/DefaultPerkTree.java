@@ -10,12 +10,6 @@ import java.util.Map;
 import java.util.Set;
 
 public final class DefaultPerkTree {
-    private static final PerkPosition ROOT = new PerkPosition(10, 2);
-    private static final PerkPosition LEFT = new PerkPosition(5, 7);
-    private static final PerkPosition RIGHT = new PerkPosition(15, 7);
-    private static final PerkPosition LEFT_DEEP = new PerkPosition(3, 14);
-    private static final PerkPosition RIGHT_DEEP = new PerkPosition(17, 14);
-    private static final PerkPosition CROWN = new PerkPosition(10, 15);
 
     private final PerkCatalog catalog;
     private final Map<PerkId, PerkPresentation> presentations;
@@ -102,17 +96,17 @@ public final class DefaultPerkTree {
             node("master", "Pán tichých vod", "Spojuje nejvyšší rychlost a štěstí rybáře.", stat(StatId.FISHING_LUCK, 0.25), stat(StatId.FISHING_SPEED, 0.20)));
         builder.tree(SkillId.LIGHT_WEAPONS,
             node("damage", "Ostrá odpověď", "Zvyšuje poškození a šanci na krvácení.", stat(StatId.DAMAGE_MULTIPLIER, 0.03), stat(StatId.BLEED_CHANCE, 0.006)),
-            node("critical", "Mezera v obraně", "Zvyšuje šanci a sílu kritického zásahu.", stat(StatId.CRITICAL_CHANCE, 0.012), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.04)),
-            node("parry", "Včasný kryt", "Odemkne odražení útoku a krátké omráčení útočníka.", mechanic(MechanicId.PARRY)),
+            node("critical", "Mezera v obraně", "Zvyšuje šanci a sílu kritického zásahu; odemyká volný pohyb se železnými a zlatými lehkými zbraněmi.", stat(StatId.CRITICAL_CHANCE, 0.012), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.04), mechanic(MechanicId.LIGHT_WEAPON_IRON_MOBILITY)),
+            node("parry", "Včasný kryt", "Odemkne odražení útoku, krátké omráčení útočníka a volný pohyb s diamantovými lehkými zbraněmi.", mechanic(MechanicId.PARRY), mechanic(MechanicId.LIGHT_WEAPON_DIAMOND_MOBILITY)),
             node("coating", "Jed na ostří", "Odemkne nanášení lektvarových účinků na zbraň.", mechanic(MechanicId.WEAPON_COATING)),
-            node("immunity", "Pod kůži", "Prohlubuje krvácení a zvyšuje šanci na jeho obnovení.", stat(StatId.BLEED_DAMAGE_MULTIPLIER, 0.20), stat(StatId.BLEED_CHANCE, 0.02)),
+            node("immunity", "Pod kůži", "Prohlubuje krvácení, zvyšuje šanci na jeho obnovení a odemyká volný pohyb s netheritovými lehkými zbraněmi.", stat(StatId.BLEED_DAMAGE_MULTIPLIER, 0.20), stat(StatId.BLEED_CHANCE, 0.02), mechanic(MechanicId.LIGHT_WEAPON_NETHERITE_MOBILITY)),
             node("master", "Sto rychlých ran", "Vrchol stezky posiluje kritické zásahy i krvácení.", stat(StatId.CRITICAL_CHANCE, 0.08), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.20), stat(StatId.BLEED_CHANCE, 0.07), stat(StatId.BLEED_DAMAGE_MULTIPLIER, 0.25)));
         builder.tree(SkillId.HEAVY_WEAPONS,
             node("damage", "Váha rozsudku", "Zvyšuje poškození těžkých zbraní.", stat(StatId.DAMAGE_MULTIPLIER, 0.035)),
-            node("power", "Drtivý nápřah", "Zesiluje silové útoky.", stat(StatId.POWER_ATTACK_DAMAGE_MULTIPLIER, 0.05)),
-            node("critical", "Prasklá obrana", "Zvyšuje šanci a sílu kritického zásahu.", stat(StatId.CRITICAL_CHANCE, 0.01), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.05)),
+            node("power", "Drtivý nápřah", "Zesiluje silové útoky a odemyká volný pohyb se železnými a zlatými těžkými zbraněmi.", stat(StatId.POWER_ATTACK_DAMAGE_MULTIPLIER, 0.05), mechanic(MechanicId.HEAVY_WEAPON_IRON_MOBILITY)),
+            node("critical", "Prasklá obrana", "Zvyšuje šanci a sílu kritického zásahu; odemyká volný pohyb s diamantovými těžkými zbraněmi.", stat(StatId.CRITICAL_CHANCE, 0.01), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.05), mechanic(MechanicId.HEAVY_WEAPON_DIAMOND_MOBILITY)),
             node("penetration", "Průlom plátu", "Část úderu pronikne zbrojí.", stat(StatId.ARMOR_PENETRATION, 0.015)),
-            node("coating", "Nános zkázy", "Odemkne nanášení lektvarových účinků na zbraň.", mechanic(MechanicId.WEAPON_COATING)),
+            node("coating", "Nános zkázy", "Odemkne nanášení lektvarových účinků na zbraň a volný pohyb s netheritovými těžkými zbraněmi.", mechanic(MechanicId.WEAPON_COATING), mechanic(MechanicId.HEAVY_WEAPON_NETHERITE_MOBILITY)),
             node("master", "Otřes země", "Vrchol stezky spojuje průraznost a kritickou sílu.", stat(StatId.ARMOR_PENETRATION, 0.08), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.25)));
         builder.tree(SkillId.ARCHERY,
             node("damage", "Pevná tětiva", "Zvyšuje poškození luků a kuší.", stat(StatId.DAMAGE_MULTIPLIER, 0.03)),
@@ -123,16 +117,16 @@ public final class DefaultPerkTree {
             node("master", "Oko bouře", "Vrchol stezky posiluje přesnost i kritický zásah.", stat(StatId.ACCURACY, 0.12), stat(StatId.CRITICAL_CHANCE, 0.08)));
         builder.tree(SkillId.LIGHT_ARMOR,
             node("armor", "Pružná ochrana", "Zvyšuje ochranu lehké výstroje.", stat(StatId.ARMOR_MULTIPLIER, 0.04)),
-            node("mobility", "Beztížný krok", "Snižuje pohybový postih lehké výstroje.", stat(StatId.MOVEMENT_PENALTY_REDUCTION, 0.04)),
+            node("mobility", "Beztížný krok", "Odemyká volný pohyb v chainmailové lehké výstroji.", mechanic(MechanicId.LIGHT_ARMOR_CHAINMAIL_MOBILITY)),
             node("dodge", "Prázdné místo", "Zvyšuje šanci zcela uniknout zásahu.", stat(StatId.DODGE_CHANCE, 0.012)),
-            node("sustenance", "Dlouhý dech", "Snižuje spotřebu hladu při pohybu a boji.", stat(StatId.HUNGER_CONSUMPTION_REDUCTION, 0.015), mechanic(MechanicId.LIGHT_ARMOR_SET_BONUS)),
+            node("sustenance", "Dlouhý dech", "Snižuje spotřebu hladu při pohybu a boji; odemyká volný pohyb v diamantové lehké výstroji.", stat(StatId.HUNGER_CONSUMPTION_REDUCTION, 0.015), mechanic(MechanicId.LIGHT_ARMOR_SET_BONUS), mechanic(MechanicId.LIGHT_ARMOR_DIAMOND_MOBILITY)),
             node("adrenaline", "Poslední únik", "Odemkne Adrenalin při nízkém zdraví.", mechanic(MechanicId.ADRENALINE)),
             node("master", "Stín mezi čepelemi", "Vrchol stezky spojuje úhyb a ochranu.", stat(StatId.DODGE_CHANCE, 0.08), stat(StatId.ARMOR_MULTIPLIER, 0.15)));
         builder.tree(SkillId.HEAVY_ARMOR,
             node("armor", "Vrstvený plát", "Zvyšuje ochranu těžké výstroje.", stat(StatId.ARMOR_MULTIPLIER, 0.05)),
-            node("burden", "Nesené břemeno", "Snižuje pohybový postih těžké výstroje.", stat(StatId.MOVEMENT_PENALTY_REDUCTION, 0.035)),
+            node("burden", "Nesené břemeno", "Odemyká volný pohyb v železné a zlaté těžké výstroji.", mechanic(MechanicId.HEAVY_ARMOR_IRON_MOBILITY)),
             node("reflection", "Odplata oceli", "Část přijatého poškození se vrací útočníkovi.", stat(StatId.DAMAGE_REFLECTION, 0.012)),
-            node("recovery", "Nezlomný dech", "Zlepšuje obnovu zdraví a bonus celé sady.", stat(StatId.HEALTH_REGENERATION, 0.04), mechanic(MechanicId.HEAVY_ARMOR_SET_BONUS)),
+            node("recovery", "Nezlomný dech", "Zlepšuje obnovu zdraví a bonus celé sady; odemyká volný pohyb v netheritové těžké výstroji.", stat(StatId.HEALTH_REGENERATION, 0.04), mechanic(MechanicId.HEAVY_ARMOR_SET_BONUS), mechanic(MechanicId.HEAVY_ARMOR_NETHERITE_MOBILITY)),
             node("rage", "Hněv pod plátem", "Odemkne Hněv při nízkém zdraví.", mechanic(MechanicId.RAGE)),
             node("master", "Kráčející hradba", "Vrchol stezky spojuje ochranu a odplatu.", stat(StatId.ARMOR_MULTIPLIER, 0.20), stat(StatId.DAMAGE_REFLECTION, 0.06)));
         return builder.build();
@@ -170,15 +164,16 @@ public final class DefaultPerkTree {
         private final Map<PerkId, PerkPresentation> presentations = new HashMap<>();
 
         void tree(SkillId skill, Node root, Node left, Node right, Node leftDeep, Node rightDeep, Node crown) {
-            PerkId rootId = add(skill, root, 5, 1, 0, Set.of(), ROOT);
-            PerkId leftId = add(skill, left, 5, 1, 20, Set.of(new PerkRequirement(rootId, 2)), LEFT);
-            PerkId rightId = add(skill, right, 1, 2, 20, Set.of(new PerkRequirement(rootId, 2)), RIGHT);
-            PerkId leftDeepId = add(skill, leftDeep, 1, 3, 50, Set.of(new PerkRequirement(leftId, 3)), LEFT_DEEP);
-            PerkId rightDeepId = add(skill, rightDeep, 1, 3, 50, Set.of(new PerkRequirement(rightId, 1)), RIGHT_DEEP);
+            PerkTreeLayout layout = PerkTreeLayout.forSkill(skill);
+            PerkId rootId = add(skill, root, 5, 1, 0, Set.of(), layout.root());
+            PerkId leftId = add(skill, left, 5, 1, 20, Set.of(new PerkRequirement(rootId, 2)), layout.left());
+            PerkId rightId = add(skill, right, 1, 2, 20, Set.of(new PerkRequirement(rootId, 2)), layout.right());
+            PerkId leftDeepId = add(skill, leftDeep, 1, 3, 50, Set.of(new PerkRequirement(leftId, 3)), layout.leftDeep());
+            PerkId rightDeepId = add(skill, rightDeep, 1, 3, 50, Set.of(new PerkRequirement(rightId, 1)), layout.rightDeep());
             add(skill, crown, 1, 5, 100, Set.of(
                 new PerkRequirement(leftDeepId, 1),
                 new PerkRequirement(rightDeepId, 1)
-            ), CROWN);
+            ), layout.crown());
         }
 
         private PerkId add(

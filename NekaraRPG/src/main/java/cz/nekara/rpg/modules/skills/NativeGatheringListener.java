@@ -91,11 +91,11 @@ final class NativeGatheringListener implements Listener {
         this.perkMechanics = new PerkMechanicResolver(perkTree.catalog());
         this.speedModifierKey = new NamespacedKey(plugin, "skills_gathering_speed");
         this.definitions = List.of(
-            new Definition(SkillId.MINING, config.mining(), GatheringTool.PICKAXE,
+            new Definition(SkillId.MINING, config.mining(), GatheringTool.PICKAXE, true,
                 StatId.MINING_SPEED, null),
-            new Definition(SkillId.WOODCUTTING, config.woodcutting(), GatheringTool.AXE,
+            new Definition(SkillId.WOODCUTTING, config.woodcutting(), GatheringTool.AXE, true,
                 StatId.WOODCUTTING_SPEED, MechanicId.RARE_LEAF_DROPS),
-            new Definition(SkillId.DIGGING, config.digging(), GatheringTool.SHOVEL,
+            new Definition(SkillId.DIGGING, config.digging(), GatheringTool.SHOVEL, false,
                 StatId.DIGGING_SPEED, null)
         );
         for (Definition definition : definitions) {
@@ -376,7 +376,8 @@ final class NativeGatheringListener implements Listener {
 
     private Optional<Definition> definition(Material material, ItemStack tool) {
         return definitions.stream()
-            .filter(definition -> GatheringMaterialPolicy.suitableTool(definition.tool(), tool))
+            .filter(definition -> !definition.toolRequired()
+                || GatheringMaterialPolicy.suitableTool(definition.tool(), tool))
             .filter(definition -> definition.config().experience(material) > 0
                 || definition.skill() == SkillId.WOODCUTTING
                     && GatheringMaterialPolicy.isLeaves(material))
@@ -469,6 +470,7 @@ final class NativeGatheringListener implements Listener {
         SkillId skill,
         GatheringSkillConfig config,
         GatheringTool tool,
+        boolean toolRequired,
         StatId speedStat,
         MechanicId rareMechanic
     ) {

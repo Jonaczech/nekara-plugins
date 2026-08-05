@@ -25,7 +25,7 @@ import java.util.Optional;
 
 public final class SqliteSkillProfileRepository
     implements SkillAdministrationRepository, SkillSnapshotRepository {
-    private static final int SCHEMA_VERSION = 4;
+    private static final int SCHEMA_VERSION = 5;
 
     private final Connection connection;
 
@@ -221,7 +221,7 @@ public final class SqliteSkillProfileRepository
             updateSchema(connection, null);
             return;
         }
-        if ("1".equals(version) || "2".equals(version) || "3".equals(version)) {
+        if ("1".equals(version) || "2".equals(version) || "3".equals(version) || "4".equals(version)) {
             updateSchema(connection, version);
             return;
         }
@@ -253,6 +253,9 @@ public final class SqliteSkillProfileRepository
                 }
             }
             createCurrentTables(connection);
+            if (previousVersion != null) {
+                migrateRenamedSkillIds(connection);
+            }
             if (previousVersion == null) {
                 try (PreparedStatement statement = connection.prepareStatement(
                     "INSERT INTO metadata(key,value) VALUES('schema-version',?)")) {
@@ -279,6 +282,44 @@ public final class SqliteSkillProfileRepository
             throw exception;
         } finally {
             connection.setAutoCommit(previousAutoCommit);
+        }
+    }
+
+    private static void migrateRenamedSkillIds(Connection connection) throws SQLException {
+        for (Map.Entry<String, String> entry : SkillId.renamedIds().entrySet()) {
+            ensureNoSkillIdCollision(connection, entry.getKey(), entry.getValue());
+            renameSkillId(connection, "skill_experience", entry.getKey(), entry.getValue());
+            renameSkillId(connection, "skill_new_game_plus", entry.getKey(), entry.getValue());
+            try (PreparedStatement statement = connection.prepareStatement(
+                "UPDATE perk_ranks SET perk_id=? || substr(perk_id,?) WHERE perk_id LIKE ?")) {
+                statement.setString(1, entry.getValue());
+                statement.setInt(2, entry.getKey().length() + 1);
+                statement.setString(3, entry.getKey() + ".%");
+                statement.executeUpdate();
+            }
+        }
+    }
+
+    private static void ensureNoSkillIdCollision(Connection connection, String oldId, String newId) throws SQLException {
+        for (String table : List.of("skill_experience", "skill_new_game_plus")) {
+            try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT 1 FROM " + table + " AS legacy JOIN " + table
+                    + " AS current ON legacy.player_key=current.player_key WHERE legacy.skill_id=? AND current.skill_id=? LIMIT 1")) {
+                statement.setString(1, oldId);
+                statement.setString(2, newId);
+                if (statement.executeQuery().next()) {
+                    throw new SQLException("Cannot migrate skill ID " + oldId + "; " + newId + " already exists");
+                }
+            }
+        }
+    }
+
+    private static void renameSkillId(Connection connection, String table, String oldId, String newId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+            "UPDATE " + table + " SET skill_id=? WHERE skill_id=?")) {
+            statement.setString(1, newId);
+            statement.setString(2, oldId);
+            statement.executeUpdate();
         }
     }
 

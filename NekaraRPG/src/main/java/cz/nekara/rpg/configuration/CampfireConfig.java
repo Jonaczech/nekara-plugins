@@ -10,7 +10,7 @@ public record CampfireConfig(
         int restedChargeSeconds,
         int restedDurationSeconds,
         double restedHungerLossMultiplier,
-        RestedValhallaConfig restedValhalla,
+        RestedExperienceConfig restedExperience,
         RestedEffectConfig restedEffect,
         LyingConfig lying,
         CampingConfig camping,

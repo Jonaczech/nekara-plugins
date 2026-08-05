@@ -23,10 +23,10 @@ class PerkPurchaseServiceTest {
             repository.save(profileAtEverySkillLevel(curve, 20), 0);
             PerkPurchaseService service = service(repository, curve, tree);
 
-            PerkPurchaseResult result = service.purchase("player-1", new PerkId("mining.yield"));
+            PerkPurchaseResult result = service.purchase("player-1", new PerkId("tezba.yield"));
 
             assertEquals(PerkPurchaseStatus.PURCHASED, result.status());
-            assertEquals(1, result.profile().perkRank(new PerkId("mining.yield")));
+            assertEquals(1, result.profile().perkRank(new PerkId("tezba.yield")));
             assertEquals(1, result.profile().spentPerkPoints());
             SkillProfile stored = repository.find("player-1").orElseThrow();
             assertEquals(result.profile().revision(), stored.revision());
@@ -43,11 +43,11 @@ class PerkPurchaseServiceTest {
             PerkPurchaseService service = service(repository, curve, tree);
 
             assertEquals(PerkPurchaseStatus.PREREQUISITE_REQUIRED,
-                service.purchase("player-1", new PerkId("mining.tempo")).status());
-            service.purchase("player-1", new PerkId("mining.yield"));
-            service.purchase("player-1", new PerkId("mining.yield"));
+                service.purchase("player-1", new PerkId("tezba.tempo")).status());
+            service.purchase("player-1", new PerkId("tezba.yield"));
+            service.purchase("player-1", new PerkId("tezba.yield"));
             assertEquals(PerkPurchaseStatus.PURCHASED,
-                service.purchase("player-1", new PerkId("mining.tempo")).status());
+                service.purchase("player-1", new PerkId("tezba.tempo")).status());
         }
     }
 
@@ -60,9 +60,9 @@ class PerkPurchaseServiceTest {
             PerkPurchaseService service = service(repository, curve, tree);
 
             assertEquals(PerkPurchaseStatus.PURCHASED,
-                service.purchase("player-1", new PerkId("mining.yield")).status());
+                service.purchase("player-1", new PerkId("tezba.yield")).status());
             assertEquals(PerkPurchaseStatus.INSUFFICIENT_POINTS,
-                service.purchase("player-1", new PerkId("mining.yield")).status());
+                service.purchase("player-1", new PerkId("tezba.yield")).status());
             assertEquals(1, repository.find("player-1").orElseThrow().spentPerkPoints());
         }
     }

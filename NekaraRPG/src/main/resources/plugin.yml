@@ -6,7 +6,6 @@ authors:
   - Nekara
 description: Modular RPG, authentication, and immersion systems for Nekara.
 softdepend:
-  - ValhallaMMO
   - MythicMobs
   - AuthMe
 commands:
@@ -69,7 +68,7 @@ permissions:
     description: Allows sitting, lying, and campfire rest effects.
     default: true
   nekararpg.echo-vein.use:
-    description: Allows ValhallaMMO Mining actions to trigger Echo Vein.
+    description: Allows native mining actions to trigger Echo Vein.
     default: true
   nekararpg.mount.use:
     description: Allows the player to create, manage, call, dismiss, and inspect their Nekara mount.

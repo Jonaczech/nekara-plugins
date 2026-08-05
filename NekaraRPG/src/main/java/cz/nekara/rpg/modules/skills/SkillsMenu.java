@@ -8,6 +8,7 @@ import cz.nekara.rpg.skills.SkillLevelProgress;
 import cz.nekara.rpg.skills.SkillPresentation;
 import cz.nekara.rpg.skills.SkillProgressBar;
 import cz.nekara.rpg.skills.perks.DefaultPerkTree;
+import cz.nekara.rpg.skills.perks.PerkConnectionPath;
 import cz.nekara.rpg.skills.perks.PerkDefinition;
 import cz.nekara.rpg.skills.perks.PerkEffectPresentation;
 import cz.nekara.rpg.skills.perks.PerkId;
@@ -19,6 +20,7 @@ import cz.nekara.rpg.skills.perks.PerkPurchasePolicy;
 import cz.nekara.rpg.skills.perks.PerkPurchaseStatus;
 import cz.nekara.rpg.skills.perks.PerkRequirement;
 import cz.nekara.rpg.skills.perks.PerkTreeViewport;
+import cz.nekara.rpg.skills.perks.PerkTreeLayout;
 import cz.nekara.rpg.skills.profile.SkillProfile;
 import cz.nekara.rpg.skills.profile.SkillProgressSnapshot;
 import cz.nekara.rpg.skills.stats.StatId;
@@ -70,7 +72,6 @@ final class SkillsMenu implements Listener {
     private static final int TREE_FIRST_ROW = 0;
     private static final int TREE_VIEWPORT_WIDTH = 9;
     private static final int TREE_VIEWPORT_HEIGHT = 5;
-    private static final PerkPosition NEW_GAME_PLUS_POSITION = new PerkPosition(10, 10);
     private static final List<Integer> SKILL_SLOTS = List.of(
         10, 11, 12, 13, 14, 15, 16,
         19, 20, 21, 22, 23, 24, 25,
@@ -231,7 +232,7 @@ final class SkillsMenu implements Listener {
         inventory.setItem(24, archeryItem(player));
 
         inventory.setItem(28, craftsmanshipItem(player));
-        inventory.setItem(29, productionItem(player, SkillId.ENCHANTING, "Očarování", Material.ENCHANTING_TABLE,
+        inventory.setItem(29, productionItem(player, SkillId.ENCHANTING, "Runotepectví", Material.ENCHANTING_TABLE,
             "Síla očarování", StatId.ENCHANTMENT_POWER,
             "Úspora úrovní XP", StatId.EXPERIENCE_COST_REDUCTION));
         inventory.setItem(30, productionItem(player, SkillId.ALCHEMY, "Alchymie", Material.BREWING_STAND,
@@ -269,10 +270,11 @@ final class SkillsMenu implements Listener {
         PerkTreeViewport viewport
     ) {
         List<PerkDefinition> perks = perkTree.catalog().forSkill(skill);
+        PerkPosition newGamePlusPosition = PerkTreeLayout.forSkill(skill).newGamePlus();
         SkillsHolder holder = new SkillsHolder(player.getUniqueId(), Screen.TREE, skill, null, viewport);
         Inventory inventory = create(holder, 54, SkillPresentation.czechName(skill) + " — stezka");
         renderTreeBackground(inventory);
-        renderConnections(inventory, profile, perks, viewport);
+        Set<Integer> graphSlots = renderConnections(inventory, profile, perks, viewport);
         for (PerkDefinition perk : perks) {
             if (!viewport.contains(perk.position())) {
                 continue;
@@ -282,12 +284,16 @@ final class SkillsMenu implements Listener {
             holder.perksBySlot.put(slot, perk.id());
             holder.perkStatusesBySlot.put(
                 slot, purchasePolicy.evaluate(profile, snapshot, perk).status());
+            graphSlots.add(slot);
         }
-        if (viewport.contains(NEW_GAME_PLUS_POSITION)) {
-            int slot = treeSlot(viewport, NEW_GAME_PLUS_POSITION);
+        if (viewport.contains(newGamePlusPosition)) {
+            int slot = treeSlot(viewport, newGamePlusPosition);
             inventory.setItem(slot, newGamePlusItem(profile, snapshot, skill));
             holder.newGamePlusSlot = slot;
+            graphSlots.add(slot);
         }
+        holder.graphSlots.addAll(graphSlots);
+        // Navigation is an overlay: it intentionally takes visual and click priority over the graph.
         renderTreeNavigation(inventory, viewport, perks);
         inventory.setItem(BACK_SLOT, treeBackItem());
         renderSkillSlider(inventory, snapshot, skill);
@@ -403,6 +409,13 @@ final class SkillsMenu implements Listener {
             module.openMenu(player);
         } else if (slot == holder.newGamePlusSlot) {
             module.openNewGamePlusConfirmation(player, holder.skill);
+        } else if (holder.perksBySlot.containsKey(slot)) {
+            PerkPurchaseStatus status = holder.perkStatusesBySlot.get(slot);
+            if (status == PerkPurchaseStatus.PURCHASED) {
+                module.openPerkConfirmation(player, holder.perksBySlot.get(slot));
+            } else {
+                showPurchaseStatus(player, status);
+            }
         } else if (TREE_MOVES.containsKey(slot)) {
             TreeMove move = TREE_MOVES.get(slot);
             moveTree(player, holder, move.horizontal(), move.vertical());
@@ -414,16 +427,6 @@ final class SkillsMenu implements Listener {
             module.openSkillTree(player, adjacent(holder.skill, 1));
         } else if (slot == SKILL_SCROLL_NEXT_SLOT) {
             module.openSkillTree(player, adjacent(holder.skill, 3));
-        } else {
-            PerkId perkId = holder.perksBySlot.get(slot);
-            if (perkId != null) {
-                PerkPurchaseStatus status = holder.perkStatusesBySlot.get(slot);
-                if (status == PerkPurchaseStatus.PURCHASED) {
-                    module.openPerkConfirmation(player, perkId);
-                } else {
-                    showPurchaseStatus(player, status);
-                }
-            }
         }
     }
 
@@ -674,50 +677,52 @@ final class SkillsMenu implements Listener {
         );
     }
 
-    private void renderConnections(
+    private Set<Integer> renderConnections(
         Inventory inventory,
         SkillProfile profile,
         List<PerkDefinition> perks,
         PerkTreeViewport viewport
     ) {
         Set<PerkPosition> perkPositions = new HashSet<>();
+        perks.forEach(perk -> perkPositions.add(perk.position()));
         Map<PerkPosition, Integer> connected = new HashMap<>();
         for (PerkDefinition perk : perks) {
-            perkPositions.add(perk.position());
             for (PerkRequirement requirement : perk.requirements()) {
                 PerkDefinition prerequisite = perkTree.catalog().require(requirement.perkId());
                 boolean prerequisiteUnlocked = profile.perkRank(prerequisite.id()) >= requirement.minimumRank();
                 int state = prerequisiteUnlocked ? (profile.perkRank(perk.id()) > 0 ? 2 : 1) : 0;
-                for (PerkPosition position : connectionPath(prerequisite.position(), perk.position())) {
-                    if (viewport.contains(position) && !perkPositions.contains(position)) {
+                PerkConnectionPath.BendOrder bendOrder = perk.requirements().size() > 1
+                    ? PerkConnectionPath.BendOrder.VERTICAL_FIRST
+                    : PerkConnectionPath.BendOrder.HORIZONTAL_FIRST;
+                for (PerkPosition position : PerkConnectionPath.between(
+                    prerequisite.position(), perk.position(), bendOrder)) {
+                    if (!perkPositions.contains(position)) {
                         connected.merge(position, state, Math::max);
                     }
                 }
             }
         }
-        connected.forEach((position, state) -> inventory.setItem(treeSlot(viewport, position), GuiItems.modeledItem(
-            "skills/tree/" + connectionStateName(state) + "/" + connectionShape(position, connected.keySet()),
-            state == 2 ? Material.LIME_STAINED_GLASS_PANE : state == 1 ? Material.WHITE_STAINED_GLASS_PANE : Material.GRAY_STAINED_GLASS_PANE,
-            Component.text(state == 2 ? "Odemčená vazba" : state == 1 ? "Přístupná vazba" : "Zamčená vazba",
-                state == 2 ? NamedTextColor.GREEN : state == 1 ? NamedTextColor.WHITE : NamedTextColor.GRAY)
-        )));
+        Set<PerkPosition> connectionNeighbors = new HashSet<>(connected.keySet());
+        connectionNeighbors.addAll(perkPositions);
+        Set<Integer> slots = new HashSet<>();
+        connected.forEach((position, state) -> {
+            if (!viewport.contains(position)) {
+                return;
+            }
+            int slot = treeSlot(viewport, position);
+            inventory.setItem(slot, GuiItems.modeledItem(
+                "skills/tree/" + connectionStateName(state) + "/" + connectionShape(position, connectionNeighbors),
+                state == 2 ? Material.LIME_STAINED_GLASS_PANE : state == 1 ? Material.WHITE_STAINED_GLASS_PANE : Material.GRAY_STAINED_GLASS_PANE,
+                Component.text(state == 2 ? "Odemčená vazba" : state == 1 ? "Přístupná vazba" : "Zamčená vazba",
+                    state == 2 ? NamedTextColor.GREEN : state == 1 ? NamedTextColor.WHITE : NamedTextColor.GRAY)
+            ));
+            slots.add(slot);
+        });
+        return slots;
     }
 
     private static String connectionStateName(int state) {
         return switch (state) { case 2 -> "unlocked"; case 1 -> "unlockable"; default -> "locked"; };
-    }
-
-    private List<PerkPosition> connectionPath(PerkPosition from, PerkPosition to) {
-        List<PerkPosition> path = new ArrayList<>();
-        int stepX = Integer.compare(to.column(), from.column());
-        for (int column = from.column() + stepX; column != to.column(); column += stepX) {
-            path.add(new PerkPosition(column, from.row()));
-        }
-        int stepY = Integer.compare(to.row(), from.row());
-        for (int row = from.row() + stepY; row != to.row(); row += stepY) {
-            path.add(new PerkPosition(to.column(), row));
-        }
-        return path;
     }
 
     private int treeSlot(PerkTreeViewport viewport, PerkPosition position) {
@@ -905,6 +910,7 @@ final class SkillsMenu implements Listener {
         private final Map<Integer, SkillId> skillsBySlot = new HashMap<>();
         private final Map<Integer, PerkId> perksBySlot = new HashMap<>();
         private final Map<Integer, PerkPurchaseStatus> perkStatusesBySlot = new HashMap<>();
+        private final Set<Integer> graphSlots = new HashSet<>();
         private int newGamePlusSlot = -1;
         private Inventory inventory;
 

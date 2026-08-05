@@ -6,7 +6,7 @@ Táboření se sezením, ležením a odpočinkem u ohně, NekaraMining s Echo Ve
 NekaraMounts s jedním trvalým vanilla koněm na hráče.
 
 Plugin je záměrně konzervativní: nenahrazuje vanilla loot tabulky, nevytváří
-syntetické fishing eventy a nevyžaduje ValhallaMMO ani jiný plugin.
+syntetické fishing eventy ani jiný herní plugin.
 
 ## Nekara Skills 2.2 — native progression
 
@@ -38,8 +38,7 @@ aktivní schopnosti a ochrana XP před opakováním či automatizací. Powerleve
 průměr úrovní všech trénovaných dovedností; jednostranné vytěžení jediné profese
 proto hlavní úroveň výrazně nezvedne.
 
-Implementace je clean-room. ValhallaMMO, AuraSkills a mcMMO slouží pouze jako
-veřejná žánrová reference; NekaraRPG nepřebírá jejich kód, texty, názvy perků,
+Implementace je clean-room. NekaraRPG nepřebírá cizí kód, texty, názvy perků,
 hodnoty ani rozložení stromů. Podrobná rozhodnutí jsou v
 `docs/adr/0001-native-skills-platform.md` a pořadí práce v
 `docs/SKILLS_2_0_ROADMAP.md`.
@@ -55,11 +54,15 @@ v aktuální úrovni, například `+4 XP | ▰▰▰▰▱▱▱▱▱▱▱▱�
 Stejný segmentový ukazatel i přesný zbývající počet XP je v popisu dovednosti.
 Stejnou segmentovou grafiku používá rybářská minihra: tmavá dráha `▱`, tyrkysové
 cílové pole `▰` a zlatá kotva jako pohybující se ukazatel.
-Modul `skills` je výchozím stavem zapnutý a je nativní autoritou postupu. ValhallaMMO
-není pro něj potřeba; zbývající kompatibilní bridge se při chybějícím pluginu pouze
-bezpečně neaktivují.
+Modul `skills` je výchozím stavem zapnutý a je nativní autoritou postupu.
 
 ### Doprovodný resource pack stezky
+
+NekaraRPG používá klientské textury z odděleného repozitáře
+[`Jonaczech/nekara-resourcepack`](https://github.com/Jonaczech/nekara-resourcepack).
+Je zdrojem textur perk-tree cest, navigačních šipek a rezervovaných modelů vlastních
+zbraní; plugin obsahuje pouze jejich namespaced identifikátory a bez packu použije
+bezpečné vanilla zástupné ikony.
 
 Klientský balíček `resource-pack/NekaraRPG-GUI` přidává vlastní osmisměrné navigační
 šipky a animované spojnice perků ve třech stavech: zamčené, dostupné a odemčené.
@@ -70,7 +73,7 @@ vanilla zástupné ikony; pro finální vzhled je nutné ZIP hostovat a připoji
 ## Moduly
 
 Nativní moduly se ovládají v `config.yml`. Výchozí profil používá Nekara Skills a
-neaktivuje starou ValhallaMMO Echo Vein aktivitu:
+neaktivuje Echo Vein, dokud ji administrátor výslovně nezapne:
 
 ```yml
 modules:
@@ -103,9 +106,9 @@ Aktuální moduly:
 | Modul | Stav | Popis |
 | --- | --- | --- |
 | `auth` | testovací | Registrace, přihlášení a ochrana nicku pro offline-mode server. |
-| `fishing` | produkční | Nenásilná časovací rybářská minihra kompatibilní s vanilla a ValhallaMMO. |
+| `fishing` | produkční | Nenásilná časovací rybářská minihra s původním vanilla úlovkem. |
 | `campfire` | produkční | Sezení, ležení, léčení, Rested bonus, skupinové škálování a roleplay u zapáleného ohně. |
-| `mining` | kompatibilní | Starší Echo Vein pro servery s ValhallaMMO; ve výchozím nativním profilu je vypnutý. |
+| `mining` | volitelný | Echo Vein pro nativní těžbu; ve výchozím profilu je vypnutý. |
 | `mounts` | testovací | Jeden trvalý vanilla kůň na hráče s píšťalkou, brašnami a ochranou proti duplikaci. |
 | `skills` | nativní | Přehled 16 dovedností, 90 perků, transakční nákup a runtime vertikály všech 15 trénovaných skillů. |
 
@@ -116,14 +119,14 @@ odpočinek funkční na bezpečné serverové póze.
 
 ### Nativní sběrné vertikály
 
-Při zapnutém `modules.skills.enabled` používají Hornictví, Rubačina a
-Zeměrytectví vlastní tabulky pod `mining`, `woodcutting` a `digging` v
+Při zapnutém `modules.skills.enabled` používají Těžba, Lesnictví a
+Kopání vlastní tabulky pod `mining`, `woodcutting` a `digging` v
 `skills/<skill>/config.yml`; vážené nálezy jsou v příslušném `loot-tables.yml`.
 Rybaření má vlastní tabulku bonusových pokladů, která nikdy nenahrazuje skutečný
 vanilla úlovek. Má 0,5 % základní šanci, která na levelu 100 dosáhne 2 %.
 `skills/config.yml` obsahuje malé, zastropované vrozené bonusy
 podle úrovně: až 2,5 % na dvojitý výtěžek ze sběru, až 1 % na nález ze
-Zeměrytectví a až 1,5 % na rybářský poklad. Perky se k nim přičítají a zůstávají
+Kopání a až 1,5 % na rybářský poklad. Perky se k nim přičítají a zůstávají
 hlavním zdrojem specializace.
 Odměna vznikne až další
 tick po skutečné změně vytěženého bloku, takže samotné syntetické vyvolání eventu
@@ -145,8 +148,8 @@ a nepřepisuje rychlejší cizí úpravu.
 přírodního kmene. Každý další blok prochází skutečným hráčským breakem, limitem,
 cooldownem, vanilla durability a kontrolami regionových pluginů. Cizí chunky se
 nenačítají. `Řízený odstřel` omezeně posílí TNT zapálené vlastníkem perku a zastropuje
-počet ovlivněných bloků. Rubačina dále nabízí pět prken z vanilla receptu a nálezy
-v přírodním listí; Zeměrytectví používá váženou tabulku nálezů rozšířenou perkem
+počet ovlivněných bloků. Lesnictví dále nabízí pět prken z vanilla receptu a nálezy
+v přírodním listí; Kopání používá váženou tabulku nálezů rozšířenou perkem
 `Paměť střepů`.
 
 ### Výkovy přímo ve vanilla craftingu
@@ -398,15 +401,14 @@ zprávám nabíjení. Lze ho vypnout hodnotou
 `visuals.rested.indicator: NONE` v `campfire/config.yml`. Další částice jsou volitelné. Dokončení
 20sekundového nabíjení potvrzuje jemný nastavitelný ametystový zvuk.
 
-S ValhallaMMO přidává Rested výchozím stavem 10 % k běžným skill-action a
-sdíleným XP všech skillů. Administrativní příkazy, resety, redemption a migrační
-refundace se nenásobí.
+Rested výchozím stavem přidává 10 % k běžným NekaraRPG Skills akcím.
+Administrativní příkazy, resety, redemption a migrační refundace se nenásobí.
 
 ## Echo Vein
 
 Echo Vein je první volitelná aktivita NekaraMining a je dostupná na každém
 Mining levelu. Těžba stone, deepslate, netherrack nebo end stone se skutečnými
-ValhallaMMO Mining XP má výchozí 5% šanci odhalit blízký viditelný blok stejné
+Nativní těžba hostitelského bloku má výchozí 5% šanci odhalit blízký viditelný blok stejné
 čtveřice. Ores, dirt, gravel, wood ani jiné bloky aktivitu nespouštějí a nemohou
 být cílem. Cooldown neexistuje.
 
@@ -423,10 +425,10 @@ zlatem, lapis pod 64 s vrcholem kolem 0 a redstone/diamond pod 16 s rostoucí
 vahou směrem ke dnu světa. Záměrně nereprodukuje seedový noise, biome density
 mimo Badlands zlato ani vanilla omezení rud vystavených vzduchu.
 
-Vytěžení označeného bloku přidá 25 % jeho finálních Mining XP s Valhalla důvodem
-`PLUGIN`, takže se Rested, Mining ani globální násobitel neaplikuje znovu. Jeden
+Vytěžení označeného bloku přidá 25 % pozorovaného Mining XP do nativní dovednosti
+Těžba; na tuto odměnu se aplikuje standardní NekaraRPG pipeline včetně Rested. Jeden
 bonusový item se vybírá podle skutečného množství z finálních přirozených a
-Valhalla-prepared dropů označeného bloku. Metadata zůstávají, množství je nejvýše
+přirozených dropů označeného bloku. Metadata zůstávají, množství je nejvýše
 jeden a Fortune se nehází znovu.
 
 Každý dokončený cíl má 50% šanci pokračovat na viditelný blok sousedící stěnou.
@@ -455,24 +457,15 @@ Chat zůstává během hry záměrně tichý: výchozím stavem se posílá jen 
 záběru a finálním úniku. Zásahy a postup ukazuje action bar, bossbar, částice a
 zvuky.
 
-## ValhallaMMO
+## Nativní rybaření a Rested
 
-ValhallaMMO je měkká závislost. Pokud je nainstalované, NekaraRPG může:
-
-- škálovat obtížnost rybářské minihry podle ValhallaMMO FishingSkill levelu,
-- odložit profesní fishing XP a udělit je spolu s finálním úlovkem,
-- zachovat připravené extra dropy, například double-loot,
-- přidat Rested hráčům nastavitelná bonusová XP ke všem skillům,
-- řídit Echo Vein skutečnými Mining XP a finálními Mining dropy.
-
-NekaraRPG ValhallaMMO loot ani postup skillu nenahrazuje a nepřepočítává. Veřejná
-hodnota XP eventu se násobí jen při aktivním Rested. Bonus lze upravit nebo
-vypnout:
+Rybářská minihra se škáluje podle nativního levelu Rybaření a po úspěchu udělí
+jednu nativní XP odměnu. Rested bonus lze upravit nebo vypnout:
 
 ```yml
 campfire:
   rested:
-    valhalla-experience:
+    skills-experience:
       enabled: true
       multiplier: 1.10
 ```
@@ -480,8 +473,8 @@ campfire:
 Škálování obtížnosti rybaření se vypíná:
 
 ```yml
-valhalla:
-  fishing-difficulty:
+fishing:
+  difficulty:
     enabled: false
 ```
 
@@ -491,7 +484,7 @@ valhalla:
 - Java 25
 - Pro plánované nasazení NekaraAuth server s `online-mode=false`; při
   `online-mode=true` modul funguje, ale zaloguje varování o dvojím ověření
-- Žádné povinné pluginové závislosti; MythicMobs a ValhallaMMO jsou volitelné
+- Žádné povinné pluginové závislosti; MythicMobs je volitelný
 
 Purpur API je použité jako `compileOnly`, takže výstup není fat JAR a neobsahuje
 třídy Paper/Purpur.
@@ -626,7 +619,7 @@ přítomné. Action bar se sestavuje interně bez závislosti na PlaceholderAPI.
   `ARMOR_STAND`; pluginy s jinou entitou ji musí přidat do konfigurace.
 - Campfire a Rested mohou dočasně nahradit jiný méně prioritní text v action
   baru. Fishing minihra má vždy před časovačem Rested přednost.
-- Automatické Echo Vein vyžaduje ValhallaMMO Mining. Testovací příkaz ověřuje
+- Automatické Echo Vein používá nativní těžbu. Testovací příkaz ověřuje
   viditelnost cíle bez odměn.
 - Staré `minimum-mining-level` z 1.2.1 a starších se ignoruje.
 - Pokud chybí `modules.mining.enabled`, použije se staré `modules.echo-vein.enabled`.
@@ -635,7 +628,7 @@ přítomné. Action bar se sestavuje interně bez závislosti na PlaceholderAPI.
 - Rested má jen textový časovač; tábor s crafting table navíc používá vanilla
   ikonu Haste. Vlastní stavová ikona by vyžadovala resource pack nebo mod.
 - Smoker zpomaluje Rested ztrátu hladu, crafting table přidává Haste a
-  ValhallaMMO skill XP dostávají nakonfigurovaný Rested násobitel.
+  nativní NekaraRPG Skills XP dostávají nakonfigurovaný Rested násobitel.
 - Minihra začíná kliknutím prutem po záběru a odkládá původní `CAUGHT_FISH`
   item do finálního zásahu.
 - Server nemůže ověřit klientský resource-pack zvuk, pouze jeho namespaced syntaxi.

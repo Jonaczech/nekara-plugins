@@ -32,7 +32,7 @@ class SqliteMountRepositoryTest {
         try (SqliteMountRepository repository = new SqliteMountRepository(database)) {
             MountRecord stored = repository.findByMountId(mount.mountId()).orElseThrow();
             assertEquals(mount.ownerId(), stored.ownerId());
-            assertEquals("Stín", stored.customName());
+            assertEquals("StĂ„â€šĂ‚Â­n", stored.customName());
             assertEquals(null, stored.activeEntityUuid());
             assertEquals(now.plusSeconds(15), repository.combatUntil(mount.ownerId()).orElseThrow());
             assertEquals(repository.combatWindows().get(mount.ownerId()), now.plusSeconds(15));
@@ -54,7 +54,7 @@ class SqliteMountRepositoryTest {
 
     private MountRecord mount(Instant now) {
         return new MountRecord(
-                "name:hrac", "Hrac", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "Stín",
+                "name:hrac", "Hrac", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "StĂ„â€šĂ‚Â­n",
                 17.5, 30.0, 0.225, 0.72, Horse.Color.BLACK, Horse.Style.WHITE_DOTS,
                 null, null, null, List.of(), 40, 20, 200, List.of(),
                 now.plusSeconds(30), null, null, now);

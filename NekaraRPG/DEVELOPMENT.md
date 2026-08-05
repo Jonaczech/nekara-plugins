@@ -96,15 +96,14 @@ identitu nebo jednorázové propojení, nikdy veřejné předávání Minecraft 
 
 ## Smlouva NekaraMining a Echo Vein
 
-Echo Vein je první aktivita volitelného modulu `mining` a při chybějícím
-ValhallaMMO nebo Mining skillu musí selhat bezpečně. Samotný Bukkit block break
-neprokazuje způsobilost: modul ho koreluje s nezrušeným ValhallaMMO Mining XP
+Echo Vein je první aktivita volitelného modulu `mining`. Samotný Bukkit block break
+musí projít běžnými bezpečnostními kontrolami nativní Těžby
 eventem `SKILL_ACTION`.
 
 XP označeného bloku se sledují až po ostatních násobitelích. Odložený úspěch
 používá důvod `PLUGIN`, takže se Mining, globální ani Rested násobitele
 neaplikují znovu. Bonusový loot se vybírá z naklonovaných finálních přirozených
-a Valhalla-prepared dropů označeného bloku. Výběr je vážený skutečným množstvím
+a přirozených dropů označeného bloku. Výběr je vážený skutečným množstvím
 a omezený na jeden item; Fortune se nepřepočítává a vlastní loot tabulka nevzniká.
 
 Echo Vein je dostupná na každé Mining úrovni. Automatické spuštění a cíle jsou

@@ -2,6 +2,21 @@
 
 ## Aktuální stav
 
+### NekaraRPG – aktuální vývojový stav
+
+- NekaraRPG je nyní plně nativní a nemá žádnou externí skill závislost. Rested,
+  Rybaření i Echo Vein zapisují XP výhradně do Nekara Skills.
+- Echo Vein je volitelný modul nad nativní těžbou; Rybaření zachovává serverem
+  vytvořený vanilla úlovek a jeho obtížnost čte nativní level Rybaření.
+- Interní skill ID byla jednorázově převedena na ASCII a migrují se při načtení.
+- Pro perk-tree cesty, navigaci a vlastní weapon modely je nutný resource pack z
+  `https://github.com/Jonaczech/nekara-resourcepack`. Plugin bez něj funguje s
+  vanilla náhradními ikonami.
+
+Nejnovější release je **NekaraRPG 2.3.1** (`v2.3.1`). Ověřený artefakt
+`NekaraRPG.jar` má SHA-256
+`573F53ABBA8A3FEEE7EB1B2482B596A8F52A472CF12346191E6DC4F4E3010C88`.
+
 Repozitář je publikovaný jako
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 Výchozí větev je `main`.

@@ -37,6 +37,7 @@ import org.bukkit.event.block.BrewingStartEvent;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.inventory.BrewEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
@@ -55,6 +56,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionType;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -164,6 +166,10 @@ final class ProductionPerkListener implements Listener {
             || !SkillEquipmentPolicy.isSmithingProduct(event.getCurrentItem())) {
             return;
         }
+        if (!canCraftEquipment(player, event.getCurrentItem(), true)) {
+            event.setCancelled(true);
+            return;
+        }
         module.runtimeState(player.getUniqueId(), SkillId.SMITHING).ifPresent(state -> {
             module.cachedProfile(player.getUniqueId()).ifPresent(profile -> SmithingTier.apply(
                 event.getCurrentItem(), module.skillLevel(profile, SkillId.SMITHING),
@@ -179,6 +185,10 @@ final class ProductionPerkListener implements Listener {
             || !SkillEquipmentPolicy.isSmithingProduct(event.getCurrentItem())) {
             return;
         }
+        if (!canCraftEquipment(player, event.getCurrentItem(), true)) {
+            event.setCancelled(true);
+            return;
+        }
         module.runtimeState(player.getUniqueId(), SkillId.SMITHING).ifPresent(state -> {
             module.cachedProfile(player.getUniqueId()).ifPresent(profile -> SmithingTier.apply(
                 event.getCurrentItem(), module.skillLevel(profile, SkillId.SMITHING),
@@ -186,6 +196,30 @@ final class ProductionPerkListener implements Listener {
             refundCraftingIngredient(player, event.getInventory().getContents(),
                 state.stats().value(StatId.RESOURCE_COST_REDUCTION));
         });
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void heatCraftedEquipment(FurnaceSmeltEvent event) {
+        if (event.getBlock().getType() != Material.BLAST_FURNACE) {
+            return;
+        }
+        ItemStack source = event.getSource();
+        SmithingTier.ProcessingState state = SmithingTier.state(source, smithingTierKeys);
+        if (state == SmithingTier.ProcessingState.NONE) {
+            return;
+        }
+        if (state != SmithingTier.ProcessingState.UNPROCESSED) {
+            event.setCancelled(true);
+            return;
+        }
+        ItemStack heated = source.clone();
+        heated.setAmount(1);
+        if (!SmithingTier.advanceProcessing(heated, smithingTierKeys,
+            SmithingTier.ProcessingState.UNPROCESSED, SmithingTier.ProcessingState.HEATED)) {
+            event.setCancelled(true);
+            return;
+        }
+        event.setResult(heated);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -259,6 +293,34 @@ final class ProductionPerkListener implements Listener {
         player.sendActionBar(net.kyori.adventure.text.Component.text(
             "Ostříš zbraň…", net.kyori.adventure.text.format.NamedTextColor.AQUA));
         player.getWorld().spawnParticle(Particle.CRIT, station, 8, 0.2, 0.2, 0.2, 0.05);
+        new BukkitRunnable() {
+            private int elapsedTicks;
+
+            @Override
+            public void run() {
+                if (!sharpeningTasks.containsKey(player.getUniqueId())) {
+                    cancel();
+                    return;
+                }
+                ItemStack current = player.getInventory().getItemInMainHand();
+                if (!player.isOnline() || !player.isSneaking() || current.getType() != weaponType
+                    || player.getLocation().distanceSquared(station) > 9.0
+                    || SmithingTier.state(current, smithingTierKeys) != SmithingTier.ProcessingState.TEMPERED) {
+                    cancel();
+                    return;
+                }
+                elapsedTicks += 8;
+                player.getWorld().spawnParticle(Particle.CRIT, station, 5, 0.18, 0.18, 0.18, 0.03);
+                player.playSound(player.getLocation(), Sound.BLOCK_GRINDSTONE_USE, 0.35F,
+                    0.85F + elapsedTicks / 80.0F);
+                player.sendActionBar(net.kyori.adventure.text.Component.text(
+                    "Brou\u0161en\u00ed zbran\u011b\u2026 " + Math.min(100, elapsedTicks * 100 / 40) + "%",
+                    net.kyori.adventure.text.format.NamedTextColor.AQUA));
+                if (elapsedTicks >= 40) {
+                    cancel();
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 8L);
         BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
             sharpeningTasks.remove(player.getUniqueId());
             ItemStack current = player.getInventory().getItemInMainHand();
@@ -579,6 +641,17 @@ final class ProductionPerkListener implements Listener {
         });
     }
 
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void previewEquipmentCraftingRequirement(PrepareItemCraftEvent event) {
+        if (event.isRepair() || !(event.getView().getPlayer() instanceof Player player)
+            || !SkillEquipmentPolicy.isSmithingProduct(event.getInventory().getResult())) {
+            return;
+        }
+        if (!canCraftEquipment(player, event.getInventory().getResult(), true)) {
+            event.getInventory().setResult(null);
+        }
+    }
+
     /**
      * Perk-only recipes intentionally remain in the vanilla crafting grid: they need no custom
      * blocks and vanilla consumes the displayed matrix only after the preview was authorized.
@@ -610,6 +683,24 @@ final class ProductionPerkListener implements Listener {
         if (chance != null && chance > 0.0 && ThreadLocalRandom.current().nextDouble() < chance) {
             event.setCancelled(true);
         }
+    }
+
+    private boolean canCraftEquipment(Player player, ItemStack item, boolean announce) {
+        int requiredLevel = CraftingTierPolicy.requiredSmithingLevel(item);
+        if (requiredLevel == 0) {
+            return true;
+        }
+        int currentLevel = module.cachedProfile(player.getUniqueId())
+            .map(profile -> module.skillLevel(profile, SkillId.SMITHING)).orElse(0);
+        if (currentLevel >= requiredLevel) {
+            return true;
+        }
+        if (announce) {
+            player.sendActionBar(net.kyori.adventure.text.Component.text(
+                "Vy\u017eaduje \u0158emeslo level " + requiredLevel + " (m\u00e1\u0161 " + currentLevel + ").",
+                net.kyori.adventure.text.format.NamedTextColor.RED));
+        }
+        return false;
     }
 
     private boolean repairWithWorkshopKit(Player player, ItemStack item) {

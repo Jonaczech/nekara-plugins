@@ -1,8 +1,15 @@
 # Nekara Skills 2.0 roadmap
 
-Tento dokument rozděluje přechod z externího ValhallaMMO postupu na vlastní
+Tento dokument rozděluje přechod na vlastní
 autoritativní systém NekaraRPG. Architektonická rozhodnutí a licenční hranice jsou
 v `docs/adr/0001-native-skills-platform.md`.
+
+## Aktuální stav
+
+Nativní platforma je aktivní pro všechny herní XP zdroje. Rested, Rybaření i Echo
+Vein používají jedinou Nekara Skills pipeline. Perk-tree a weapon presentation
+využívají assety ze samostatného repozitáře `Jonaczech/nekara-resourcepack`; tento
+plugin proto nesmí duplikovat bitmapové textury ani resource-pack assety.
 
 ## Cílový katalog
 
@@ -33,7 +40,7 @@ nadále vlastnit BetonQuest.
 ## Perk stromy
 
 Každá přímo trénovaná dovednost dostane vlastní původní acyklický strom. Cílem je
-srovnatelná hustota a hloubka jako u současného ValhallaMMO, včetně stejného počtu
+srovnatelná hustota a hloubka odpovídající cílům Nekary, včetně stejného počtu
 uzlů tam, kde lze počet spolehlivě zjistit z veřejně dostupného hráčského
 rozhraní. Přebírá se pouze tato číselná velikost stromu, nikoliv názvy, texty,
 hodnoty, vazby, ikony či rozložení. Zjištěné počty musí být před tvorbou obsahu
@@ -124,7 +131,7 @@ předchůdcem, kolizí pozic nebo cizím stromem se při startu odmítne.
 - hotovo v kódu: critical, stun a bleed mají oddělené proc pojistky; bleed používá
   centrální registr nejvýše 2048 cílů a perk GUI volí ikonku podle dominantního efektu,
 - zbývá před produkcí: živé vyvážení proti MythicMobs bossům, custom itemům a
-  měření souběhu s ValhallaMMO.
+  měření nativního postupu.
 
 ### 7. Výrobní dovednosti a obchod — runtime baseline v kódu
 
@@ -139,10 +146,10 @@ předchůdcem, kolizí pozic nebo cizím stromem se při startu odmítne.
 ### 8. Nativní aktivace a vydání
 
 - hotovo v kandidátu 2.2.0: výchozí profil zapíná nativní `skills` a vypíná starý
-  ValhallaMMO modul `mining`; všech 15 vertikál je autoritou vlastního postupu,
+  modul `mining`; všech 15 vertikál je autoritou vlastního postupu,
 - hotovo pro nativní data: read-only SQLite+CSV export profilů, XP, perků a auditu,
 - volitelné pro budoucí import starého postupu: read-only export/mapování současného
-  ValhallaMMO postupu z podporovaného veřejného API nebo dat,
+  staršího postupu z podporovaného veřejného API nebo dat,
 - hotovo: nativní export a záloha před produkční aktivací,
 - hotovo: runtime metriky nativní XP fronty; zbývá průběžné měření MSPT a balance,
 - BetonQuest podmínky a Power milestone pro NekaraMounts,
