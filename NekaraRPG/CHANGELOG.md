@@ -1,6 +1,6 @@
 # Přehled změn
 
-## Unreleased
+## 2.3.1
 
 - NekaraRPG je plně samostatný: byly odstraněny všechny externí skill bridge,
   soft-dependency, konfigurační sekce a kompatibilní menu fallbacky.
