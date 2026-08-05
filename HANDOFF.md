@@ -13,6 +13,10 @@
   `https://github.com/Jonaczech/nekara-resourcepack`. Plugin bez něj funguje s
   vanilla náhradními ikonami.
 
+Nejnovější release je **NekaraRPG 2.3.1** (`v2.3.1`). Ověřený artefakt
+`NekaraRPG.jar` má SHA-256
+`573F53ABBA8A3FEEE7EB1B2482B596A8F52A472CF12346191E6DC4F4E3010C88`.
+
 Repozitář je publikovaný jako
 [`Jonaczech/nekara-plugins`](https://github.com/Jonaczech/nekara-plugins).
 Výchozí větev je `main`.
