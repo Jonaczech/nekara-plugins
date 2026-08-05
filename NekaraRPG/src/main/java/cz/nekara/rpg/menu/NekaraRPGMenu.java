@@ -135,12 +135,6 @@ public final class NekaraRPGMenu implements Listener {
                     Component.text("Moc a patnáct cest rozvoje", NamedTextColor.GRAY),
                     Component.text("Nahlédni do své kroniky", NamedTextColor.DARK_GRAY)));
             visibleModules++;
-        } else if (Bukkit.getPluginManager().isPluginEnabled("ValhallaMMO")) {
-            inventory.setItem(SKILLS_SLOT, item(Material.EXPERIENCE_BOTTLE,
-                    Component.text("Dovednosti", NamedTextColor.LIGHT_PURPLE),
-                    Component.text("Otevře přehled tvých schopností", NamedTextColor.GRAY),
-                    Component.text("Tady uvidíš cestu svého rozvoje", NamedTextColor.DARK_GRAY)));
-            visibleModules++;
         }
         if (visibleModules == 0) {
             inventory.setItem(13, item(Material.BARRIER,
@@ -246,9 +240,6 @@ public final class NekaraRPGMenu implements Listener {
             case SKILLS_SLOT -> {
                 if (canShow(player, SkillsModule.ID, "nekararpg.skills.use")) {
                     skills.openMenu(player);
-                } else if (Bukkit.getPluginManager().isPluginEnabled("ValhallaMMO")) {
-                    player.closeInventory();
-                    player.performCommand("skills");
                 }
             }
             case DIAGNOSTICS_SLOT -> {
@@ -388,7 +379,6 @@ public final class NekaraRPGMenu implements Listener {
         inventory.setItem(12, item(Material.EXPERIENCE_BOTTLE,
                 Component.text("Napojení", NamedTextColor.LIGHT_PURPLE),
                 Component.text("Nekara Skills: " + skills.storageStatus(), NamedTextColor.GRAY),
-                Component.text("ValhallaMMO: " + enabledPlugin("ValhallaMMO"), NamedTextColor.GRAY),
                 Component.text("MythicMobs: " + enabledPlugin("MythicMobs"), NamedTextColor.GRAY)));
         long usedMemory = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1_048_576L;
         long maxMemory = Runtime.getRuntime().maxMemory() / 1_048_576L;

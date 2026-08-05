@@ -68,7 +68,7 @@ class SkillExportServiceTest {
                 String experienceCsv = new String(
                     zip.getInputStream(zip.getEntry("skill_experience.csv")).readAllBytes(),
                     StandardCharsets.UTF_8);
-                assertTrue(experienceCsv.contains(playerKey + ",mining,1234"));
+                assertTrue(experienceCsv.contains(playerKey + ",tezba,1234"));
                 Files.copy(zip.getInputStream(zip.getEntry("data.db")), extractedDatabase);
             }
 

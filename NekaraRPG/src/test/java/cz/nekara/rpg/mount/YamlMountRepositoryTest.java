@@ -28,7 +28,7 @@ class YamlMountRepositoryTest {
         UUID entityUuid = UUID.randomUUID();
         Instant now = Instant.parse("2026-08-02T12:00:00Z");
         MountRecord mount = new MountRecord(
-                "name:hrac", "Hrac", ownerUuid, mountId, entityUuid, "Stín",
+                "name:hrac", "Hrac", ownerUuid, mountId, entityUuid, "StĂ„â€šĂ‚Â­n",
                 17.5, 30.0, 0.225, 0.72, Horse.Color.BLACK, Horse.Style.WHITE_DOTS,
                 null, null, null, List.of(), 40, 20, 200, List.of(),
                 now.plusSeconds(30), null, null, now);
@@ -41,7 +41,7 @@ class YamlMountRepositoryTest {
         YamlMountRepository reloaded = new YamlMountRepository(storage);
         MountRecord stored = reloaded.findByOwnerId(mount.ownerId()).orElseThrow();
         assertEquals(mount.mountId(), stored.mountId());
-        assertEquals("Stín", stored.customName());
+        assertEquals("StĂ„â€šĂ‚Â­n", stored.customName());
         assertEquals(17.5, stored.health(), 0.0001);
         assertEquals(Horse.Color.BLACK, stored.color());
         assertEquals(Horse.Style.WHITE_DOTS, stored.style());
@@ -57,7 +57,7 @@ class YamlMountRepositoryTest {
         YamlMountRepository repository = new YamlMountRepository(storage);
         Instant now = Instant.parse("2026-08-02T12:00:00Z");
         MountRecord mount = new MountRecord(
-                "name:hrac", "Hrac", UUID.randomUUID(), UUID.randomUUID(), null, "Stín",
+                "name:hrac", "Hrac", UUID.randomUUID(), UUID.randomUUID(), null, "StĂ„â€šĂ‚Â­n",
                 30.0, 30.0, 0.225, 0.72, Horse.Color.BLACK, Horse.Style.NONE,
                 null, null, null, List.of(), 0, 0, 300, List.of(), null, null, null, now);
         assertTrue(repository.create(mount));

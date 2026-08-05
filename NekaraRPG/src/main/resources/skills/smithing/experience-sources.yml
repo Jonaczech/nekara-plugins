@@ -1,3 +1,5 @@
 sources:
   equipment_craft: 12
   smithing_table: 12
+  utility_craft: 2
+  construction_craft: 1

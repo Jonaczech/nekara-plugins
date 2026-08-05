@@ -3,6 +3,7 @@ package cz.nekara.rpg.modules.skills;
 import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.configuration.NativeActivityConfig;
 import cz.nekara.rpg.fishing.FishingCatchDeliveredEvent;
+import cz.nekara.rpg.items.weapons.WeaponCatalog;
 import cz.nekara.rpg.skills.SkillId;
 import cz.nekara.rpg.skills.experience.ExperienceAwardRequest;
 import cz.nekara.rpg.skills.experience.ExperienceContext;
@@ -11,8 +12,10 @@ import cz.nekara.rpg.skills.experience.ExperienceGrantGuard;
 import io.papermc.paper.event.player.PlayerTradeEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BrewingStand;
+import org.bukkit.block.Furnace;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.entity.Enemy;
 import org.bukkit.entity.Entity;
@@ -25,12 +28,15 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockFertilizeEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.inventory.BrewEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.SmithItemEvent;
 import org.bukkit.event.player.PlayerFishEvent;
@@ -49,7 +55,9 @@ import java.util.UUID;
 final class NativeActivityListener implements Listener {
     private static final int MAX_FINGERPRINTS = 65_536;
     private static final long BREWING_ATTRIBUTION_MILLIS = 120_000L;
+    private static final long COOKING_ATTRIBUTION_MILLIS = 600_000L;
     private static final int GRASS_BLOCKS_PER_AWARD = 8;
+    private static final int PLANTS_PER_AWARD = 8;
 
     private final NekaraRPGPlugin plugin;
     private final SkillsModule module;
@@ -57,7 +65,9 @@ final class NativeActivityListener implements Listener {
     private final PlacedBlockTracker placedBlocks;
     private final ExperienceGrantGuard guard;
     private final Map<BlockKey, BrewingActor> brewingActors = new HashMap<>();
+    private final Map<BlockKey, CookingActor> cookingActors = new HashMap<>();
     private final Map<UUID, Integer> grassForageProgress = new HashMap<>();
+    private final Map<UUID, Integer> plantingProgress = new HashMap<>();
     private boolean enabled;
 
     NativeActivityListener(
@@ -89,7 +99,9 @@ final class NativeActivityListener implements Listener {
         enabled = false;
         HandlerList.unregisterAll(this);
         brewingActors.clear();
+        cookingActors.clear();
         grassForageProgress.clear();
+        plantingProgress.clear();
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -102,7 +114,7 @@ final class NativeActivityListener implements Listener {
             SkillId skill = event.getDamager() instanceof Projectile
                 ? SkillId.ARCHERY
                 : SkillEquipmentPolicy.meleeSkill(attacker.getInventory().getItemInMainHand()).orElse(null);
-            if (skill != null) {
+            if (skill != null && usesWeaponCorrectly(attacker)) {
                 award(attacker, skill, "combat_hit", target.getUniqueId().toString());
             }
         }
@@ -113,6 +125,13 @@ final class NativeActivityListener implements Listener {
         }
     }
 
+    private static boolean usesWeaponCorrectly(Player player) {
+        return WeaponCatalog.resolve(player.getInventory().getItemInMainHand())
+            .map(weapon -> !weapon.family().requiresEmptyOffhand()
+                || player.getInventory().getItemInOffHand().getType().isAir())
+            .orElse(true);
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onTrade(PlayerTradeEvent event) {
         award(event.getPlayer(), SkillId.TRADING, "villager_trade",
@@ -121,12 +140,14 @@ final class NativeActivityListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCraft(CraftItemEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)
-            || !SkillEquipmentPolicy.isSmithingProduct(event.getRecipe().getResult())) {
+        if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
-        award(player, SkillId.SMITHING, "equipment_craft",
-            event.getRecipe().getResult().getType().getKey() + ":" + Bukkit.getCurrentTick());
+        String source = CraftingExperiencePolicy.sourceFor(event.getCurrentItem());
+        if (source != null) {
+            award(player, SkillId.SMITHING, source,
+                event.getCurrentItem().getType().getKey() + ":" + Bukkit.getCurrentTick());
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -189,6 +210,51 @@ final class NativeActivityListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlant(BlockPlaceEvent event) {
+        if (!isPlant(event.getBlockPlaced()) || !completedPlantingBundle(event.getPlayer())) {
+            return;
+        }
+        award(event.getPlayer(), SkillId.FARMING, "planting_bundle",
+            event.getPlayer().getUniqueId() + ":" + Bukkit.getCurrentTick());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void rememberCook(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player) || !isCookingInsertion(event)) {
+            return;
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> rememberCookingInput(player, event.getView().getTopInventory()));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void rememberCookDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player) || !event.getRawSlots().contains(0)) {
+            return;
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> rememberCookingInput(player, event.getView().getTopInventory()));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onCook(FurnaceSmeltEvent event) {
+        Material appliance = event.getBlock().getType();
+        if ((appliance != Material.FURNACE && appliance != Material.SMOKER) || !event.getResult().getType().isEdible()) {
+            return;
+        }
+        BlockKey key = BlockKey.of(event.getBlock());
+        CookingActor actor = cookingActors.get(key);
+        if (actor == null || actor.source() != event.getSource().getType()
+            || System.currentTimeMillis() - actor.recordedAt() > COOKING_ATTRIBUTION_MILLIS) {
+            cookingActors.remove(key);
+            return;
+        }
+        Player player = Bukkit.getPlayer(actor.playerId());
+        if (player != null && player.isOnline()) {
+            award(player, SkillId.FARMING, appliance == Material.SMOKER ? "smoker_meal" : "furnace_meal",
+                key + ":" + event.getSource().getType().getKey() + ":" + Bukkit.getCurrentTick());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBerryHarvest(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null) {
             return;
@@ -224,6 +290,8 @@ final class NativeActivityListener implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         grassForageProgress.remove(event.getPlayer().getUniqueId());
+        plantingProgress.remove(event.getPlayer().getUniqueId());
+        cookingActors.entrySet().removeIf(entry -> entry.getValue().playerId().equals(event.getPlayer().getUniqueId()));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -304,6 +372,51 @@ final class NativeActivityListener implements Listener {
         return true;
     }
 
+    private boolean completedPlantingBundle(Player player) {
+        int progress = plantingProgress.merge(player.getUniqueId(), 1, Integer::sum);
+        if (progress < PLANTS_PER_AWARD) {
+            return false;
+        }
+        plantingProgress.put(player.getUniqueId(), 0);
+        return true;
+    }
+
+    private static boolean isPlant(Block block) {
+        String name = block.getType().name();
+        return name.equals("WHEAT") || name.equals("CARROTS") || name.equals("POTATOES")
+            || name.equals("BEETROOTS") || name.equals("NETHER_WART") || name.equals("MELON_STEM")
+            || name.equals("PUMPKIN_STEM") || name.equals("TORCHFLOWER_CROP") || name.equals("PITCHER_CROP")
+            || name.endsWith("_SAPLING") || name.equals("BAMBOO") || name.equals("SUGAR_CANE")
+            || name.equals("CACTUS") || name.equals("KELP");
+    }
+
+    private static boolean isCookingInsertion(InventoryClickEvent event) {
+        if (!(event.getView().getTopInventory().getHolder() instanceof Furnace)) {
+            return false;
+        }
+        int topSize = event.getView().getTopInventory().getSize();
+        return event.getRawSlot() == 0
+            || event.isShiftClick() && event.getRawSlot() >= topSize && event.getCurrentItem() != null
+                && event.getCurrentItem().getType().isEdible();
+    }
+
+    private void rememberCookingInput(Player player, org.bukkit.inventory.Inventory inventory) {
+        if (!(inventory.getHolder() instanceof Furnace furnace)) {
+            return;
+        }
+        Material appliance = furnace.getBlock().getType();
+        if (appliance != Material.FURNACE && appliance != Material.SMOKER) {
+            return;
+        }
+        ItemStack input = inventory.getItem(0);
+        BlockKey key = BlockKey.of(furnace.getBlock());
+        if (input == null || !input.getType().isEdible()) {
+            cookingActors.remove(key);
+            return;
+        }
+        cookingActors.put(key, new CookingActor(player.getUniqueId(), input.getType(), System.currentTimeMillis()));
+    }
+
     static String wildForageSource(String materialName) {
         return switch (materialName) {
             case "DANDELION", "POPPY", "BLUE_ORCHID", "ALLIUM", "AZURE_BLUET",
@@ -327,6 +440,9 @@ final class NativeActivityListener implements Listener {
     }
 
     private record BrewingActor(UUID playerId, long recordedAt) {
+    }
+
+    private record CookingActor(UUID playerId, Material source, long recordedAt) {
     }
 
     private record BlockKey(UUID worldId, int x, int y, int z) {

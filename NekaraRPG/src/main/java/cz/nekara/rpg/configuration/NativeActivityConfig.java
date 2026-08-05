@@ -25,12 +25,14 @@ public record NativeActivityConfig(
         EnumMap<SkillId, Map<String, Long>> values = new EnumMap<>(SkillId.class);
         put(values, SkillId.MARTIAL_ARTS, "combat_hit", 4);
         put(values, SkillId.TRADING, "villager_trade", 10);
-        put(values, SkillId.SMITHING, "equipment_craft", 12, "smithing_table", 12);
+        put(values, SkillId.SMITHING, "equipment_craft", 12, "smithing_table", 12,
+            "utility_craft", 2, "construction_craft", 1);
         put(values, SkillId.ENCHANTING, "enchant_item", 15);
         put(values, SkillId.ALCHEMY, "brew_complete", 10);
         put(values, SkillId.FARMING, "mature_harvest", 4, "berry_harvest", 3,
             "wild_flower", 2, "wild_mushroom", 2, "grass_bundle", 1,
-            "animal_breed", 8, "animal_shear", 3, "bonemeal_growth", 2);
+            "animal_breed", 8, "animal_shear", 3, "bonemeal_growth", 2,
+            "planting_bundle", 2, "furnace_meal", 3, "smoker_meal", 4);
         put(values, SkillId.FISHING, "vanilla_catch", 12, "deferred_catch", 12);
         put(values, SkillId.LIGHT_WEAPONS, "combat_hit", 4);
         put(values, SkillId.HEAVY_WEAPONS, "combat_hit", 5);

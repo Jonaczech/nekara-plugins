@@ -76,7 +76,7 @@ public final class ConfigurationService {
                 config, "effects.success", "HAPPY_VILLAGER", warning);
         OutcomeEffectConfig failureEffect = parseOutcomeEffect(
                 config, "effects.failure", "DAMAGE_INDICATOR", warning);
-        ValhallaFishingConfig valhallaFishing = parseValhallaFishingConfig(config, warning);
+        FishingDifficultyConfig fishingDifficulty = parseFishingDifficultyConfig(config, warning);
 
         String preferredMode = config.getString("fishing.preferred-mode", "BITE_GATE");
         if ("BITE_GATE".equalsIgnoreCase(preferredMode)) {
@@ -166,12 +166,12 @@ public final class ConfigurationService {
                 config.getBoolean("campfire.rested.haste.particles", true),
                 config.getBoolean("campfire.rested.haste.icon", true)
         );
-        RestedValhallaConfig restedValhalla = new RestedValhallaConfig(
-                config.getBoolean("campfire.rested.valhalla-experience.enabled", true),
+        RestedExperienceConfig restedExperience = new RestedExperienceConfig(
+                config.getBoolean("campfire.rested.skills-experience.enabled", true),
                 validateDouble(config.getDouble(
-                                "campfire.rested.valhalla-experience.multiplier", 1.10),
+                                "campfire.rested.skills-experience.multiplier", 1.10),
                         1.0, 10.0, 1.10,
-                        "campfire.rested.valhalla-experience.multiplier", warning)
+                        "campfire.rested.skills-experience.multiplier", warning)
         );
 
         String mythicHostileFaction = config.getString(
@@ -212,7 +212,7 @@ public final class ConfigurationService {
                         1, 3_600, 300, "campfire.rested.duration-seconds", warning),
                 validateDouble(config.getDouble("campfire.rested.hunger-loss-multiplier", 0.5),
                         0.0, 1.0, 0.5, "campfire.rested.hunger-loss-multiplier", warning),
-                restedValhalla,
+                restedExperience,
                 restedEffect,
                 lying,
                 camping,
@@ -374,46 +374,46 @@ public final class ConfigurationService {
         );
 
         int miningChunkSoftLimit = validateInt(
-                config.getInt("skills.mining.experience.chunk-soft-limit", 32),
-                0, 100_000, 32, "skills.mining.experience.chunk-soft-limit", warning);
+                config.getInt("skills.tezba.experience.chunk-soft-limit", 32),
+                0, 100_000, 32, "skills.tezba.experience.chunk-soft-limit", warning);
         int miningChunkHardLimit = validateInt(
-                config.getInt("skills.mining.experience.chunk-hard-limit", 128),
-                1, 1_000_000, 128, "skills.mining.experience.chunk-hard-limit", warning);
+                config.getInt("skills.tezba.experience.chunk-hard-limit", 128),
+                1, 1_000_000, 128, "skills.tezba.experience.chunk-hard-limit", warning);
         if (miningChunkHardLimit <= miningChunkSoftLimit) {
-            warning.accept("Invalid skills.mining experience chunk limits; using 32/128.");
+            warning.accept("Invalid skills.tezba experience chunk limits; using 32/128.");
             miningChunkSoftLimit = 32;
             miningChunkHardLimit = 128;
         }
         NativeMiningConfig nativeMining = new NativeMiningConfig(
-                config.getBoolean("skills.mining.experience.enabled", true),
-                validateInt(config.getInt("skills.mining.experience.chunk-window-seconds", 300),
+                config.getBoolean("skills.tezba.experience.enabled", true),
+                validateInt(config.getInt("skills.tezba.experience.chunk-window-seconds", 300),
                         1, 86_400, 300,
-                        "skills.mining.experience.chunk-window-seconds", warning),
+                        "skills.tezba.experience.chunk-window-seconds", warning),
                 miningChunkSoftLimit,
                 miningChunkHardLimit,
                 validateDouble(config.getDouble(
-                                "skills.mining.experience.farm-floor-multiplier", 0.10),
+                                "skills.tezba.experience.farm-floor-multiplier", 0.10),
                         0.01, 1.0, 0.10,
-                        "skills.mining.experience.farm-floor-multiplier", warning),
-                config.getBoolean("skills.mining.rewards.final-drop-multiplier-enabled", true),
+                        "skills.tezba.experience.farm-floor-multiplier", warning),
+                config.getBoolean("skills.tezba.rewards.final-drop-multiplier-enabled", true),
                 parseMiningExperienceTable(config, warning)
         );
         NativeGatheringConfig nativeWoodcutting = parseGatheringConfig(
                 config,
-                "woodcutting",
+                "lesnictvi",
                 NativeGatheringConfig.defaultWoodcuttingExperience(),
                 NativeGatheringConfig.defaultWoodcuttingRareDrops(),
                 warning);
         NativeGatheringConfig nativeDigging = parseGatheringConfig(
                 config,
-                "digging",
+                "kopani",
                 NativeGatheringConfig.defaultDiggingExperience(),
                 NativeGatheringConfig.defaultDiggingRareDrops(),
                 warning);
         LevelRewardConfig levelRewards = parseLevelRewards(config, warning);
         FishingRewardConfig fishingRewards = new FishingRewardConfig(
-                config.getBoolean("skills.fishing.rewards.treasures-enabled", true),
-                parseMaterialIntTable(config, "skills.fishing.rewards.treasures", Map.of(), warning));
+                config.getBoolean("skills.rybareni.rewards.treasures-enabled", true),
+                parseMaterialIntTable(config, "skills.rybareni.rewards.treasures", Map.of(), warning));
 
         SkillsConfig skills = new SkillsConfig(
                 validateRelativeStoragePath(
@@ -436,10 +436,11 @@ public final class ConfigurationService {
                 nativeDigging,
                 levelRewards,
                 fishingRewards,
-                parseGatheringAbility(config, "mining", "vein-mining", 24, 6, 8, warning),
-                parseGatheringAbility(config, "mining", "drilling", 64, 8, 20, warning),
-                parseGatheringAbility(config, "woodcutting", "tree-feller", 64, 8, 12, warning),
-                parseNativeActivities(config, warning)
+                parseGatheringAbility(config, "tezba", "vein-mining", 24, 6, 8, warning),
+                parseGatheringAbility(config, "tezba", "drilling", 64, 8, 20, warning),
+                parseGatheringAbility(config, "lesnictvi", "tree-feller", 64, 8, 12, warning),
+                parseNativeActivities(config, warning),
+                parseWeaponCombat(config, warning)
         );
 
         Map<String, SoundSettings> sounds = new HashMap<>();
@@ -489,7 +490,7 @@ public final class ConfigurationService {
                 hookParticles,
                 successEffect,
                 failureEffect,
-                valhallaFishing,
+                fishingDifficulty,
                 fishing,
                 sitting,
                 campfire,
@@ -524,22 +525,22 @@ public final class ConfigurationService {
         }
     }
 
-    private ValhallaFishingConfig parseValhallaFishingConfig(
+    private FishingDifficultyConfig parseFishingDifficultyConfig(
             FileConfiguration config, Consumer<String> warning) {
-        String path = "valhalla.fishing-difficulty";
+        String path = "fishing.difficulty";
         int maxLevelRequiredHits = validateInt(config.getInt(path + ".max-level-required-hits", 2),
                 1, 100, 2, path + ".max-level-required-hits", warning);
         int maxLevelMaxMisses = validateInt(config.getInt(path + ".max-level-max-misses", 3),
                 0, 100, 3, path + ".max-level-max-misses", warning);
 
-        List<ValhallaFishingTier> tiers = new ArrayList<>();
-        parseValhallaTier(config, path + ".tiers.novice", "novice", 1, 30,
+        List<FishingDifficultyTier> tiers = new ArrayList<>();
+        parseFishingDifficultyTier(config, path + ".tiers.novice", "novice", 1, 30,
                 3, 5, 1, tiers, warning);
-        parseValhallaTier(config, path + ".tiers.skilled", "skilled", 31, 60,
+        parseFishingDifficultyTier(config, path + ".tiers.skilled", "skilled", 31, 60,
                 3, 4, 2, tiers, warning);
-        parseValhallaTier(config, path + ".tiers.expert", "expert", 61, 0,
+        parseFishingDifficultyTier(config, path + ".tiers.expert", "expert", 61, 0,
                 2, 3, 3, tiers, warning);
-        return new ValhallaFishingConfig(
+        return new FishingDifficultyConfig(
                 config.getBoolean(path + ".enabled", true),
                 maxLevelRequiredHits,
                 maxLevelMaxMisses,
@@ -547,7 +548,7 @@ public final class ConfigurationService {
         );
     }
 
-    private void parseValhallaTier(
+    private void parseFishingDifficultyTier(
             FileConfiguration config,
             String path,
             String name,
@@ -556,7 +557,7 @@ public final class ConfigurationService {
             int defaultRequiredHitsMin,
             int defaultRequiredHitsMax,
             int defaultMaxMisses,
-            List<ValhallaFishingTier> tiers,
+            List<FishingDifficultyTier> tiers,
             Consumer<String> warning
     ) {
         int minLevel = validateInt(config.getInt(path + ".min-level", defaultMinLevel),
@@ -574,7 +575,7 @@ public final class ConfigurationService {
                 path + ".required-hits-max", warning);
         int maxMisses = validateInt(config.getInt(path + ".max-misses", defaultMaxMisses),
                 0, 100, defaultMaxMisses, path + ".max-misses", warning);
-        tiers.add(new ValhallaFishingTier(name, minLevel, maxLevel,
+        tiers.add(new FishingDifficultyTier(name, minLevel, maxLevel,
                 requiredHitsMin, requiredHitsMax, maxMisses));
     }
 
@@ -705,17 +706,17 @@ public final class ConfigurationService {
     ) {
         Map<Material, Long> fallback = NativeMiningConfig.defaultExperienceByMaterial();
         ConfigurationSection section = config.getConfigurationSection(
-                "skills.mining.experience-sources.blocks");
+                "skills.tezba.experience-sources.blocks");
         if (section == null) {
             return fallback;
         }
         Map<Material, Long> values = applyMaterialTags(
-            config, "skills.mining.experience-sources.tags", fallback, warning);
+            config, "skills.tezba.experience-sources.tags", fallback, warning);
         for (String key : section.getKeys(false)) {
             Material material = Material.matchMaterial(key);
             long experience = section.getLong(key, 0);
             if (material == null || !material.isBlock() || experience < 1 || experience > 1_000_000) {
-                warning.accept("Invalid skills.mining.experience-sources.blocks." + key + "; ignoring it.");
+                warning.accept("Invalid skills.tezba.experience-sources.blocks." + key + "; ignoring it.");
                 continue;
             }
             values.put(material, experience);
@@ -827,6 +828,33 @@ public final class ConfigurationService {
                 blocksPerTick,
                 validateInt(config.getInt(root + ".cooldown-seconds", defaultCooldownSeconds),
                         0, 86_400, defaultCooldownSeconds, root + ".cooldown-seconds", warning)
+        );
+    }
+
+    private WeaponCombatConfig parseWeaponCombat(
+            FileConfiguration config,
+            Consumer<String> warning
+    ) {
+        WeaponCombatConfig defaults = WeaponCombatConfig.defaults();
+        return new WeaponCombatConfig(
+            validateDouble(config.getDouble("skills.weapons.dagger.critical-chance", defaults.daggerCriticalChance()),
+                0.0, 1.0, defaults.daggerCriticalChance(), "skills.weapons.dagger.critical-chance", warning),
+            validateDouble(config.getDouble("skills.weapons.dagger.rear-attack-bonus", defaults.daggerRearAttackBonus()),
+                0.0, 5.0, defaults.daggerRearAttackBonus(), "skills.weapons.dagger.rear-attack-bonus", warning),
+            validateDouble(config.getDouble("skills.weapons.sword.bleed-chance", defaults.swordBleedChance()),
+                0.0, 1.0, defaults.swordBleedChance(), "skills.weapons.sword.bleed-chance", warning),
+            validateDouble(config.getDouble("skills.weapons.spear.armor-penetration", defaults.spearArmorPenetration()),
+                0.0, 1.0, defaults.spearArmorPenetration(), "skills.weapons.spear.armor-penetration", warning),
+            validateDouble(config.getDouble("skills.weapons.axe.critical-chance", defaults.axeCriticalChance()),
+                0.0, 1.0, defaults.axeCriticalChance(), "skills.weapons.axe.critical-chance", warning),
+            validateDouble(config.getDouble("skills.weapons.greatsword.bleed-chance", defaults.greatswordBleedChance()),
+                0.0, 1.0, defaults.greatswordBleedChance(), "skills.weapons.greatsword.bleed-chance", warning),
+            validateDouble(config.getDouble("skills.weapons.greatsword.cleave-damage-multiplier", defaults.greatswordCleaveDamageMultiplier()),
+                0.0, 1.0, defaults.greatswordCleaveDamageMultiplier(), "skills.weapons.greatsword.cleave-damage-multiplier", warning),
+            validateDouble(config.getDouble("skills.weapons.hammer.armor-penetration", defaults.hammerArmorPenetration()),
+                0.0, 1.0, defaults.hammerArmorPenetration(), "skills.weapons.hammer.armor-penetration", warning),
+            validateDouble(config.getDouble("skills.weapons.hammer.stun-chance", defaults.hammerStunChance()),
+                0.0, 1.0, defaults.hammerStunChance(), "skills.weapons.hammer.stun-chance", warning)
         );
     }
 

@@ -2,6 +2,8 @@ package cz.nekara.rpg.modules.skills;
 
 import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.configuration.SkillsConfig;
+import cz.nekara.rpg.configuration.WeaponCombatConfig;
+import cz.nekara.rpg.items.weapons.WeaponRecipeRegistry;
 import cz.nekara.rpg.modules.NekaraModule;
 import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.skills.SkillId;
@@ -13,6 +15,8 @@ import cz.nekara.rpg.skills.admin.SkillAdminResult;
 import cz.nekara.rpg.skills.admin.SkillAdministrationService;
 import cz.nekara.rpg.skills.experience.ExperienceAwardRequest;
 import cz.nekara.rpg.skills.experience.ExperienceAwardResult;
+import cz.nekara.rpg.skills.experience.ExperienceContext;
+import cz.nekara.rpg.skills.experience.ExperienceFingerprint;
 import cz.nekara.rpg.skills.experience.ExperienceGrantGuard;
 import cz.nekara.rpg.skills.experience.GlobalExperienceEvent;
 import cz.nekara.rpg.skills.experience.ExperiencePolicy;
@@ -98,6 +102,7 @@ public final class SkillsModule implements NekaraModule {
     private volatile NativeActivityListener nativeActivityListener;
     private volatile CombatPerkListener combatPerkListener;
     private volatile ProductionPerkListener productionPerkListener;
+    private volatile WeaponRecipeRegistry weaponRecipeRegistry;
     private volatile String storageFailure;
     private volatile long generation;
     private boolean enabled;
@@ -202,6 +207,8 @@ public final class SkillsModule implements NekaraModule {
         nativeActivityListener.enable();
         combatPerkListener = new CombatPerkListener(plugin, this);
         combatPerkListener.enable();
+        weaponRecipeRegistry = new WeaponRecipeRegistry(plugin.getServer());
+        weaponRecipeRegistry.register();
         productionPerkListener = new ProductionPerkListener(plugin, this);
         productionPerkListener.enable();
     }
@@ -213,6 +220,11 @@ public final class SkillsModule implements NekaraModule {
         }
         enabled = false;
         generation++;
+        WeaponRecipeRegistry closingWeapons = weaponRecipeRegistry;
+        weaponRecipeRegistry = null;
+        if (closingWeapons != null) {
+            closingWeapons.unregister();
+        }
         ProductionPerkListener closingProductionPerks = productionPerkListener;
         productionPerkListener = null;
         if (closingProductionPerks != null) {
@@ -493,9 +505,12 @@ public final class SkillsModule implements NekaraModule {
     private ExperienceAwardRequest applyExperienceBoost(UUID playerId, ExperienceAwardRequest request) {
         SkillProfile profile = profileCache.get(playerId);
         GlobalExperienceEvent event = globalExperienceEvent;
+        double restedMultiplier = request.context().synthetic() ? 1.0
+            : plugin.campfireModule().skillsExperienceMultiplier(playerId);
         double multiplier = experienceBoost(playerId, request.skill())
             * (event == null ? 1.0 : event.multiplier(request.skill()))
-            * (profile == null ? 1.0 : newGamePlusExperienceMultiplier(profile, request.skill()));
+            * (profile == null ? 1.0 : newGamePlusExperienceMultiplier(profile, request.skill()))
+            * restedMultiplier;
         if (multiplier == 1.0) return request;
         long boosted = Math.max(1L, Math.min(100_000_000L,
             Math.round(request.baseExperience() * multiplier)));
@@ -568,6 +583,34 @@ public final class SkillsModule implements NekaraModule {
     double newGamePlusStatBonus(SkillProfile profile, SkillId skill) {
         SkillsConfig config = activeConfig;
         return config == null ? 0.0 : config.newGamePlus().perkStatBonusPerRank() * profile.newGamePlusRank(skill);
+    }
+
+    /** Returns the cached level used by optional gameplay integrations. */
+    public int cachedSkillLevel(UUID playerId, SkillId skill) {
+        SkillProfile profile = profileCache.get(playerId);
+        return profile == null ? 0 : skillLevel(profile, skill);
+    }
+
+    /**
+     * Grants XP for a verified external Nekara mechanic such as Echo Vein.
+     * The normal anti-duplication, event and Rested pipeline remains in force.
+     */
+    public void awardMechanicExperience(Player player, SkillId skill, long amount, String sourceKey) {
+        if (amount < 1L || player == null || sourceKey == null || sourceKey.isBlank()) {
+            return;
+        }
+        ExperienceFingerprint fingerprint = new ExperienceFingerprint(
+            player.getUniqueId().toString(), skill, "mechanic", sourceKey);
+        ExperienceContext context = new ExperienceContext(
+            skill, false, false, false, false, false, false, 0);
+        awardExperience(player.getUniqueId(), new ExperienceAwardRequest(
+            player.getUniqueId().toString(), skill, amount, context, fingerprint),
+            result -> showExperienceFeedback(player.getUniqueId(), skill, "Ozvěna žíly", result));
+    }
+
+    WeaponCombatConfig weaponCombatConfig() {
+        SkillsConfig config = activeConfig;
+        return config == null ? WeaponCombatConfig.defaults() : config.weapons();
     }
 
     private double newGamePlusStatMultiplier(SkillProfile profile, SkillId skill) {

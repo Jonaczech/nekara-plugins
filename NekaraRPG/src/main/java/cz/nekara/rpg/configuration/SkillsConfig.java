@@ -14,6 +14,7 @@ public record SkillsConfig(
     GatheringAbilityConfig veinMining,
     GatheringAbilityConfig drilling,
     GatheringAbilityConfig treeFeller,
-    NativeActivityConfig activities
+    NativeActivityConfig activities,
+    WeaponCombatConfig weapons
 ) {
 }

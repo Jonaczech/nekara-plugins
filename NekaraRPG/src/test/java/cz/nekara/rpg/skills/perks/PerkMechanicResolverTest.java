@@ -17,7 +17,7 @@ class PerkMechanicResolverTest {
         SkillProfile profile = new SkillProfile(
             "player",
             Map.of(),
-            Map.of(new PerkId("mining.vein"), 1),
+            Map.of(new PerkId("tezba.vein"), 1),
             3,
             0
         );

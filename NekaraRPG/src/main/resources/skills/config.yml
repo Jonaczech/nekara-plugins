@@ -35,3 +35,22 @@ level-rewards:
 activities:
   enabled: true
   deduplication-milliseconds: 750
+
+# Weapon-family combat effects are always resolved server-side. Values are
+# added to the selected weapon skill's perk statistics, never stored in items.
+weapons:
+  dagger:
+    critical-chance: 0.06
+    rear-attack-bonus: 0.25
+  sword:
+    bleed-chance: 0.04
+  spear:
+    armor-penetration: 0.12
+  axe:
+    critical-chance: 0.04
+  greatsword:
+    bleed-chance: 0.05
+    cleave-damage-multiplier: 0.35
+  hammer:
+    armor-penetration: 0.20
+    stun-chance: 0.10

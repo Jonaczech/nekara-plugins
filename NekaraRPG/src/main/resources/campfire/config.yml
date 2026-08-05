@@ -38,7 +38,9 @@ rested:
   charge-seconds: 20
   duration-seconds: 300
   hunger-loss-multiplier: 0.5
-  valhalla-experience:
+  # Applies only to ordinary NekaraRPG Skills actions, never to commands,
+  # resets or migration/refund operations.
+  skills-experience:
     enabled: true
     multiplier: 1.10
   haste:

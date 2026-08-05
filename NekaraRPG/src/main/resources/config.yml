@@ -28,8 +28,7 @@ modules:
   campfire:
     enabled: true
   mining:
-    # Legacy Echo Vein observes ValhallaMMO Mining. Native Žilobití now lives
-    # in the skills module, so this compatibility activity stays opt-in.
+    # Echo Vein is an optional exploration activity built on native mining.
     enabled: false
   mounts:
     enabled: true

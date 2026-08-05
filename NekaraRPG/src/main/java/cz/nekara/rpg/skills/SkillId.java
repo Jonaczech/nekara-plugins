@@ -8,14 +8,14 @@ public enum SkillId {
     MARTIAL_ARTS("martial_arts", true),
     TRADING("trading", true),
     SMITHING("smithing", true),
-    ENCHANTING("enchanting", true),
+    ENCHANTING("runotepectvi", true),
     ALCHEMY("alchemy", true),
-    MINING("mining", true),
-    WOODCUTTING("woodcutting", true),
-    DIGGING("digging", true),
-    FARMING("farming", true),
-    FISHING("fishing", true),
-    LIGHT_WEAPONS("light_weapons", true),
+    MINING("tezba", true),
+    WOODCUTTING("lesnictvi", true),
+    DIGGING("kopani", true),
+    FARMING("statkarstvi", true),
+    FISHING("rybareni", true),
+    LIGHT_WEAPONS("lehke_zbrane", true),
     HEAVY_WEAPONS("heavy_weapons", true),
     ARCHERY("archery", true),
     LIGHT_ARMOR("light_armor", true),
@@ -43,5 +43,16 @@ public enum SkillId {
 
     public static List<SkillId> gameplaySkills() {
         return GAMEPLAY_SKILLS;
+    }
+
+    public static java.util.Map<String, String> renamedIds() {
+        return java.util.Map.of(
+            "enchanting", "runotepectvi",
+            "mining", "tezba",
+            "woodcutting", "lesnictvi",
+            "digging", "kopani",
+            "farming", "statkarstvi",
+            "fishing", "rybareni",
+            "light_weapons", "lehke_zbrane");
     }
 }

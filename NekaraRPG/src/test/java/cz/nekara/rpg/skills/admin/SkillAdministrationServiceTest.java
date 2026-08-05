@@ -42,9 +42,9 @@ class SkillAdministrationServiceTest {
                 ACTOR,
                 "player-id",
                 "Player",
-                SkillAdminOperation.grantPerk(new PerkId("mining.yield"), 3)
+                SkillAdminOperation.grantPerk(new PerkId("tezba.yield"), 3)
             );
-            assertEquals(3, perk.profile().perkRank(new PerkId("mining.yield")));
+            assertEquals(3, perk.profile().perkRank(new PerkId("tezba.yield")));
             assertEquals(3, perk.profile().spentPerkPoints());
             assertEquals(2, perk.profile().revision());
 
@@ -67,13 +67,13 @@ class SkillAdministrationServiceTest {
                 ACTOR,
                 "player-id",
                 "Player",
-                SkillAdminOperation.grantPerk(new PerkId("mining.yield"), 1)
+                SkillAdminOperation.grantPerk(new PerkId("tezba.yield"), 1)
             );
             SkillAdminResult repeated = service.execute(
                 ACTOR,
                 "player-id",
                 "Player",
-                SkillAdminOperation.grantPerk(new PerkId("mining.yield"), 1)
+                SkillAdminOperation.grantPerk(new PerkId("tezba.yield"), 1)
             );
 
             assertFalse(repeated.changed());
@@ -89,12 +89,12 @@ class SkillAdministrationServiceTest {
             service.execute(ACTOR, "player-id", "Player",
                 SkillAdminOperation.grantExperience(SkillId.MINING, 2_000));
             service.execute(ACTOR, "player-id", "Player",
-                SkillAdminOperation.grantPerk(new PerkId("mining.yield"), 2));
+                SkillAdminOperation.grantPerk(new PerkId("tezba.yield"), 2));
 
             SkillAdminResult skillReset = service.execute(
                 ACTOR, "player-id", "Player", SkillAdminOperation.resetSkill(SkillId.MINING));
             assertEquals(0, skillReset.profile().totalExperience(SkillId.MINING));
-            assertEquals(2, skillReset.profile().perkRank(new PerkId("mining.yield")));
+            assertEquals(2, skillReset.profile().perkRank(new PerkId("tezba.yield")));
             assertEquals(2, skillReset.profile().spentPerkPoints());
 
             SkillAdminResult perkReset = service.execute(
@@ -122,7 +122,7 @@ class SkillAdministrationServiceTest {
                 ACTOR,
                 "player-id",
                 "Player",
-                SkillAdminOperation.grantPerk(new PerkId("mining.yield"), 6)
+                SkillAdminOperation.grantPerk(new PerkId("tezba.yield"), 6)
             ));
             assertThrows(IllegalArgumentException.class,
                 () -> SkillAdminOperation.grantExperience(SkillId.POWER, 10));

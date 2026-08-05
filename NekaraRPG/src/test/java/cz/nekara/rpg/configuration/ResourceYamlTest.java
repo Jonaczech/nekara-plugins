@@ -23,20 +23,20 @@ class ResourceYamlTest {
                 "skills/martial_arts/config.yml", "skills/martial_arts/messages.yml",
                 "skills/trading/config.yml", "skills/trading/messages.yml",
                 "skills/smithing/config.yml", "skills/smithing/messages.yml",
-                "skills/enchanting/config.yml", "skills/enchanting/messages.yml",
+                "skills/runotepectvi/config.yml", "skills/runotepectvi/messages.yml",
                 "skills/alchemy/config.yml", "skills/alchemy/messages.yml",
-                "skills/mining/config.yml", "skills/mining/messages.yml",
-                "skills/woodcutting/config.yml", "skills/woodcutting/messages.yml",
-                "skills/digging/config.yml", "skills/digging/messages.yml",
-                "skills/farming/config.yml", "skills/farming/messages.yml",
-                "skills/fishing/config.yml", "skills/fishing/messages.yml",
-                "skills/light_weapons/config.yml", "skills/light_weapons/messages.yml",
+                "skills/tezba/config.yml", "skills/tezba/messages.yml",
+                "skills/lesnictvi/config.yml", "skills/lesnictvi/messages.yml",
+                "skills/kopani/config.yml", "skills/kopani/messages.yml",
+                "skills/statkarstvi/config.yml", "skills/statkarstvi/messages.yml",
+                "skills/rybareni/config.yml", "skills/rybareni/messages.yml",
+                "skills/lehke_zbrane/config.yml", "skills/lehke_zbrane/messages.yml",
                 "skills/heavy_weapons/config.yml", "skills/heavy_weapons/messages.yml",
                 "skills/archery/config.yml", "skills/archery/messages.yml",
                 "skills/light_armor/config.yml", "skills/light_armor/messages.yml",
                 "skills/heavy_armor/config.yml", "skills/heavy_armor/messages.yml",
-                "skills/woodcutting/loot-tables.yml",
-                "skills/digging/loot-tables.yml", "skills/fishing/loot-tables.yml"}) {
+                "skills/lesnictvi/loot-tables.yml",
+                "skills/kopani/loot-tables.yml", "skills/rybareni/loot-tables.yml"}) {
             InputStream stream = getClass().getClassLoader().getResourceAsStream(resource);
             assertNotNull(stream, resource + " is missing from the test classpath");
             try (stream; InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
@@ -57,10 +57,10 @@ class ResourceYamlTest {
         Map<String, Object> fishing = loadYaml("fishing/config.yml");
         Map<String, Object> mountsConfig = loadYaml("mounts/config.yml");
             Map<String, Object> skillsConfig = loadYaml("skills/config.yml");
-            Map<String, Object> fishingLoot = loadYaml("skills/fishing/loot-tables.yml");
-        Map<String, Object> miningSkillConfig = loadYaml("skills/mining/config.yml");
-        Map<String, Object> woodcuttingSkillConfig = loadYaml("skills/woodcutting/config.yml");
-        Map<String, Object> diggingSkillConfig = loadYaml("skills/digging/config.yml");
+            Map<String, Object> fishingLoot = loadYaml("skills/rybareni/loot-tables.yml");
+        Map<String, Object> miningSkillConfig = loadYaml("skills/tezba/config.yml");
+        Map<String, Object> woodcuttingSkillConfig = loadYaml("skills/lesnictvi/config.yml");
+        Map<String, Object> diggingSkillConfig = loadYaml("skills/kopani/config.yml");
 
             Map<String, Object> updater = (Map<String, Object>) root.get("updater");
             Map<String, Object> modules = (Map<String, Object>) root.get("modules");
@@ -78,8 +78,8 @@ class ResourceYamlTest {
             Map<String, Object> oreSound = (Map<String, Object>) miningSounds.get("echo-vein-ore-reveal");
             Map<String, Object> campfireRested = (Map<String, Object>) campfire.get("rested");
             Map<String, Object> haste = (Map<String, Object>) campfireRested.get("haste");
-            Map<String, Object> valhallaExperience =
-                    (Map<String, Object>) campfireRested.get("valhalla-experience");
+            Map<String, Object> skillsExperience =
+                    (Map<String, Object>) campfireRested.get("skills-experience");
             Map<String, Object> camping = (Map<String, Object>) campfire.get("camping");
             Map<String, Object> spawnProtection =
                     (Map<String, Object>) camping.get("spawn-protection");
@@ -156,8 +156,8 @@ class ResourceYamlTest {
             assertEquals(5.0, ((Number) campfire.get("radius")).doubleValue(), 0.0001);
             assertEquals(300, ((Number) campfireRested.get("duration-seconds")).intValue());
             assertEquals(0.5, ((Number) campfireRested.get("hunger-loss-multiplier")).doubleValue(), 0.0001);
-            assertTrue((Boolean) valhallaExperience.get("enabled"));
-            assertEquals(1.10, ((Number) valhallaExperience.get("multiplier")).doubleValue(), 0.0001);
+            assertTrue((Boolean) skillsExperience.get("enabled"));
+            assertEquals(1.10, ((Number) skillsExperience.get("multiplier")).doubleValue(), 0.0001);
             assertTrue((Boolean) haste.get("enabled"));
             assertEquals(0, ((Number) haste.get("amplifier")).intValue());
             assertTrue((Boolean) haste.get("icon"));

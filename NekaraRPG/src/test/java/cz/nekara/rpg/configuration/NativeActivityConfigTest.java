@@ -22,6 +22,8 @@ class NativeActivityConfigTest {
         assertEquals(3L, defaults.get(SkillId.FARMING).get("berry_harvest"));
         assertEquals(2L, defaults.get(SkillId.FARMING).get("wild_flower"));
         assertEquals(1L, defaults.get(SkillId.FARMING).get("grass_bundle"));
+        assertEquals(4L, defaults.get(SkillId.FARMING).get("smoker_meal"));
+        assertEquals(2L, defaults.get(SkillId.SMITHING).get("utility_craft"));
     }
 
     @Test

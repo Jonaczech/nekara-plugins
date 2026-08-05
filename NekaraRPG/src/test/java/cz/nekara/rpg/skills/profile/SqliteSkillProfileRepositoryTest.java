@@ -28,7 +28,7 @@ class SqliteSkillProfileRepositoryTest {
             SkillProfile profile = new SkillProfile(
                 "player-1",
                 Map.of(SkillId.MINING, 12_345L, SkillId.FISHING, 456L),
-                Map.of(new PerkId("mining.prospector"), 2),
+                Map.of(new PerkId("tezba.prospector"), 2),
                 2,
                 0
             );
@@ -116,7 +116,7 @@ class SqliteSkillProfileRepositoryTest {
         try (SqliteSkillProfileRepository repository = new SqliteSkillProfileRepository(database)) {
             SkillProfile migrated = repository.find("player-1").orElseThrow();
             assertEquals(1_234, migrated.totalExperience(SkillId.MINING));
-            assertEquals(1, migrated.perkRank(new PerkId("mining.yield")));
+            assertEquals(1, migrated.perkRank(new PerkId("tezba.yield")));
             assertEquals(0, migrated.adminBonusPerkPoints());
             assertEquals(4, migrated.revision());
 
@@ -136,7 +136,7 @@ class SqliteSkillProfileRepositoryTest {
                  "SELECT value FROM metadata WHERE key='schema-version'");
              var result = statement.executeQuery()) {
             assertTrue(result.next());
-            assertEquals("4", result.getString(1));
+            assertEquals("5", result.getString(1));
         }
     }
 

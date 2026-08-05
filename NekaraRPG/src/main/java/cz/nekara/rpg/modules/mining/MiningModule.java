@@ -1,7 +1,6 @@
 package cz.nekara.rpg.modules.mining;
 
 import cz.nekara.rpg.NekaraRPGPlugin;
-import cz.nekara.rpg.compatibility.ValhallaMiningBridge;
 import cz.nekara.rpg.configuration.EchoVeinConfig;
 import cz.nekara.rpg.echovein.BlockPosition;
 import cz.nekara.rpg.echovein.EchoVeinMath;
@@ -66,7 +65,6 @@ public final class MiningModule implements NekaraModule, Listener {
     private final MessageService messages;
     private final SoundService sounds;
     private final FishingModule fishingModule;
-    private final ValhallaMiningBridge valhalla;
     private final Map<UUID, Deque<PendingMiningAction>> activeBreaks = new HashMap<>();
     private final Map<BlockPosition, PendingMiningAction> awaitingDrops = new HashMap<>();
     private final Map<UUID, Deque<BlockPosition>> awaitingByPlayer = new HashMap<>();
@@ -85,7 +83,6 @@ public final class MiningModule implements NekaraModule, Listener {
         this.messages = messages;
         this.sounds = sounds;
         this.fishingModule = fishingModule;
-        this.valhalla = new ValhallaMiningBridge(plugin, this::prepareExperienceCapture);
     }
 
     @Override
@@ -99,17 +96,6 @@ public final class MiningModule implements NekaraModule, Listener {
             return;
         }
         config = plugin.configuration().get().echoVein();
-        if (!plugin.getServer().getPluginManager().isPluginEnabled("ValhallaMMO")) {
-            plugin.getLogger().info("NekaraMining Echo Vein remains inactive because ValhallaMMO Mining is unavailable. "
-                    + "Use native Nekara Skills Žilobití instead.");
-            return;
-        }
-        valhalla.register();
-        if (!valhalla.isAvailable()) {
-            plugin.getLogger().warning("NekaraMining Echo Vein remains inactive because the ValhallaMMO bridge "
-                    + "could not be initialized. Use native Nekara Skills Žilobití instead.");
-            return;
-        }
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         ticker = plugin.getServer().getScheduler().runTaskTimer(
                 plugin, this::tick, 0L, config.pulseIntervalTicks());
@@ -129,7 +115,6 @@ public final class MiningModule implements NekaraModule, Listener {
         activeBreaks.clear();
         awaitingDrops.clear();
         awaitingByPlayer.clear();
-        valhalla.unregister();
         HandlerList.unregisterAll(this);
         enabled = false;
     }
@@ -153,10 +138,6 @@ public final class MiningModule implements NekaraModule, Listener {
         return sessions.containsKey(playerId);
     }
 
-    public boolean bridgeAvailable() {
-        return valhalla.isAvailable();
-    }
-
     @EventHandler(priority = EventPriority.LOWEST)
     public void beginMiningAction(BlockBreakEvent event) {
         Player player = event.getPlayer();
@@ -170,14 +151,6 @@ public final class MiningModule implements NekaraModule, Listener {
                 player.getUniqueId(), BlockPosition.of(event.getBlock()),
                 event.getBlock().getLocation(), event.getBlock().getType(), targetSession);
         activeBreaks.computeIfAbsent(player.getUniqueId(), ignored -> new ArrayDeque<>()).addLast(action);
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void capturePreparedDrops(BlockBreakEvent event) {
-        PendingMiningAction action = activeAction(event.getPlayer(), event.getBlock());
-        if (action != null) {
-            action.addDrops(valhalla.preparedDrops(event.getBlock()));
-        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -277,40 +250,13 @@ public final class MiningModule implements NekaraModule, Listener {
     }
 
     private boolean canObserve(Player player) {
-        if (!enabled || !valhalla.isAvailable() || !player.hasPermission("nekararpg.echo-vein.use")
+        if (!enabled || !player.hasPermission("nekararpg.echo-vein.use")
                 || player.getGameMode() == GameMode.CREATIVE || player.getGameMode() == GameMode.SPECTATOR
                 || !plugin.configuration().get().worlds().isEnabled(player.getWorld().getName())
                 || sessions.containsKey(player.getUniqueId())) {
             return false;
         }
         return fishingModule.minigames().session(player.getUniqueId()) == null;
-    }
-
-    private Runnable prepareExperienceCapture(Player player, double amount) {
-        PendingMiningAction action = latestAction(player.getUniqueId());
-        if (action != null && System.currentTimeMillis() - action.createdAtMillis() <= PENDING_MAX_AGE_MILLIS) {
-            return () -> action.addExperience(amount);
-        }
-        return null;
-    }
-
-    private PendingMiningAction latestAction(UUID playerId) {
-        Deque<PendingMiningAction> active = activeBreaks.get(playerId);
-        if (active != null && !active.isEmpty()) {
-            return active.peekLast();
-        }
-        Deque<BlockPosition> positions = awaitingByPlayer.get(playerId);
-        if (positions == null) {
-            return null;
-        }
-        while (!positions.isEmpty()) {
-            PendingMiningAction action = awaitingDrops.get(positions.peekLast());
-            if (action != null) {
-                return action;
-            }
-            positions.removeLast();
-        }
-        return null;
     }
 
     private PendingMiningAction activeAction(Player player, Block block) {
@@ -351,10 +297,11 @@ public final class MiningModule implements NekaraModule, Listener {
             return;
         }
         if (action.echoSession() != null) {
+            action.addExperience(nativeMiningExperience(action.material()));
             completeMinedVein(player, action);
             return;
         }
-        if (!canObserve(player) || action.experience() <= 0.0) {
+        if (!canObserve(player)) {
             return;
         }
         debug(String.format(Locale.ROOT,
@@ -375,6 +322,11 @@ public final class MiningModule implements NekaraModule, Listener {
                 player.getName(), action.material(), action.experienceEventCount(),
                 action.experience(), BlockPosition.of(target)));
         startSession(player, target, false);
+    }
+
+    private long nativeMiningExperience(Material material) {
+        return plugin.configuration().get().skills().mining().experienceByMaterial()
+                .getOrDefault(material, 0L);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -509,7 +461,11 @@ public final class MiningModule implements NekaraModule, Listener {
     private void completeMinedVein(Player player, PendingMiningAction action) {
         double bonus = EchoVeinMath.bonusExperience(
                 action.experience(), config.experienceBonusMultiplier());
-        boolean experienceGranted = valhalla.grantBonusExperience(player, bonus);
+        long nativeBonus = Math.max(0L, Math.round(bonus));
+        plugin.skillsModule().awardMechanicExperience(
+                player, cz.nekara.rpg.skills.SkillId.MINING, nativeBonus,
+                action.position().toString() + ":" + action.createdAtMillis());
+        boolean experienceGranted = nativeBonus > 0L && plugin.skillsModule().isEnabled();
         ItemStack reward = config.bonusDropEnabled() ? chooseBonusDrop(action.drops()) : null;
         boolean dropGranted = giveReward(player, reward);
 

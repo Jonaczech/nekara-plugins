@@ -10,6 +10,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,7 +29,7 @@ final class ModuleConfigurationStore {
             new ModuleFile("auth/config.yml", "auth", List.of("auth"), List.of()),
             new ModuleFile("fishing/config.yml",
                     null,
-                    List.of("minigame", "fishing", "worlds", "effects", "valhalla"),
+                    List.of("minigame", "fishing", "worlds", "effects"),
                     List.of("bite", "hit", "miss", "timeout", "escape",
                             "minigame-success", "catch-success")),
             new ModuleFile("campfire/config.yml", "campfire", List.of("campfire", "sitting"),
@@ -46,12 +48,12 @@ final class ModuleConfigurationStore {
                     "skills/" + skill.id() + "/experience-sources.yml",
                     "skills." + skill.id() + ".experience-sources", List.of(), List.of()));
         }
-        files.add(new ModuleFile("skills/woodcutting/loot-tables.yml",
-                "skills.woodcutting.rewards", List.of(), List.of()));
-        files.add(new ModuleFile("skills/digging/loot-tables.yml",
-                "skills.digging.rewards", List.of(), List.of()));
-        files.add(new ModuleFile("skills/fishing/loot-tables.yml",
-                "skills.fishing.rewards", List.of(), List.of()));
+        files.add(new ModuleFile("skills/lesnictvi/loot-tables.yml",
+                "skills.lesnictvi.rewards", List.of(), List.of()));
+        files.add(new ModuleFile("skills/kopani/loot-tables.yml",
+                "skills.kopani.rewards", List.of(), List.of()));
+        files.add(new ModuleFile("skills/rybareni/loot-tables.yml",
+                "skills.rybareni.rewards", List.of(), List.of()));
         return List.copyOf(files);
     }
 
@@ -62,6 +64,7 @@ final class ModuleConfigurationStore {
     }
 
     FileConfiguration reload(FileConfiguration root) {
+        migrateRenamedSkillIds(root);
         boolean migrateLegacy = ConfigurationLayout.requiresMigration(
                 root.contains("configuration-layout", true),
                 root.getInt("configuration-layout", 1));
@@ -95,6 +98,42 @@ final class ModuleConfigurationStore {
             copyModuleValues(entry.getValue().configuration(), merged, entry.getKey().mountPath(), true);
         }
         return merged;
+    }
+
+    private void migrateRenamedSkillIds(FileConfiguration root) {
+        boolean changed = false;
+        File skillsDirectory = new File(plugin.getDataFolder(), "skills");
+        for (Map.Entry<String, String> entry : SkillId.renamedIds().entrySet()) {
+            File legacy = new File(skillsDirectory, entry.getKey());
+            File current = new File(skillsDirectory, entry.getValue());
+            if (legacy.isDirectory()) {
+                if (current.exists()) {
+                    throw new IllegalStateException("Cannot migrate skill configuration " + entry.getKey()
+                        + "; target folder " + entry.getValue() + " already exists");
+                }
+                try {
+                    Files.move(legacy.toPath(), current.toPath(), StandardCopyOption.ATOMIC_MOVE);
+                } catch (IOException exception) {
+                    throw new IllegalStateException("Cannot migrate skill configuration " + entry.getKey(), exception);
+                }
+                changed = true;
+            }
+            String legacyPath = "skills." + entry.getKey();
+            String currentPath = "skills." + entry.getValue();
+            if (root.contains(legacyPath, true)) {
+                if (root.contains(currentPath, true)) {
+                    throw new IllegalStateException("Cannot migrate legacy skill configuration " + entry.getKey()
+                        + "; target key " + entry.getValue() + " already exists");
+                }
+                root.set(currentPath, root.get(legacyPath));
+                root.set(legacyPath, null);
+                changed = true;
+            }
+        }
+        if (changed) {
+            plugin.saveConfig();
+            plugin.getLogger().info("Migrated Nekara Skills IDs to the current ASCII identifiers.");
+        }
     }
 
     private void migrateLegacySkillLayout(Map<ModuleFile, LoadedModule> loaded) {

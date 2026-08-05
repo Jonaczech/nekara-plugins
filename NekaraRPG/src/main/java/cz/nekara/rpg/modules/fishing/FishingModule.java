@@ -2,7 +2,6 @@ package cz.nekara.rpg.modules.fishing;
 
 import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.command.NekaraRPGCommand;
-import cz.nekara.rpg.compatibility.ValhallaExperienceBridge;
 import cz.nekara.rpg.fishing.FishingListener;
 import cz.nekara.rpg.fishing.MinigameInputListener;
 import cz.nekara.rpg.messages.MessageService;
@@ -23,7 +22,6 @@ public final class FishingModule implements NekaraModule {
     private final MessageService messages;
     private final SoundService sounds;
     private final FishingMinigameManager minigames;
-    private final ValhallaExperienceBridge valhallaExperienceBridge;
     private final List<Listener> listeners = new ArrayList<>();
     private boolean enabled;
 
@@ -32,8 +30,6 @@ public final class FishingModule implements NekaraModule {
         this.messages = messages;
         this.sounds = sounds;
         this.minigames = new FishingMinigameManager(plugin, messages, sounds);
-        this.valhallaExperienceBridge = new ValhallaExperienceBridge(plugin, minigames);
-        this.minigames.setValhallaExperienceBridge(valhallaExperienceBridge);
     }
 
     @Override
@@ -48,7 +44,6 @@ public final class FishingModule implements NekaraModule {
         }
         registerListener(new FishingListener(plugin, minigames));
         registerListener(new MinigameInputListener(plugin, minigames));
-        valhallaExperienceBridge.register();
         minigames.applyConfig(plugin.configuration().get());
         minigames.startTicker();
         enabled = true;

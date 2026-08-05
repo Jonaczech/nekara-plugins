@@ -69,6 +69,8 @@ final class ExperienceSourcePresentation {
             case "villager_trade" -> "Obchod s vesničanem";
             case "equipment_craft" -> "Výroba výbavy";
             case "smithing_table" -> "Kovářský stůl";
+            case "utility_craft" -> "Užitečný výrobek";
+            case "construction_craft" -> "Stavební výrobek";
             case "enchant_item" -> "Očarování předmětu";
             case "brew_complete" -> "Uvařený lektvar";
             case "mature_harvest" -> "Zralá sklizeň";
@@ -76,6 +78,9 @@ final class ExperienceSourcePresentation {
             case "wild_flower" -> "Přírodní květina";
             case "wild_mushroom" -> "Přírodní houba";
             case "grass_bundle" -> "Sběr trávy";
+            case "planting_bundle" -> "Sázení";
+            case "furnace_meal" -> "Jídlo z pece";
+            case "smoker_meal" -> "Jídlo ze smokeru";
             case "vanilla_catch", "deferred_catch" -> "Úlovek";
             default -> "Dokončená činnost";
         };

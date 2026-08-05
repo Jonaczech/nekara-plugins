@@ -14,6 +14,8 @@ class SkillEquipmentPolicyTest {
             SkillEquipmentPolicy.meleeSkill(Material.AIR).orElseThrow());
         assertEquals(SkillId.LIGHT_WEAPONS,
             SkillEquipmentPolicy.meleeSkill(Material.IRON_SWORD).orElseThrow());
+        assertEquals(SkillId.LIGHT_WEAPONS,
+            SkillEquipmentPolicy.meleeSkill(Material.IRON_SPEAR).orElseThrow());
         assertEquals(SkillId.HEAVY_WEAPONS,
             SkillEquipmentPolicy.meleeSkill(Material.DIAMOND_AXE).orElseThrow());
         assertTrue(SkillEquipmentPolicy.meleeSkill(Material.IRON_PICKAXE).isEmpty());

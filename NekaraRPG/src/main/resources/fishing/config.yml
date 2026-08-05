@@ -92,8 +92,8 @@ effects:
     radius: 0.9
     y-offset: 0.05
 
-valhalla:
-  fishing-difficulty:
+fishing:
+  difficulty:
     enabled: true
     max-level-required-hits: 2
     max-level-max-misses: 3

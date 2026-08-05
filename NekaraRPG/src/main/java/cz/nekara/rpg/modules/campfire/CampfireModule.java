@@ -9,7 +9,6 @@ import cz.nekara.rpg.campfire.CampFeature;
 import cz.nekara.rpg.campfire.CampFeatureSnapshot;
 import cz.nekara.rpg.campfire.LieResult;
 import cz.nekara.rpg.campfire.RestedBonusState;
-import cz.nekara.rpg.compatibility.ValhallaRestedExperienceBridge;
 import cz.nekara.rpg.configuration.CampfireConfig;
 import cz.nekara.rpg.configuration.CampfireVisualConfig;
 import cz.nekara.rpg.configuration.CampingConfig;
@@ -57,7 +56,6 @@ public final class CampfireModule implements NekaraModule, Listener {
     private final MessageService messages;
     private final SoundService sounds;
     private final SittingModule sitting;
-    private final ValhallaRestedExperienceBridge valhallaRestedExperienceBridge;
     private final Map<UUID, CampfireRestSession> restingSessions = new HashMap<>();
     private final Map<UUID, RestedBonusState> restedBonuses = new HashMap<>();
     private final Map<UUID, ManagedHasteEffect> managedHasteEffects = new HashMap<>();
@@ -76,8 +74,6 @@ public final class CampfireModule implements NekaraModule, Listener {
         this.messages = messages;
         this.sounds = sounds;
         this.sitting = sitting;
-        this.valhallaRestedExperienceBridge = new ValhallaRestedExperienceBridge(
-                plugin, this::canApplyValhallaRestedBonus);
     }
 
     @Override
@@ -93,7 +89,6 @@ public final class CampfireModule implements NekaraModule, Listener {
         clearStaleRestedHasteEffects();
         sitting.enable();
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
-        valhallaRestedExperienceBridge.register();
         registerMythicSpawnListener();
         startUpdateTask();
         enabled = true;
@@ -106,7 +101,6 @@ public final class CampfireModule implements NekaraModule, Listener {
         }
         stopUpdateTask();
         HandlerList.unregisterAll(this);
-        valhallaRestedExperienceBridge.unregister();
         if (mythicSpawnListener != null) {
             HandlerList.unregisterAll(mythicSpawnListener);
             mythicSpawnListener = null;
@@ -150,6 +144,15 @@ public final class CampfireModule implements NekaraModule, Listener {
         long now = System.currentTimeMillis();
         RestedBonusState state = activeRestedBonus(playerId, now);
         return state == null ? 0L : state.remainingSeconds(now);
+    }
+
+    /** Returns the native Skills XP multiplier for an active Rested player. */
+    public double skillsExperienceMultiplier(UUID playerId) {
+        if (!isRested(playerId)) {
+            return 1.0;
+        }
+        var experience = plugin.configuration().get().campfire().restedExperience();
+        return experience.enabled() ? experience.multiplier() : 1.0;
     }
 
     public LieResult lieDown(Player player) {
@@ -659,14 +662,6 @@ public final class CampfireModule implements NekaraModule, Listener {
             return null;
         }
         return state;
-    }
-
-    private boolean canApplyValhallaRestedBonus(Player player) {
-        if (!isRested(player.getUniqueId())) {
-            return false;
-        }
-        var fishingSession = plugin.fishingModule().minigames().session(player.getUniqueId());
-        return fishingSession == null || !fishingSession.valhallaReplayInProgress();
     }
 
     private void removeExpiredBonuses(long now) {

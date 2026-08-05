@@ -17,7 +17,7 @@ class PerkStatResolverTest {
     @Test
     void scalesPurchasedMiningYieldByStoredRank() {
         SkillProfile profile = new SkillProfile(
-            "player-1", Map.of(), Map.of(new PerkId("mining.yield"), 3), 3, 1);
+            "player-1", Map.of(), Map.of(new PerkId("tezba.yield"), 3), 3, 1);
 
         StatSnapshot stats = resolver.resolve(profile, SkillId.MINING);
 
@@ -28,7 +28,7 @@ class PerkStatResolverTest {
     @Test
     void ignoresPerksOwnedByAnotherSkill() {
         SkillProfile profile = new SkillProfile(
-            "player-1", Map.of(), Map.of(new PerkId("woodcutting.yield"), 2), 2, 1);
+            "player-1", Map.of(), Map.of(new PerkId("lesnictvi.yield"), 2), 2, 1);
 
         assertEquals(0.0, resolver.resolve(profile, SkillId.MINING)
             .value(StatId.DOUBLE_DROP_CHANCE), 0.000_001);
@@ -37,7 +37,7 @@ class PerkStatResolverTest {
     @Test
     void rejectsCorruptRanksInsteadOfAmplifyingThem() {
         SkillProfile profile = new SkillProfile(
-            "player-1", Map.of(), Map.of(new PerkId("mining.yield"), 6), 6, 1);
+            "player-1", Map.of(), Map.of(new PerkId("tezba.yield"), 6), 6, 1);
 
         assertThrows(IllegalStateException.class,
             () -> resolver.resolve(profile, SkillId.MINING));
