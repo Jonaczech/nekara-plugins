@@ -21,6 +21,18 @@
 - Osm navigačních šipek je mimo viditelný graf a vždy má klikací prioritu.
 - Tooltip ukazuje u mechanik jediný konkrétní účinek; u statových perků doplňuje
   přesnou hodnotu krátkým popisem.
+- Hlavní úroveň používá hráčskou hlavu. Milník Tábořiště/Rested je automatický na
+  Power 1, milník Můj kůň na Power 25; položka mounta se před jeho odemčením nezobrazuje.
+- Všechny návraty GUI používají `skills/tree/button_return_to_menu` přes `GuiItems.back`.
+
+## Gathering a New Game+
+
+- Těžba, Lesnictví, Kopání, Statkářství a Rybaření mají `0,20 %` přirozeného
+  double dropu za úroveň, nejvýše `20 %` na levelu 100.
+- Lesnictví násobí pouze logy a stemy; Rybaření kopíruje pouze skutečný vanilla catch,
+  nikoliv treasure nebo Luck loot.
+- New Game+ má XP multiplikátor `0.75`, všechny perk statistiky posiluje o `10 %`
+  za rank a přirozený gathering double drop násobí `1.25` za rank.
 
 ## Resource pack a release
 

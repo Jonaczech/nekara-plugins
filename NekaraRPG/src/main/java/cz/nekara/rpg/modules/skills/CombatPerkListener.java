@@ -6,8 +6,12 @@ import cz.nekara.rpg.items.weapons.WeaponCatalog;
 import cz.nekara.rpg.items.weapons.WeaponDefinition;
 import cz.nekara.rpg.items.weapons.WeaponFamily;
 import cz.nekara.rpg.skills.SkillId;
+import cz.nekara.rpg.skills.SkillPresentation;
 import cz.nekara.rpg.skills.combat.BleedRegistry;
+import cz.nekara.rpg.skills.combat.ArmorProtectionResolver;
+import cz.nekara.rpg.skills.combat.DamageTypeResolver;
 import cz.nekara.rpg.skills.perks.MechanicId;
+import cz.nekara.rpg.skills.profile.SkillProfile;
 import cz.nekara.rpg.skills.stats.StatId;
 import io.papermc.paper.event.entity.EntityEquipmentChangedEvent;
 import org.bukkit.Bukkit;
@@ -31,6 +35,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -57,7 +62,6 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 final class CombatPerkListener implements Listener {
-    private static final long PARRY_COOLDOWN_MILLIS = 4_000L;
     private static final long ACTIVE_ABILITY_COOLDOWN_MILLIS = 5_000L;
     private static final long SURVIVAL_PROC_COOLDOWN_MILLIS = 20_000L;
     private static final int MAXIMUM_ACTIVE_BLEEDS = 2_048;
@@ -70,6 +74,7 @@ final class CombatPerkListener implements Listener {
     private final NamespacedKey lightMobilityKey;
     private final NamespacedKey weaponMobilityKey;
     private final NamespacedKey heavyStabilityKey;
+    private final NamespacedKey proficiencyMobilityKey;
     private final NamespacedKey smithingWeaponDamageKey;
     private final NamespacedKey smithingArmorKey;
     private final SmithingTier.Keys smithingTierKeys;
@@ -78,6 +83,7 @@ final class CombatPerkListener implements Listener {
     private final NamespacedKey coatingAmplifierKey;
     private final NamespacedKey coatingChargesKey;
     private final Map<CooldownKey, Long> cooldowns = new HashMap<>();
+    private final Map<UUID, String> proficiencyWarnings = new HashMap<>();
     private final BleedRegistry bleeds = new BleedRegistry(MAXIMUM_ACTIVE_BLEEDS);
     private BukkitTask bleedTask;
     private boolean enabled;
@@ -90,6 +96,7 @@ final class CombatPerkListener implements Listener {
         this.lightMobilityKey = new NamespacedKey(plugin, "skills_light_mobility");
         this.weaponMobilityKey = new NamespacedKey(plugin, "skills_weapon_mobility");
         this.heavyStabilityKey = new NamespacedKey(plugin, "skills_heavy_stability");
+        this.proficiencyMobilityKey = new NamespacedKey(plugin, "skills_equipment_proficiency_mobility");
         this.smithingWeaponDamageKey = new NamespacedKey(plugin, "smithing_weapon_damage");
         this.smithingArmorKey = new NamespacedKey(plugin, "smithing_armor");
         this.smithingTierKeys = SmithingTier.keys(plugin);
@@ -121,6 +128,7 @@ final class CombatPerkListener implements Listener {
         }
         bleeds.clear();
         cooldowns.clear();
+        proficiencyWarnings.clear();
         Bukkit.getOnlinePlayers().forEach(this::removeArmorModifiers);
     }
 
@@ -130,6 +138,9 @@ final class CombatPerkListener implements Listener {
             return;
         }
         Player attacker = attackingPlayer(event.getDamager());
+        if (attacker != null && !(event.getDamager() instanceof Projectile) && supported(attacker)) {
+            applyWeaponProficiency(event, attacker);
+        }
         if (attacker != null && event.getEntity() instanceof LivingEntity target
             && !(target instanceof Player) && supported(attacker)) {
             SkillId attackSkill = event.getDamager() instanceof Projectile
@@ -150,6 +161,16 @@ final class CombatPerkListener implements Listener {
         }
         if (event.getEntity() instanceof Player defender && supported(defender)) {
             applyDefense(event, defender);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void bypassArmorForBleed(EntityDamageEvent event) {
+        if (!SyntheticCombatGuard.isBleed()) {
+            return;
+        }
+        if (event.isApplicable(EntityDamageEvent.DamageModifier.ARMOR)) {
+            event.setDamage(EntityDamageEvent.DamageModifier.ARMOR, 0.0);
         }
     }
 
@@ -310,6 +331,7 @@ final class CombatPerkListener implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         UUID playerId = event.getPlayer().getUniqueId();
         cooldowns.keySet().removeIf(key -> key.playerId().equals(playerId));
+        proficiencyWarnings.remove(playerId);
         removeArmorModifiers(event.getPlayer());
     }
 
@@ -330,6 +352,15 @@ final class CombatPerkListener implements Listener {
             has(heavyState, MechanicId.HEAVY_ARMOR_IRON_MOBILITY),
             has(heavyState, MechanicId.HEAVY_ARMOR_NETHERITE_MOBILITY));
         addModifier(player, Attribute.MOVEMENT_SPEED, lightMobilityKey, armorPenalty);
+        module.cachedProfile(player.getUniqueId()).ifPresent(profile -> {
+            int untrainedPieces = untrainedArmorPieces(player, profile);
+            if (untrainedPieces > 0) {
+                addModifier(player, Attribute.MOVEMENT_SPEED, proficiencyMobilityKey,
+                    EquipmentProficiencyPolicy.armorMovementPenalty(untrainedPieces));
+                warn(player, firstUntrainedArmorRequirement(player, profile).orElseThrow(),
+                    "Tuto zbroj ještě nemůžeš nosit");
+            }
+        });
         applyWeaponMobility(player);
 
         if (SkillEquipmentPolicy.armorSkill(player.getInventory()).orElse(null) == SkillId.HEAVY_ARMOR) {
@@ -356,6 +387,15 @@ final class CombatPerkListener implements Listener {
                 has(state, heavy ? MechanicId.HEAVY_WEAPON_DIAMOND_MOBILITY : MechanicId.LIGHT_WEAPON_DIAMOND_MOBILITY),
                 has(state, heavy ? MechanicId.HEAVY_WEAPON_NETHERITE_MOBILITY : MechanicId.LIGHT_WEAPON_NETHERITE_MOBILITY));
             addModifier(player, Attribute.MOVEMENT_SPEED, weaponMobilityKey, penalty);
+            module.cachedProfile(player.getUniqueId()).ifPresent(profile -> {
+                EquipmentProficiencyPolicy.Requirement requirement = mobilityRequirement(weapon,
+                    player.getInventory().getItemInMainHand());
+                if (module.skillLevel(profile, requirement.skill()) < requirement.requiredLevel()) {
+                    addModifier(player, Attribute.MOVEMENT_SPEED, proficiencyMobilityKey,
+                        EquipmentProficiencyPolicy.weaponMovementPenalty(requirement.skill()));
+                    warn(player, requirement, "Tuto zbraň ještě neumíš používat");
+                }
+            });
         });
     }
 
@@ -511,7 +551,7 @@ final class CombatPerkListener implements Listener {
             target.getWorld().spawnParticle(
                 Particle.DAMAGE_INDICATOR, target.getLocation().add(0.0, 0.8, 0.0), 1,
                 0.15, 0.15, 0.15, 0.0);
-            SyntheticCombatGuard.run(() -> {
+            SyntheticCombatGuard.runBleed(() -> {
                 if (sourceEntity instanceof LivingEntity source && source.isValid()) {
                     target.damage(tick.damage(), source);
                 } else {
@@ -522,15 +562,15 @@ final class CombatPerkListener implements Listener {
     }
 
     private void applyDefense(EntityDamageByEntityEvent event, Player defender) {
-        if (defender.isBlocking()
-            && module.runtimeState(defender.getUniqueId(), SkillId.LIGHT_WEAPONS)
-                .map(value -> value.has(MechanicId.PARRY)).orElse(false)
-            && acquire(defender.getUniqueId(), "parry", PARRY_COOLDOWN_MILLIS)) {
-            event.setCancelled(true);
-            livingDamager(event.getDamager()).ifPresent(attacker ->
-                attacker.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 30, 5, false, true, true)));
-            return;
-        }
+        module.cachedProfile(defender.getUniqueId()).ifPresent(profile -> {
+            int untrainedPieces = untrainedArmorPieces(defender, profile);
+            if (untrainedPieces > 0) {
+                event.setDamage(event.getDamage()
+                    * EquipmentProficiencyPolicy.armorDamageMultiplier(untrainedPieces));
+                firstUntrainedArmorRequirement(defender, profile).ifPresent(requirement ->
+                    warn(defender, requirement, "Tuto zbroj ještě nemůžeš nosit"));
+            }
+        });
         Optional<SkillId> armorSkill = SkillEquipmentPolicy.armorSkill(defender.getInventory());
         if (armorSkill.isEmpty()) {
             return;
@@ -561,6 +601,11 @@ final class CombatPerkListener implements Listener {
         double armorMultiplier = baseArmorEffectiveness * runtime.stats().value(StatId.ARMOR_MULTIPLIER)
             * (1.0 + craftedArmor * 0.04);
         event.setDamage(event.getDamage() / armorMultiplier);
+        DamageTypeResolver.resolve(
+            event.getDamager() instanceof Player attacker ? attacker.getInventory().getItemInMainHand() : null,
+            event.getDamager() instanceof Projectile
+        ).ifPresent(type -> event.setDamage(event.getDamage()
+            * ArmorProtectionResolver.damageMultiplier(defender.getInventory().getArmorContents(), type)));
         double reflection = runtime.stats().value(StatId.DAMAGE_REFLECTION);
         if (reflection > 0.0) {
             livingDamager(event.getDamager()).ifPresent(attacker -> {
@@ -632,7 +677,67 @@ final class CombatPerkListener implements Listener {
     private void removeArmorModifiers(Player player) {
         removeModifier(player, Attribute.MOVEMENT_SPEED, lightMobilityKey);
         removeModifier(player, Attribute.MOVEMENT_SPEED, weaponMobilityKey);
+        removeModifier(player, Attribute.MOVEMENT_SPEED, proficiencyMobilityKey);
         removeModifier(player, Attribute.KNOCKBACK_RESISTANCE, heavyStabilityKey);
+    }
+
+    private void applyWeaponProficiency(EntityDamageByEntityEvent event, Player attacker) {
+        ItemStack held = attacker.getInventory().getItemInMainHand();
+        Optional<EquipmentProficiencyPolicy.Requirement> requirement = WeaponCatalog.resolve(held)
+            .map(EquipmentProficiencyPolicy::weapon)
+            .or(() -> EquipmentProficiencyPolicy.heldTool(held));
+        requirement.ifPresent(value -> {
+            module.cachedProfile(attacker.getUniqueId()).ifPresent(profile -> {
+                if (module.skillLevel(profile, value.skill()) < value.requiredLevel()) {
+                    event.setDamage(event.getDamage() * EquipmentProficiencyPolicy.weaponDamageMultiplier());
+                    warn(attacker, value, "Tento předmět ještě neumíš používat");
+                }
+            });
+        });
+    }
+
+    private int untrainedArmorPieces(Player player, SkillProfile profile) {
+        int untrained = 0;
+        for (ItemStack item : player.getInventory().getArmorContents()) {
+            if (EquipmentProficiencyPolicy.armor(item).filter(requirement ->
+                module.skillLevel(profile, requirement.skill()) < requirement.requiredLevel()).isPresent()) {
+                untrained++;
+            }
+        }
+        return untrained;
+    }
+
+    private Optional<EquipmentProficiencyPolicy.Requirement> firstUntrainedArmorRequirement(
+        Player player,
+        SkillProfile profile
+    ) {
+        for (ItemStack item : player.getInventory().getArmorContents()) {
+            Optional<EquipmentProficiencyPolicy.Requirement> requirement = EquipmentProficiencyPolicy.armor(item);
+            if (requirement.isPresent()
+                && module.skillLevel(profile, requirement.get().skill()) < requirement.get().requiredLevel()) {
+                return requirement;
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static EquipmentProficiencyPolicy.Requirement mobilityRequirement(
+        WeaponDefinition weapon,
+        ItemStack item
+    ) {
+        return weapon.family() == WeaponFamily.AXE
+            ? EquipmentProficiencyPolicy.heldTool(item).orElseGet(() -> EquipmentProficiencyPolicy.weapon(weapon))
+            : EquipmentProficiencyPolicy.weapon(weapon);
+    }
+
+    private void warn(Player player, EquipmentProficiencyPolicy.Requirement requirement, String message) {
+        String key = requirement.skill().id() + ":" + requirement.requiredLevel();
+        if (key.equals(proficiencyWarnings.put(player.getUniqueId(), key))) {
+            return;
+        }
+        player.sendActionBar(net.kyori.adventure.text.Component.text(message + ": vyžaduje "
+            + SkillPresentation.czechName(requirement.skill()) + " level " + requirement.requiredLevel() + ".",
+            net.kyori.adventure.text.format.NamedTextColor.RED));
     }
 
     private static void addModifier(

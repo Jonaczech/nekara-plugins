@@ -30,7 +30,7 @@ class SkillExperienceServiceTest {
             assertEquals(ExperienceAwardStatus.AWARDED, awarded.status());
             assertEquals(100, awarded.awardedExperience());
             assertEquals(1, awarded.progress().orElseThrow().skill(SkillId.MINING).level());
-            assertEquals(0, awarded.progress().orElseThrow().power().level());
+            assertEquals(1, awarded.progress().orElseThrow().power().level());
             assertEquals(ExperienceAwardStatus.DUPLICATE, duplicate.status());
             assertEquals(100, repository.find("player-1").orElseThrow()
                 .totalExperience(SkillId.MINING));

@@ -33,6 +33,7 @@ public final class WeaponFactory {
                 ? "Sek\u00e1n\u00ed a bod\u00e1n\u00ed" : "Brut\u00e1ln\u00ed boj", NamedTextColor.GRAY),
             Component.text(definition.family().requiresEmptyOffhand()
                 ? "Vy\u017eaduje pr\u00e1zdnou druhou ruku" : "Zbra\u0148 Nekara", NamedTextColor.DARK_GRAY),
+            Component.text("Typ po\u0161kozen\u00ed: " + definition.family().damageType().czechName(), NamedTextColor.GOLD),
             Component.text("Model: " + definition.modelKey(), NamedTextColor.DARK_GRAY)
         ));
         applyAttributes(meta, definition.family());

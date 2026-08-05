@@ -32,9 +32,10 @@ Hráč uvidí šestnáct dovedností:
 15. Light Armor
 16. Heavy Armor
 
-Power nepřijímá přímé XP. Jeho úroveň je celočíselný průměr zbývajících patnácti
-dovedností a poskytuje společné perk pointy a obecné milníky. Prvním plánovaným
-milníkem je možnost odemknout mounta při Power 50; samotné příběhové udělení může
+Power nepřijímá přímé XP. První dosažený level aktivní dovednosti odemkne Power 1;
+další úrovně jsou celočíselný průměr třinácti aktivních dovedností. Poskytuje společné
+perk pointy a automatické obecné milníky: Tábořiště s Rested bonusem při Power 1 a
+možnost odemknout mounta při Power 25; samotné příběhové udělení může
 nadále vlastnit BetonQuest.
 
 ## Perk stromy
@@ -77,7 +78,7 @@ předchůdcem, kolizí pozic nebo cizím stromem se při startu odmítne.
 - hotovo v kandidátu 2.2.0: konzistentní SQLite+CSV export s manifestem a SHA-256
   bez editace živé databáze; zbývá retenční politika a ověřený restore postup.
 
-### 3. GUI a navigace — hotovo pro katalog 2.1.0
+### 3. GUI a navigace — hotovo pro katalog 2.3.3
 
 - bezpečně vypnutelný 54slotový přehled všech dovedností, hlavní úrovně a XP,
 - asynchronní čtení profilu a návrat do centrálního `/nrpg`,
@@ -86,6 +87,9 @@ předchůdcem, kolizí pozic nebo cizím stromem se při startu odmítne.
 - dostupné body a srozumitelné důvody zamčených perků,
 - bez zavírání při kliknutí na prázdný slot,
 - vlastní vizuální jazyk Nekary; žádná kopie cizího layoutu či textů.
+- hotovo v 2.3.3: Hlavní úroveň používá hráčskou hlavu, nadbytečné Činnosti nejsou
+  na hlavním menu, Můj kůň je viditelný až po Power milníku 25 a všechny návraty
+  sdílejí model `skills/tree/button_return_to_menu`.
 
 ### 4. Bezpečný nákup perků — hráčský průchod hotov
 
@@ -104,10 +108,10 @@ předchůdcem, kolizí pozic nebo cizím stromem se při startu odmítne.
   deduplikace zdroje a atomický zápis profilu pro všechny tři vertikály,
 - hotovo v kódu: dvojitý/trojitý výtěžek klonuje skutečné finální vanilla/custom
   dropy namísto opakovaného volání loot tabulky,
-- hotovo v kandidátu 2.2.0: úroveň dává malý zastropovaný vrozený bonus k
-  dvojitému výtěžku; Zeměrytectví má navíc vlastní šanci na vážený nález.
-  Tyto hodnoty jsou konfigurovatelné, skládají se s perky a nepřepisují vanilla
-  loot ani Fortune,
+- hotovo v 2.3.3: každá ze sběratelských dovedností má `0,20 %` vrozené šance na
+  dvojitý výtěžek za úroveň až do `20 %` na úrovni 100. Lesnictví násobí pouze
+  logy/stemy, Rybaření jen skutečný vanilla catch. Tyto hodnoty jsou
+  konfigurovatelné, skládají se s perky a nepřepisují vanilla loot ani Fortune,
 - hotovo v kódu: rychlost nástroje, hornická pec, Žilobití, Řízený odstřel, Pád
   velikána, úsporná prkna a vzácné nálezy Zeměrytectví i listí,
 - hromadné schopnosti používají skutečný hráčský break pro každý blok, nevynucují

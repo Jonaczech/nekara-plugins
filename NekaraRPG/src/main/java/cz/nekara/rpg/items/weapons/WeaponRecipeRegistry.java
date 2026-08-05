@@ -26,12 +26,7 @@ public final class WeaponRecipeRegistry {
                 WeaponDefinition definition = WeaponCatalog.custom(family, tier).orElseThrow();
                 NamespacedKey key = new NamespacedKey("nekararpg", "weapons/" + definition.id());
                 ShapedRecipe recipe = new ShapedRecipe(key, factory.create(definition));
-                switch (family) {
-                    case DAGGER -> recipe.shape(" A ", " S ");
-                    case GREATSWORD -> recipe.shape("AAA", " B ", " S ");
-                    case HAMMER -> recipe.shape("AAA", " S ", " S ");
-                    default -> throw new IllegalStateException("Unexpected custom weapon family: " + family);
-                }
+                recipe.shape(WeaponRecipePattern.forFamily(family).rows());
                 recipe.setIngredient('A', tier.craftingIngredient());
                 recipe.setIngredient('S', org.bukkit.Material.STICK);
                 if (family == WeaponFamily.GREATSWORD) {

@@ -7,6 +7,8 @@ import cz.nekara.rpg.skills.AttributePresentation;
 import cz.nekara.rpg.skills.SkillLevelProgress;
 import cz.nekara.rpg.skills.SkillPresentation;
 import cz.nekara.rpg.skills.SkillProgressBar;
+import cz.nekara.rpg.skills.PowerProgress;
+import cz.nekara.rpg.skills.milestones.PowerMilestoneId;
 import cz.nekara.rpg.skills.perks.DefaultPerkTree;
 import cz.nekara.rpg.skills.perks.PerkConnectionPath;
 import cz.nekara.rpg.skills.perks.PerkDefinition;
@@ -128,7 +130,7 @@ final class SkillsMenu implements Listener {
         Inventory inventory = create(holder, 54, "Nekara — dovednosti");
         int availablePoints = availablePoints(profile, snapshot);
         inventory.setItem(POWER_SLOT, GuiItems.item(
-            Material.NETHER_STAR,
+            Material.PLAYER_HEAD,
             Component.text("Hlavní úroveň " + snapshot.power().level(), NamedTextColor.LIGHT_PURPLE)
                 .decoration(TextDecoration.BOLD, true),
             Component.text("Síla všech tvých naučených cest", NamedTextColor.GRAY),
@@ -156,6 +158,32 @@ final class SkillsMenu implements Listener {
             Component.text("Dílčí úrovně zvyšují hlavní úroveň", NamedTextColor.GRAY),
             Component.text("Hlavní úroveň dává body do perků", NamedTextColor.GOLD)
         ));
+        player.openInventory(inventory);
+    }
+
+    void openPowerMilestones(Player player, SkillProgressSnapshot snapshot) {
+        SkillsHolder holder = new SkillsHolder(player.getUniqueId(), Screen.POWER_MILESTONES, null, null);
+        Inventory inventory = create(holder, 27, "Nekara — hlavní úroveň");
+        PowerProgress power = snapshot.power();
+        inventory.setItem(4, GuiItems.item(Material.PLAYER_HEAD,
+            Component.text("Hlavní úroveň " + power.level(), NamedTextColor.LIGHT_PURPLE)
+                .decoration(TextDecoration.BOLD, true),
+            Component.text("Milníky se odemykají automaticky", NamedTextColor.GRAY),
+            Component.text("Bez ceny a bez vlastních XP", NamedTextColor.DARK_GRAY)));
+        boolean campfire = power.level() >= PowerMilestoneId.CAMPFIRE_RESTED.requiredPowerLevel();
+        boolean mount = power.level() >= PowerMilestoneId.MOUNT.requiredPowerLevel();
+        inventory.setItem(11, milestoneItem(Material.CAMPFIRE, "Tábořiště",
+            PowerMilestoneId.CAMPFIRE_RESTED, campfire,
+            "Odemyká Rested bonus u zapáleného táboráku."));
+        ItemStack path = GuiItems.item(campfire ? Material.LIME_STAINED_GLASS_PANE : Material.WHITE_STAINED_GLASS_PANE,
+            Component.text("Cesta hlavní úrovně", campfire ? NamedTextColor.GREEN : NamedTextColor.GRAY));
+        inventory.setItem(12, path);
+        inventory.setItem(13, path);
+        inventory.setItem(14, path);
+        inventory.setItem(15, milestoneItem(Material.SADDLE, "Věrný společník",
+            PowerMilestoneId.MOUNT, mount,
+            "Odemyká NekaraMounts a vlastního mounta."));
+        inventory.setItem(18, GuiItems.back("Zpět do dovedností"));
         player.openInventory(inventory);
     }
 
@@ -389,6 +417,7 @@ final class SkillsMenu implements Listener {
         int slot = event.getRawSlot();
         switch (holder.screen) {
             case OVERVIEW -> clickOverview(player, holder, slot);
+            case POWER_MILESTONES -> clickPowerMilestones(player, slot);
             case PLAYER_OVERVIEW -> clickPlayerOverview(player, slot);
             case TREE -> clickTree(player, holder, slot);
             case CONFIRMATION -> clickConfirmation(player, holder, slot);
@@ -408,9 +437,19 @@ final class SkillsMenu implements Listener {
             Bukkit.getScheduler().runTask(plugin, () -> plugin.openMainMenu(player));
             return;
         }
+        if (slot == POWER_SLOT) {
+            module.openPowerMilestones(player);
+            return;
+        }
         SkillId skill = holder.skillsBySlot.get(slot);
         if (skill != null) {
             module.openSkillTree(player, skill);
+        }
+    }
+
+    private void clickPowerMilestones(Player player, int slot) {
+        if (slot == 18) {
+            module.openMenu(player);
         }
     }
 
@@ -450,7 +489,7 @@ final class SkillsMenu implements Listener {
 
     private ItemStack skillItem(SkillId skill, SkillLevelProgress progress) {
         return GuiItems.item(
-            material(skill),
+            SkillIconResolver.resolve(skill),
             Component.text(SkillPresentation.czechName(skill), NamedTextColor.AQUA),
             Component.text("Úroveň: " + progress.level() + "/100", NamedTextColor.GRAY),
             totalExperienceLine(progress),
@@ -531,15 +570,12 @@ final class SkillsMenu implements Listener {
     }
 
     private ItemStack treeBackItem() {
-        return GuiItems.modeledItem("skills/tree/button_return_to_menu", Material.SPECTRAL_ARROW,
-            Component.text("Zpět na dovednosti", NamedTextColor.GOLD),
-            Component.text("Otevřít přehled všech dovedností", NamedTextColor.GRAY)
-        );
+        return GuiItems.back("Zpět na dovednosti");
     }
 
     private ItemStack gatheringItem(Player player, SkillId skill, String speedLabel, StatId speed) {
         return GuiItems.item(
-            material(skill),
+            SkillIconResolver.resolve(skill),
             Component.text(SkillPresentation.czechName(skill), NamedTextColor.GREEN),
             Component.text(speedLabel + ": " + AttributePresentation.bonusPercentage(stat(player, skill, speed)),
                 NamedTextColor.AQUA),
@@ -553,7 +589,7 @@ final class SkillsMenu implements Listener {
     private ItemStack farmingItem(Player player) {
         SkillId skill = SkillId.FARMING;
         return GuiItems.item(
-            material(skill),
+            SkillIconResolver.resolve(skill),
             Component.text(SkillPresentation.czechName(skill), NamedTextColor.GREEN),
             Component.text("Dvojitá sklizeň: " + AttributePresentation.percentage(
                 stat(player, skill, StatId.DOUBLE_DROP_CHANCE)), NamedTextColor.AQUA),
@@ -567,12 +603,12 @@ final class SkillsMenu implements Listener {
     private ItemStack fishingItem(Player player) {
         SkillId skill = SkillId.FISHING;
         return GuiItems.item(
-            material(skill),
+            SkillIconResolver.resolve(skill),
             Component.text(SkillPresentation.czechName(skill), NamedTextColor.BLUE),
             Component.text("Rychlost záběru: " + AttributePresentation.bonusPercentage(
                 stat(player, skill, StatId.FISHING_SPEED)), NamedTextColor.AQUA),
-            Component.text("Štěstí při lovu: " + AttributePresentation.percentage(
-                stat(player, skill, StatId.FISHING_LUCK)), NamedTextColor.AQUA),
+            Component.text("Globální štěstí: " + AttributePresentation.decimal(
+                module.cachedProfile(player.getUniqueId()).map(module::globalLuck).orElse(0.0)), NamedTextColor.AQUA),
             Component.text("Více vanilla XP: " + AttributePresentation.bonusPercentage(
                 stat(player, skill, StatId.EXPERIENCE_ORB_MULTIPLIER)), NamedTextColor.AQUA)
         );
@@ -581,7 +617,7 @@ final class SkillsMenu implements Listener {
     private ItemStack archeryItem(Player player) {
         SkillId skill = SkillId.ARCHERY;
         return GuiItems.item(
-            material(skill),
+            SkillIconResolver.resolve(skill),
             Component.text(SkillPresentation.czechName(skill), NamedTextColor.YELLOW),
             Component.text("Přesnost: " + AttributePresentation.percentage(stat(player, skill, StatId.ACCURACY)),
                 NamedTextColor.AQUA),
@@ -680,7 +716,7 @@ final class SkillsMenu implements Listener {
     private ItemStack skillSliderItem(SkillId skill, SkillLevelProgress progress, boolean current) {
         NamedTextColor color = current ? NamedTextColor.GOLD : NamedTextColor.AQUA;
         return GuiItems.item(
-            material(skill),
+            SkillIconResolver.resolve(skill),
             Component.text(SkillPresentation.czechName(skill), color).decoration(TextDecoration.BOLD, current),
             Component.text(current ? "Aktuálně zobrazená stezka" : "Klikni pro otevření stezky", NamedTextColor.GRAY),
             Component.text("Úroveň: " + progress.level() + "/100", NamedTextColor.DARK_GRAY)
@@ -861,6 +897,23 @@ final class SkillsMenu implements Listener {
         };
     }
 
+    private ItemStack milestoneItem(
+        Material material,
+        String name,
+        PowerMilestoneId milestone,
+        boolean unlocked,
+        String description
+    ) {
+        NamedTextColor color = unlocked ? NamedTextColor.GREEN : NamedTextColor.GRAY;
+        return GuiItems.item(material,
+            Component.text(name, color).decoration(TextDecoration.BOLD, true),
+            Component.text(description, NamedTextColor.GRAY),
+            Component.text(unlocked ? "✓ Odemčeno automaticky" : "⚠ Zamčeno", color),
+            Component.text("Hlavní úroveň: " + milestone.requiredPowerLevel(),
+                unlocked ? NamedTextColor.GREEN : NamedTextColor.RED),
+            Component.text("Nestojí perk body", NamedTextColor.DARK_GRAY));
+    }
+
     private int availablePoints(SkillProfile profile, SkillProgressSnapshot snapshot) {
         return Math.max(0, snapshot.power().level() + profile.adminBonusPerkPoints()
             - profile.spentPerkPoints());
@@ -880,29 +933,9 @@ final class SkillsMenu implements Listener {
         return inventory;
     }
 
-    private Material material(SkillId skill) {
-        return switch (skill) {
-            case MARTIAL_ARTS -> Material.IRON_SWORD;
-            case TRADING -> Material.EMERALD;
-            case SMITHING -> Material.ANVIL;
-            case ENCHANTING -> Material.ENCHANTING_TABLE;
-            case ALCHEMY -> Material.BREWING_STAND;
-            case MINING -> Material.IRON_PICKAXE;
-            case WOODCUTTING -> Material.IRON_AXE;
-            case DIGGING -> Material.IRON_SHOVEL;
-            case FARMING -> Material.WHEAT;
-            case FISHING -> Material.FISHING_ROD;
-            case LIGHT_WEAPONS -> Material.IRON_SWORD;
-            case HEAVY_WEAPONS -> Material.IRON_AXE;
-            case ARCHERY -> Material.BOW;
-            case LIGHT_ARMOR -> Material.CHAINMAIL_CHESTPLATE;
-            case HEAVY_ARMOR -> Material.NETHERITE_CHESTPLATE;
-            case POWER -> Material.NETHER_STAR;
-        };
-    }
-
     private enum Screen {
         OVERVIEW,
+        POWER_MILESTONES,
         PLAYER_OVERVIEW,
         TREE,
         CONFIRMATION,

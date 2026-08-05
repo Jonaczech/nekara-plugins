@@ -44,7 +44,7 @@ single repetitive activity from unlocking account-wide milestones. The formula
 is encapsulated so a later weighted model does not require persistence changes.
 
 Power grants the shared perk-point budget and provides milestone conditions for
-other NekaraRPG modules. A mount reward at Power 50 will use a generic milestone
+other NekaraRPG modules. A mount reward at Power 25 uses a generic milestone
 API; BetonQuest may own the actual story presentation and claim flow.
 
 ### Progression and persistence

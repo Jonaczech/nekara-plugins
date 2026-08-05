@@ -5,8 +5,8 @@ artefaktem `NekaraRPG` – modulární plugin pro Purpur/Paper 26.1.
 
 ## Aktuální release
 
-**NekaraRPG 2.3.2** přináší nativní RPG postup, perk-tree GUI, vlastní zbraně,
-integrované XP zdroje a přepracované dovednostní rozhraní.
+**NekaraRPG 2.3.3** přináší nativní RPG postup, perk-tree GUI, vlastní zbraně,
+integrované XP zdroje, gathering odměny a přepracované dovednostní rozhraní.
 
 - 13 aktivních hráčských dovedností a odvozená Hlavní úroveň.
 - `Umění dlaně` a `Obchodování` zůstávají v interní databázové kompatibilitě,
@@ -15,6 +15,11 @@ integrované XP zdroje a přepracované dovednostní rozhraní.
   a New Game+ vedle počátečního perku.
 - Tooltipy perků ukazují jen relevantní účinek, stav, rank, cenu a skutečný
   postup podmínek.
+- Hlavní úroveň používá ikonu hráčské hlavy; automatické milníky odemykají Rested
+  na Power 1 a Mého koně na Power 25.
+- Hlavní menu bez Činností a všechna návratová tlačítka sdílejí vizuální jazyk perk-tree.
+- Gathering má `0,20 %` přirozeného double dropu za level do maxima `20 %`;
+  New Game+ zpomaluje XP a přitom zvyšuje získané pasivní bonusy.
 
 ## Resource pack
 

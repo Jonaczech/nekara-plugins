@@ -29,6 +29,13 @@ public record LevelRewardConfig(
         return capped(level, gatheringDoubleDropChancePerLevel, gatheringDoubleDropMaximumChance);
     }
 
+    public double gatheringDoubleDropChance(int level, double newGamePlusMultiplier) {
+        if (!Double.isFinite(newGamePlusMultiplier) || newGamePlusMultiplier < 1.0) {
+            throw new IllegalArgumentException("New Game+ multiplier must be at least one");
+        }
+        return Math.min(1.0, gatheringDoubleDropChance(level) * newGamePlusMultiplier);
+    }
+
     public double diggingRareDropChance(int level) {
         return capped(level, diggingRareDropChancePerLevel, diggingRareDropMaximumChance);
     }

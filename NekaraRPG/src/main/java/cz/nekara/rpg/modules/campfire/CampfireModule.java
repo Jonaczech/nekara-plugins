@@ -16,6 +16,7 @@ import cz.nekara.rpg.configuration.RestedEffectConfig;
 import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.modules.NekaraModule;
 import cz.nekara.rpg.modules.sitting.SittingModule;
+import cz.nekara.rpg.skills.milestones.PowerMilestoneId;
 import cz.nekara.rpg.sounds.SoundService;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -298,7 +299,9 @@ public final class CampfireModule implements NekaraModule, Listener {
         Map<UUID, CampfireKey> activeCampfires = new HashMap<>();
         for (Player player : sitting.restingPlayers()) {
             if (!player.hasPermission("nekararpg.campfire.use")
-                    || !plugin.configuration().get().worlds().isEnabled(player.getWorld().getName())) {
+                    || !plugin.configuration().get().worlds().isEnabled(player.getWorld().getName())
+                    || !plugin.skillsModule().hasPowerMilestone(player.getUniqueId(),
+                        PowerMilestoneId.CAMPFIRE_RESTED)) {
                 continue;
             }
             Block campfire = findNearestLitCampfire(player.getLocation(), config.radius());

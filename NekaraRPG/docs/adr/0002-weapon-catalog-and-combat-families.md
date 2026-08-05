@@ -65,6 +65,15 @@ material tiers. Recipe output is produced by the server-side factory and is
 therefore PDC-stamped before a player receives it. Existing Smithing Tier and
 workshop processing applies to custom weapons just like vanilla weapons.
 
+`A` means the tier's crafting ingredient, `S` a stick and `B` a second tier
+ingredient. The hammer deliberately uses its cross-head pattern rather than
+the vanilla pickaxe pattern:
+
+| Weapon | Crafting grid |
+| --- | --- |
+| Greatsword | `AAA` / ` B ` / ` S ` |
+| Hammer | ` A ` / `ASA` / ` S ` |
+
 Equipment material tiers are gated by Smithing level at craft preview and at
 the final server-side craft event: wooden and leather at 0, stone at 5, copper
 at 10, golden at 15, iron and chainmail at 20, diamond at 50, and netherite at

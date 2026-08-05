@@ -1,5 +1,18 @@
 # Přehled změn
 
+## 2.3.3
+
+- Hlavní úroveň používá v přehledu dovedností i v milnících ikonu hráčské hlavy.
+- Hlavní menu již neobsahuje nadbytečnou položku `Činnosti`; sezení a ležení zůstávají
+  dostupné přímo z něj.
+- `Můj kůň` se zobrazí až po automatickém odemknutí milníku Věrný společník na
+  Hlavní úrovni 25.
+- Všechna tlačítka návratu používají stejný model `skills/tree/button_return_to_menu`
+  jako perk-tree.
+- Pět sběratelských dovedností má přirozený double drop `0,20 %` za úroveň až do
+  `20 %` na úrovni 100; New Game+ zpomaluje XP na `75 %`, posiluje perk statistiky
+  o `10 %` za rank a přirozený double drop násobí `1,25×` za rank.
+
 ## 2.3.2
 
 - Skryté a neaktivní `Umění dlaně` a `Obchodování` se nezobrazují v GUI,

@@ -25,6 +25,8 @@ import cz.nekara.rpg.skills.export.SkillExportResult;
 import cz.nekara.rpg.skills.export.SkillExportService;
 import cz.nekara.rpg.skills.newgameplus.NewGamePlusResult;
 import cz.nekara.rpg.skills.newgameplus.NewGamePlusService;
+import cz.nekara.rpg.skills.milestones.PowerMilestoneCatalog;
+import cz.nekara.rpg.skills.milestones.PowerMilestoneId;
 import cz.nekara.rpg.skills.perks.DefaultPerkTree;
 import cz.nekara.rpg.skills.perks.PerkDefinition;
 import cz.nekara.rpg.skills.perks.PerkId;
@@ -39,6 +41,7 @@ import cz.nekara.rpg.skills.profile.SkillProgressSnapshot;
 import cz.nekara.rpg.skills.profile.SqliteSkillProfileRepository;
 import cz.nekara.rpg.skills.profile.SkillStorageException;
 import cz.nekara.rpg.skills.stats.PerkStatResolver;
+import cz.nekara.rpg.skills.stats.StatId;
 import cz.nekara.rpg.skills.telemetry.SkillRuntimeMetrics;
 import cz.nekara.rpg.skills.telemetry.SkillRuntimeMetricsSnapshot;
 import java.io.File;
@@ -85,6 +88,8 @@ public final class SkillsModule implements NekaraModule {
     private final AtomicLong nextQueueWarningAt = new AtomicLong();
     private final PerkStatResolver perkStats;
     private final PerkMechanicResolver perkMechanics;
+    private final PowerMilestoneCatalog powerMilestones = new PowerMilestoneCatalog(
+        java.util.Arrays.stream(PowerMilestoneId.values()).map(PowerMilestoneId::milestone).toList());
     private volatile SkillProfileRepository repository;
     private volatile SkillProgressResolver progressResolver;
     private volatile PerkPurchaseService purchaseService;
@@ -292,6 +297,10 @@ public final class SkillsModule implements NekaraModule {
 
     public void openPlayerOverview(Player player) {
         loadProfile(player, (profile, snapshot) -> menu.openPlayerOverview(player, profile, snapshot));
+    }
+
+    void openPowerMilestones(Player player) {
+        loadProfile(player, (profile, snapshot) -> menu.openPowerMilestones(player, snapshot));
     }
 
     void openSkillTree(Player player, SkillId skill) {
@@ -631,7 +640,40 @@ public final class SkillsModule implements NekaraModule {
         return config == null ? WeaponCombatConfig.defaults() : config.weapons();
     }
 
-    private double newGamePlusStatMultiplier(SkillProfile profile, SkillId skill) {
+    double globalLuck(SkillProfile profile) {
+        SkillsConfig config = activeConfig;
+        if (config == null) {
+            return 0.0;
+        }
+        double total = 0.0;
+        for (SkillId skill : SkillId.activeGameplaySkills()) {
+            total += perkStats.resolve(profile, skill).value(StatId.LUCK);
+        }
+        return Math.min(config.luck().maximumPoints(), total);
+    }
+
+    double innateGatheringDoubleDropChance(SkillProfile profile, SkillId skill) {
+        SkillsConfig config = activeConfig;
+        if (config == null) {
+            return 0.0;
+        }
+        int rank = profile.newGamePlusRank(skill);
+        double multiplier = Math.pow(
+            config.newGamePlus().innateGatheringDoubleDropMultiplierPerRank(), rank);
+        return config.levelRewards().gatheringDoubleDropChance(skillLevel(profile, skill), multiplier);
+    }
+
+    public boolean hasPowerMilestone(UUID playerId, PowerMilestoneId milestone) {
+        SkillProfile profile = profileCache.get(playerId);
+        SkillProgressResolver resolver = progressResolver;
+        if (profile == null || resolver == null) {
+            return false;
+        }
+        return powerMilestones.unlockedAt(resolver.resolve(profile).power().level()).stream()
+            .anyMatch(value -> value.id().equals(milestone.id()));
+    }
+
+    double newGamePlusStatMultiplier(SkillProfile profile, SkillId skill) {
         SkillsConfig config = activeConfig;
         if (config == null) return 1.0;
         return 1.0 + newGamePlusStatBonus(profile, skill);

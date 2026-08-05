@@ -5,6 +5,7 @@ import cz.nekara.rpg.configuration.MountConfig;
 import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.menu.GuiItems;
 import cz.nekara.rpg.modules.NekaraModule;
+import cz.nekara.rpg.skills.milestones.PowerMilestoneId;
 import cz.nekara.rpg.mount.MountCooldown;
 import cz.nekara.rpg.mount.MountOwnerId;
 import cz.nekara.rpg.mount.MountRecord;
@@ -285,7 +286,7 @@ public final class MountsModule implements NekaraModule, Listener {
     }
 
     public void openMenu(Player player) {
-        if (!prepareOperation(player, true)) {
+        if (!hasMountMilestone(player) || !prepareOperation(player, true)) {
             return;
         }
         Optional<MountRecord> found = findOwned(player);
@@ -342,7 +343,7 @@ public final class MountsModule implements NekaraModule, Listener {
     }
 
     public void call(Player player) {
-        if (!prepareOperation(player, true)) {
+        if (!hasMountMilestone(player) || !prepareOperation(player, true)) {
             return;
         }
         Optional<MountRecord> found = findOwned(player);
@@ -424,7 +425,7 @@ public final class MountsModule implements NekaraModule, Listener {
     }
 
     public void dismiss(Player player) {
-        if (!prepareOperation(player, false)) {
+        if (!hasMountMilestone(player) || !prepareOperation(player, false)) {
             return;
         }
         Optional<MountRecord> found = findOwned(player);
@@ -450,6 +451,9 @@ public final class MountsModule implements NekaraModule, Listener {
     }
 
     public void sendStatus(Player player) {
+        if (!hasMountMilestone(player)) {
+            return;
+        }
         if (!enabled) {
             messages.send(player, "module-disabled", Map.of("module", ID));
             return;
@@ -486,7 +490,7 @@ public final class MountsModule implements NekaraModule, Listener {
     }
 
     public void restoreWhistle(Player player) {
-        if (!prepareOperation(player, false)) {
+        if (!hasMountMilestone(player) || !prepareOperation(player, false)) {
             return;
         }
         Optional<MountRecord> found = findOwned(player);
@@ -504,7 +508,7 @@ public final class MountsModule implements NekaraModule, Listener {
     }
 
     public void removeWhistle(Player player) {
-        if (!prepareOperation(player, false)) {
+        if (!hasMountMilestone(player) || !prepareOperation(player, false)) {
             return;
         }
         Optional<MountRecord> found = findOwned(player);
@@ -1514,6 +1518,15 @@ public final class MountsModule implements NekaraModule, Listener {
             return false;
         }
         return true;
+    }
+
+    private boolean hasMountMilestone(Player player) {
+        if (plugin.skillsModule().hasPowerMilestone(player.getUniqueId(), PowerMilestoneId.MOUNT)) {
+            return true;
+        }
+        messages.send(player, "mount-milestone-locked", Map.of(
+            "level", PowerMilestoneId.MOUNT.requiredPowerLevel()));
+        return false;
     }
 
     private Optional<MountRecord> findOwned(Player player) {

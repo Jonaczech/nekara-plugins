@@ -21,7 +21,7 @@ class PerkStatResolverTest {
 
         StatSnapshot stats = resolver.resolve(profile, SkillId.MINING);
 
-        assertEquals(0.075, stats.value(StatId.DOUBLE_DROP_CHANCE), 0.000_001);
+        assertEquals(0.15, stats.value(StatId.DOUBLE_DROP_CHANCE), 0.000_001);
         assertEquals(0.0, stats.value(StatId.TRIPLE_DROP_CHANCE), 0.000_001);
     }
 

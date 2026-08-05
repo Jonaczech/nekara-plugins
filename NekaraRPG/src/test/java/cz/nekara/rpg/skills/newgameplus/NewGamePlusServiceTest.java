@@ -26,7 +26,7 @@ class NewGamePlusServiceTest {
                 Map.of(miningPerk.id(), 1), miningPerk.pointCostPerRank(), 0);
             repository.save(profile, 0);
             NewGamePlusResult result = new NewGamePlusService(repository, curve, tree.catalog(),
-                new NewGamePlusConfig(true, 0.90, 0.02)).rebirth("player", SkillId.MINING);
+                new NewGamePlusConfig(true, 0.75, 0.10, 1.25)).rebirth("player", SkillId.MINING);
             assertEquals(NewGamePlusStatus.REBORN, result.status());
             assertEquals(0, result.profile().totalExperience(SkillId.MINING));
             assertEquals(100, result.profile().totalExperience(SkillId.FISHING));

@@ -60,44 +60,44 @@ public final class DefaultPerkTree {
             node("recipes", "Herbář Nekary", "Odemkne recept Tonika vitality ze vzácných plodů.", mechanic(MechanicId.ALCHEMY_RECIPES)),
             node("merging", "Spojené esence", "Odemkne sloučení účinků dvou lektvarů.", mechanic(MechanicId.POTION_MERGING)));
         builder.tree(SkillId.MINING,
-            node("yield", "Hlas kamene", "Zvyšuje šanci na násobný výtěžek.", stat(StatId.DOUBLE_DROP_CHANCE, 0.025)),
+            node("yield", "Hlas kamene", "Zvyšuje šanci na násobný výtěžek.", stat(StatId.DOUBLE_DROP_CHANCE, 0.05)),
             node("tempo", "Rytmus krumpáče", "Zrychluje dobývání kamene a rud.", stat(StatId.MINING_SPEED, 0.05)),
             node("furnace", "Žhavá směna", "Pece otevřené horníkem pracují rychleji.", stat(StatId.FURNACE_SPEED, 0.08)),
             node("vein", "Žilobití", "Při plížení vytěží propojenou rudnou žílu.", mechanic(MechanicId.VEIN_MINING)),
             node("blast", "Řízený odstřel", "Bezpečně posílí vlastní TNT s omezeným záběrem.", stat(StatId.TNT_POWER, 0.08), mechanic(MechanicId.DRILLING)),
-            node("triple", "Srdce hory", "Přidává šanci na trojitý výtěžek.", stat(StatId.TRIPLE_DROP_CHANCE, 0.08)));
+            node("triple", "Srdce hory", "Přidává šanci na trojitý výtěžek.", stat(StatId.TRIPLE_DROP_CHANCE, 0.03)));
         builder.tree(SkillId.WOODCUTTING,
-            node("yield", "Míza lesa", "Zvyšuje šanci na násobný výtěžek dřeva.", stat(StatId.DOUBLE_DROP_CHANCE, 0.025)),
+            node("yield", "Míza lesa", "Zvyšuje šanci na násobný výtěžek dřeva.", stat(StatId.DOUBLE_DROP_CHANCE, 0.05)),
             node("tempo", "Jistý zásek", "Zrychluje práci se sekerou.", stat(StatId.WOODCUTTING_SPEED, 0.05)),
             node("recipes", "Úsporné trámy", "Recept z jednoho kmene vydá pět prken místo čtyř.", mechanic(MechanicId.WOOD_RECIPES)),
             node("feller", "Pád velikána", "Při plížení porazí propojený přírodní strom.", mechanic(MechanicId.TREE_FELLER)),
             node("leaves", "Koruna tajemství", "Listí může skrývat vzácnou odměnu.", mechanic(MechanicId.RARE_LEAF_DROPS), stat(StatId.RARE_DROP_CHANCE, 0.015)),
-            node("triple", "Dědictví hvozdu", "Přidává šanci na trojitý výtěžek.", stat(StatId.TRIPLE_DROP_CHANCE, 0.08)));
+            node("triple", "Dědictví hvozdu", "Přidává šanci na trojitý výtěžek.", stat(StatId.TRIPLE_DROP_CHANCE, 0.03)));
         builder.tree(SkillId.DIGGING,
-            node("yield", "Úrodná zem", "Zvyšuje šanci na násobný výtěžek zeminy.", stat(StatId.DOUBLE_DROP_CHANCE, 0.025)),
+            node("yield", "Úrodná zem", "Zlepšuje ovládání lopaty.", stat(StatId.DIGGING_SPEED, 0.03)),
             node("tempo", "Lehká lopata", "Zrychluje kopání hlíny, písku a štěrku.", stat(StatId.DIGGING_SPEED, 0.05)),
             node("finds", "Třpyt v prachu", "Při kopání lze nalézt vzácné suroviny.", stat(StatId.RARE_DROP_CHANCE, 0.012)),
             node("archaeology", "Paměť střepů", "Rozšiřuje možné archeologické nálezy.", mechanic(MechanicId.ARCHAEOLOGY_FINDS)),
-            node("deep_soil", "Hluboká vrstva", "Dále posiluje výtěžek a rychlost práce.", stat(StatId.DOUBLE_DROP_CHANCE, 0.04), stat(StatId.DIGGING_SPEED, 0.08)),
-            node("triple", "Poklad pod nohama", "Přidává šanci na trojitý výtěžek.", stat(StatId.TRIPLE_DROP_CHANCE, 0.08)));
+            node("deep_soil", "Hluboká vrstva", "Dále posiluje výtěžek a rychlost práce.", stat(StatId.DOUBLE_DROP_CHANCE, 0.05), stat(StatId.DIGGING_SPEED, 0.08)),
+            node("triple", "Poklad pod nohama", "Přidává šanci na trojitý výtěžek.", stat(StatId.TRIPLE_DROP_CHANCE, 0.03)));
         builder.tree(SkillId.FARMING,
-            node("yield", "Plná ošatka", "Zvyšuje šanci na násobnou sklizeň.", stat(StatId.DOUBLE_DROP_CHANCE, 0.025)),
+            node("yield", "Plná ošatka", "Zvyšuje šanci na násobnou sklizeň.", stat(StatId.DOUBLE_DROP_CHANCE, 0.05)),
             node("growth", "Živá půda", "Plodiny v péči hráče rostou rychleji.", stat(StatId.CROP_GROWTH_MULTIPLIER, 0.05)),
             node("husbandry", "Péče o stádo", "Zvyšuje výtěžek chovu a včelaření.", stat(StatId.ANIMAL_DAMAGE_MULTIPLIER, 0.04), stat(StatId.BEEKEEPING_YIELD, 0.05)),
             node("instant", "Obratná sklizeň", "Odemkne sklizeň a nové zasazení jedním dotykem.", mechanic(MechanicId.INSTANT_HARVEST)),
             node("field", "Záběr pole", "Odemkne sklizeň sousedících zralých plodin.", mechanic(MechanicId.FIELD_HARVEST), stat(StatId.EXPERIENCE_ORB_MULTIPLIER, 0.05)),
-            node("triple", "Roh hojnosti", "Přidává šanci na trojitý výtěžek.", stat(StatId.TRIPLE_DROP_CHANCE, 0.08)));
+            node("triple", "Roh hojnosti", "Přidává šanci na trojitý výtěžek.", stat(StatId.TRIPLE_DROP_CHANCE, 0.03)));
         builder.tree(SkillId.FISHING,
-            node("luck", "Čtení proudu", "Zvyšuje štěstí při rybolovu.", stat(StatId.FISHING_LUCK, 0.08)),
+            node("luck", "Čtení proudu", "Dává 1 bod globálního štěstí pro vzácné nálezy.", stat(StatId.LUCK, 1.0)),
             node("speed", "Napjatý vlasec", "Zkracuje čekání na záběr.", stat(StatId.FISHING_SPEED, 0.05)),
             node("wisdom", "Moudrost hlubin", "Úlovky vydají více zkušenostních koulí.", stat(StatId.EXPERIENCE_ORB_MULTIPLIER, 0.05)),
             node("equipment", "Ztracená výstroj", "Do úlovků přidává nalezenou výbavu.", mechanic(MechanicId.EQUIPMENT_FISHING)),
             node("salvage", "Druhý život", "Odemkne rozebrání vylovené výbavy.", mechanic(MechanicId.EQUIPMENT_SALVAGING)),
-            node("master", "Pán tichých vod", "Spojuje nejvyšší rychlost a štěstí rybáře.", stat(StatId.FISHING_LUCK, 0.25), stat(StatId.FISHING_SPEED, 0.20)));
+            node("master", "Pán tichých vod", "Spojuje nejvyšší rychlost, globální štěstí a výtěžek.", stat(StatId.LUCK, 1.0), stat(StatId.FISHING_SPEED, 0.20), stat(StatId.DOUBLE_DROP_CHANCE, 0.05)));
         builder.tree(SkillId.LIGHT_WEAPONS,
             node("damage", "Ostrá odpověď", "Zvyšuje poškození a šanci na krvácení.", stat(StatId.DAMAGE_MULTIPLIER, 0.03), stat(StatId.BLEED_CHANCE, 0.006)),
             node("critical", "Mezera v obraně", "Zvyšuje šanci a sílu kritického zásahu; odemyká volný pohyb se železnými a zlatými lehkými zbraněmi.", stat(StatId.CRITICAL_CHANCE, 0.012), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.04), mechanic(MechanicId.LIGHT_WEAPON_IRON_MOBILITY)),
-            node("parry", "Včasný kryt", "Odemkne odražení útoku, krátké omráčení útočníka a volný pohyb s diamantovými lehkými zbraněmi.", mechanic(MechanicId.PARRY), mechanic(MechanicId.LIGHT_WEAPON_DIAMOND_MOBILITY)),
+            node("parry", "Včasný kryt", "Odemkne volný pohyb s diamantovými lehkými zbraněmi.", mechanic(MechanicId.LIGHT_WEAPON_DIAMOND_MOBILITY)),
             node("coating", "Jed na ostří", "Odemkne nanášení lektvarových účinků na zbraň.", mechanic(MechanicId.WEAPON_COATING)),
             node("immunity", "Pod kůži", "Prohlubuje krvácení, zvyšuje šanci na jeho obnovení a odemyká volný pohyb s netheritovými lehkými zbraněmi.", stat(StatId.BLEED_DAMAGE_MULTIPLIER, 0.20), stat(StatId.BLEED_CHANCE, 0.02), mechanic(MechanicId.LIGHT_WEAPON_NETHERITE_MOBILITY)),
             node("master", "Sto rychlých ran", "Vrchol stezky posiluje kritické zásahy i krvácení.", stat(StatId.CRITICAL_CHANCE, 0.08), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.20), stat(StatId.BLEED_CHANCE, 0.07), stat(StatId.BLEED_DAMAGE_MULTIPLIER, 0.25)));

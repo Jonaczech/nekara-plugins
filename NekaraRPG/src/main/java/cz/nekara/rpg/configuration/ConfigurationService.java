@@ -427,10 +427,14 @@ public final class ConfigurationService {
                         0, 100_000, 2, "skills.progression.quadratic-growth", warning),
                 new NewGamePlusConfig(
                     config.getBoolean("skills.new-game-plus.enabled", true),
-                    validateDouble(config.getDouble("skills.new-game-plus.experience-multiplier", 0.90),
-                        0.01, 1.0, 0.90, "skills.new-game-plus.experience-multiplier", warning),
-                    validateDouble(config.getDouble("skills.new-game-plus.perk-stat-bonus-per-rank", 0.02),
-                        0.0, 1.0, 0.02, "skills.new-game-plus.perk-stat-bonus-per-rank", warning)),
+                    validateDouble(config.getDouble("skills.new-game-plus.experience-multiplier", 0.75),
+                        0.01, 1.0, 0.75, "skills.new-game-plus.experience-multiplier", warning),
+                    validateDouble(config.getDouble("skills.new-game-plus.perk-stat-bonus-per-rank", 0.10),
+                        0.0, 1.0, 0.10, "skills.new-game-plus.perk-stat-bonus-per-rank", warning),
+                    validateDouble(config.getDouble(
+                            "skills.new-game-plus.innate-gathering-double-drop-multiplier-per-rank", 1.25),
+                        1.0, 10.0, 1.25,
+                        "skills.new-game-plus.innate-gathering-double-drop-multiplier-per-rank", warning)),
                 nativeMining,
                 nativeWoodcutting,
                 nativeDigging,
@@ -440,6 +444,7 @@ public final class ConfigurationService {
                 parseGatheringAbility(config, "tezba", "drilling", 64, 8, 20, warning),
                 parseGatheringAbility(config, "lesnictvi", "tree-feller", 64, 8, 12, warning),
                 parseNativeActivities(config, warning),
+                parseLuck(config, warning),
                 parseWeaponCombat(config, warning)
         );
 
@@ -771,8 +776,8 @@ public final class ConfigurationService {
             Consumer<String> warning
     ) {
         double gatheringMaximum = validateDouble(config.getDouble(
-                        "skills.level-rewards.gathering.maximum-double-drop-chance", 0.025),
-                0.0, 1.0, 0.025,
+                        "skills.level-rewards.gathering.maximum-double-drop-chance", 0.20),
+                0.0, 1.0, 0.20,
                 "skills.level-rewards.gathering.maximum-double-drop-chance", warning);
         double diggingMaximum = validateDouble(config.getDouble(
                         "skills.level-rewards.digging.maximum-rare-drop-chance", 0.010),
@@ -788,8 +793,8 @@ public final class ConfigurationService {
                 "skills.level-rewards.fishing.base-treasure-chance", warning);
         return new LevelRewardConfig(
                 validateDouble(config.getDouble(
-                                "skills.level-rewards.gathering.double-drop-chance-per-level", 0.00025),
-                        0.0, gatheringMaximum, Math.min(0.00025, gatheringMaximum),
+                                "skills.level-rewards.gathering.double-drop-chance-per-level", 0.002),
+                        0.0, gatheringMaximum, Math.min(0.002, gatheringMaximum),
                         "skills.level-rewards.gathering.double-drop-chance-per-level", warning),
                 gatheringMaximum,
                 validateDouble(config.getDouble(
@@ -828,6 +833,18 @@ public final class ConfigurationService {
                 blocksPerTick,
                 validateInt(config.getInt(root + ".cooldown-seconds", defaultCooldownSeconds),
                         0, 86_400, defaultCooldownSeconds, root + ".cooldown-seconds", warning)
+        );
+    }
+
+    private LuckConfig parseLuck(FileConfiguration config, Consumer<String> warning) {
+        LuckConfig defaults = LuckConfig.defaults();
+        return new LuckConfig(
+            validateInt(config.getInt("skills.luck.maximum-points", defaults.maximumPoints()),
+                0, 100, defaults.maximumPoints(), "skills.luck.maximum-points", warning),
+            validateDouble(config.getDouble("skills.luck.rare-loot-chance-bonus-per-point",
+                    defaults.rareLootChanceBonusPerPoint()),
+                0.0, 1.0, defaults.rareLootChanceBonusPerPoint(),
+                "skills.luck.rare-loot-chance-bonus-per-point", warning)
         );
     }
 

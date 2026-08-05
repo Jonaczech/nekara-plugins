@@ -6,7 +6,9 @@ import cz.nekara.rpg.configuration.NativeGatheringConfig;
 import cz.nekara.rpg.configuration.SkillsConfig;
 import cz.nekara.rpg.modules.skills.GatheringMaterialPolicy.GatheringTool;
 import cz.nekara.rpg.skills.SkillId;
+import cz.nekara.rpg.skills.SkillPresentation;
 import cz.nekara.rpg.skills.combat.RandomChanceRoller;
+import cz.nekara.rpg.skills.luck.LuckChanceResolver;
 import cz.nekara.rpg.skills.experience.ChunkActivityTracker;
 import cz.nekara.rpg.skills.experience.ExperienceAwardRequest;
 import cz.nekara.rpg.skills.experience.ExperienceContext;
@@ -75,7 +77,9 @@ final class NativeGatheringListener implements Listener {
     private final PerkMechanicResolver perkMechanics;
     private final DropMultiplierResolver dropMultiplier = new DropMultiplierResolver();
     private final NamespacedKey speedModifierKey;
+    private final NamespacedKey proficiencyMobilityKey;
     private final Set<UUID> automatedPlayers = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, String> proficiencyWarnings = new ConcurrentHashMap<>();
     private boolean enabled;
 
     NativeGatheringListener(
@@ -90,6 +94,7 @@ final class NativeGatheringListener implements Listener {
         this.perkStats = new PerkStatResolver(perkTree.catalog());
         this.perkMechanics = new PerkMechanicResolver(perkTree.catalog());
         this.speedModifierKey = new NamespacedKey(plugin, "skills_gathering_speed");
+        this.proficiencyMobilityKey = new NamespacedKey(plugin, "skills_tool_proficiency_mobility");
         this.definitions = List.of(
             new Definition(SkillId.MINING, config.mining(), GatheringTool.PICKAXE, true,
                 StatId.MINING_SPEED, null),
@@ -125,7 +130,10 @@ final class NativeGatheringListener implements Listener {
         physicalInputs.clear();
         validatedBreaks.clear();
         automatedPlayers.clear();
-        Bukkit.getOnlinePlayers().forEach(this::removeSpeedModifier);
+        Bukkit.getOnlinePlayers().forEach(player -> {
+            removeSpeedModifier(player);
+            removeProficiencyMobility(player);
+        });
     }
 
     PlacedBlockTracker placedBlocks() {
@@ -151,6 +159,8 @@ final class NativeGatheringListener implements Listener {
         physicalInputs.forget(playerKey);
         validatedBreaks.forget(playerKey);
         removeSpeedModifier(event.getPlayer());
+        removeProficiencyMobility(event.getPlayer());
+        proficiencyWarnings.remove(event.getPlayer().getUniqueId());
         module.forgetProfile(event.getPlayer().getUniqueId());
     }
 
@@ -235,7 +245,8 @@ final class NativeGatheringListener implements Listener {
         SkillProfile profile = cached.get();
         StatSnapshot stats;
         try {
-            stats = perkStats.resolve(profile, definition.skill());
+            stats = perkStats.resolve(profile, definition.skill(),
+                module.newGamePlusStatMultiplier(profile, definition.skill()));
         } catch (RuntimeException exception) {
             module.invalidateProfile(player.getUniqueId(), exception);
             return;
@@ -243,11 +254,13 @@ final class NativeGatheringListener implements Listener {
 
         List<BonusDrop> bonusDrops = new ArrayList<>();
         int level = module.skillLevel(profile, definition.skill());
-        if (definition.config().finalDropMultiplierEnabled()
+        boolean eligibleDoubleDrop = definition.skill() != SkillId.WOODCUTTING
+            || GatheringMaterialPolicy.isLog(material);
+        if (eligibleDoubleDrop && definition.config().finalDropMultiplierEnabled()
             && definition.config().experience(material) > 0 && !event.getItems().isEmpty()) {
             int multiplier = dropMultiplier.resolve(
                 stats,
-                plugin.configuration().get().skills().levelRewards().gatheringDoubleDropChance(level),
+                module.innateGatheringDoubleDropChance(profile, definition.skill()),
                 new RandomChanceRoller(ThreadLocalRandom.current()));
             bonusDrops.addAll(createBonusDrops(event.getItems(), multiplier - 1));
         }
@@ -293,26 +306,44 @@ final class NativeGatheringListener implements Listener {
             return;
         }
         removeSpeedModifier(player);
+        removeProficiencyMobility(player);
         Optional<Definition> held = definitionForTool(player.getInventory().getItemInMainHand());
         Optional<SkillProfile> profile = module.cachedProfile(player.getUniqueId());
-        if (held.isEmpty() || profile.isEmpty()) {
+        if (profile.isEmpty()) {
+            module.preloadProfile(player);
             return;
         }
-        double multiplier;
+        double modifier = 0.0;
         try {
-            multiplier = perkStats.resolve(profile.get(), held.get().skill())
-                .value(held.get().speedStat());
+            if (held.isPresent()) {
+                double multiplier = perkStats.resolve(profile.get(), held.get().skill(),
+                    module.newGamePlusStatMultiplier(profile.get(), held.get().skill()))
+                    .value(held.get().speedStat());
+                modifier += multiplier - 1.0;
+            }
         } catch (RuntimeException exception) {
             module.invalidateProfile(player.getUniqueId(), exception);
             return;
         }
-        if (multiplier <= 1.0) {
-            return;
+        EquipmentProficiencyPolicy.heldTool(player.getInventory().getItemInMainHand()).ifPresent(requirement -> {
+            int currentLevel = module.skillLevel(profile.get(), requirement.skill());
+            if (currentLevel < requirement.requiredLevel()) {
+                warn(player, requirement, "Tento nástroj ještě neumíš používat");
+            }
+        });
+        Optional<EquipmentProficiencyPolicy.Requirement> requirement =
+            EquipmentProficiencyPolicy.heldTool(player.getInventory().getItemInMainHand());
+        if (requirement.isPresent()
+            && module.skillLevel(profile.get(), requirement.get().skill()) < requirement.get().requiredLevel()) {
+            modifier += EquipmentProficiencyPolicy.toolBreakSpeedModifier();
+            addProficiencyMobility(player, EquipmentProficiencyPolicy.toolMovementPenalty());
+        } else {
+            proficiencyWarnings.remove(player.getUniqueId());
         }
         AttributeInstance speed = player.getAttribute(Attribute.BLOCK_BREAK_SPEED);
-        if (speed != null) {
+        if (speed != null && modifier != 0.0) {
             speed.addTransientModifier(new AttributeModifier(
-                speedModifierKey, multiplier - 1.0, AttributeModifier.Operation.ADD_SCALAR));
+                speedModifierKey, modifier, AttributeModifier.Operation.ADD_SCALAR));
         }
     }
 
@@ -358,7 +389,9 @@ final class NativeGatheringListener implements Listener {
             chance += plugin.configuration().get().skills().levelRewards()
                 .diggingRareDropChance(level);
         }
-        chance = Math.min(1.0, chance);
+        var luck = plugin.configuration().get().skills().luck();
+        chance = LuckChanceResolver.rareLootChance(chance, module.globalLuck(profile),
+            luck.maximumPoints(), luck.rareLootChanceBonusPerPoint());
         if (chance <= 0 || ThreadLocalRandom.current().nextDouble() >= chance) {
             return Optional.empty();
         }
@@ -404,6 +437,31 @@ final class NativeGatheringListener implements Listener {
         if (speed != null) {
             speed.removeModifier(speedModifierKey);
         }
+    }
+
+    private void addProficiencyMobility(Player player, double penalty) {
+        AttributeInstance movement = player.getAttribute(Attribute.MOVEMENT_SPEED);
+        if (movement != null && penalty != 0.0) {
+            movement.addTransientModifier(new AttributeModifier(
+                proficiencyMobilityKey, penalty, AttributeModifier.Operation.ADD_SCALAR));
+        }
+    }
+
+    private void removeProficiencyMobility(Player player) {
+        AttributeInstance movement = player.getAttribute(Attribute.MOVEMENT_SPEED);
+        if (movement != null) {
+            movement.removeModifier(proficiencyMobilityKey);
+        }
+    }
+
+    private void warn(Player player, EquipmentProficiencyPolicy.Requirement requirement, String itemType) {
+        String key = requirement.skill().id() + ":" + requirement.requiredLevel();
+        if (key.equals(proficiencyWarnings.put(player.getUniqueId(), key))) {
+            return;
+        }
+        player.sendActionBar(net.kyori.adventure.text.Component.text(itemType + ": vyžaduje "
+            + SkillPresentation.czechName(requirement.skill()) + " level " + requirement.requiredLevel() + ".",
+            net.kyori.adventure.text.format.NamedTextColor.RED));
     }
 
     private static List<BonusDrop> createBonusDrops(List<Item> drops, int additionalCopies) {

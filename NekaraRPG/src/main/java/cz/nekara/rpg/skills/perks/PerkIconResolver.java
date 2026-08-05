@@ -71,7 +71,7 @@ public final class PerkIconResolver {
             case RARE_DROP_CHANCE -> Material.AMETHYST_SHARD;
             case ANIMAL_DAMAGE_MULTIPLIER -> Material.IRON_AXE;
             case BEEKEEPING_YIELD -> Material.HONEYCOMB;
-            case FISHING_LUCK -> Material.HEART_OF_THE_SEA;
+            case LUCK -> Material.RABBIT_FOOT;
             case FISHING_SPEED -> Material.FISHING_ROD;
             case ACCURACY -> Material.TARGET;
             case AMMO_CONSUMPTION_REDUCTION -> Material.ARROW;
@@ -89,7 +89,6 @@ public final class PerkIconResolver {
             case DRILLING -> Material.TNT;
             case TREE_FELLER -> Material.OAK_LOG;
             case INSTANT_HARVEST, FIELD_HARVEST -> Material.GOLDEN_HOE;
-            case PARRY -> Material.SHIELD;
             case WEAPON_COATING -> Material.LINGERING_POTION;
             case CHARGED_SHOT, CUSTOM_ARROW_RECIPES -> Material.SPECTRAL_ARROW;
             case ADRENALINE -> Material.SUGAR;

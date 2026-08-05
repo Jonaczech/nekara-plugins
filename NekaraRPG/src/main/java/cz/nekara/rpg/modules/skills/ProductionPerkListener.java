@@ -4,6 +4,7 @@ import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.fishing.FishingCatchDeliveredEvent;
 import cz.nekara.rpg.skills.SkillId;
 import cz.nekara.rpg.skills.combat.RandomChanceRoller;
+import cz.nekara.rpg.skills.luck.LuckChanceResolver;
 import cz.nekara.rpg.skills.perks.MechanicId;
 import cz.nekara.rpg.skills.rewards.DropMultiplierResolver;
 import cz.nekara.rpg.skills.stats.StatId;
@@ -534,12 +535,14 @@ final class ProductionPerkListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void multiplyHarvestDrops(BlockDropItemEvent event) {
-        if (!isMature(event.getBlockState().getBlockData()) || event.getItems().isEmpty()) {
+        if (!isFarmingDoubleDropSource(event.getBlockState().getBlock()) || event.getItems().isEmpty()) {
             return;
         }
-        module.runtimeState(event.getPlayer().getUniqueId(), SkillId.FARMING).ifPresent(state -> {
+        module.cachedProfile(event.getPlayer().getUniqueId()).ifPresent(profile ->
+            module.runtimeState(event.getPlayer().getUniqueId(), SkillId.FARMING).ifPresent(state -> {
             int multiplier = dropMultiplier.resolve(
-                state.stats(), new RandomChanceRoller(ThreadLocalRandom.current()));
+                state.stats(), module.innateGatheringDoubleDropChance(profile, SkillId.FARMING),
+                new RandomChanceRoller(ThreadLocalRandom.current()));
             if (multiplier <= 1) {
                 return;
             }
@@ -552,7 +555,7 @@ final class ProductionPerkListener implements Listener {
             }
             Bukkit.getScheduler().runTask(plugin, () -> bonuses.forEach(item ->
                 event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation().add(0.5, 0.5, 0.5), item)));
-        });
+        }));
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -584,6 +587,14 @@ final class ProductionPerkListener implements Listener {
 
     private void rewardFishingPerks(Player player, ItemStack catchItem, int vanillaExperience) {
         module.runtimeState(player.getUniqueId(), SkillId.FISHING).ifPresent(state -> {
+            module.cachedProfile(player.getUniqueId()).ifPresent(profile -> {
+                int multiplier = dropMultiplier.resolve(state.stats(),
+                    module.innateGatheringDoubleDropChance(profile, SkillId.FISHING),
+                    new RandomChanceRoller(ThreadLocalRandom.current()));
+                for (int copy = 1; copy < multiplier; copy++) {
+                    giveLater(player, catchItem.clone());
+                }
+            });
             rewardFishingLevelTreasure(player);
             int extraExperience = (int) Math.floor(vanillaExperience
                 * Math.max(0.0, state.stats().value(StatId.EXPERIENCE_ORB_MULTIPLIER) - 1.0));
@@ -591,8 +602,7 @@ final class ProductionPerkListener implements Listener {
                 player.giveExp(extraExperience);
             }
             if (state.has(MechanicId.EQUIPMENT_FISHING)) {
-                double chance = Math.min(0.08,
-                    0.02 + state.stats().value(StatId.FISHING_LUCK) * 0.05);
+                double chance = 0.02;
                 if (ThreadLocalRandom.current().nextDouble() < chance) {
                     Material[] equipment = {Material.FISHING_ROD, Material.BOW, Material.LEATHER_BOOTS};
                     giveLater(player, new ItemStack(equipment[ThreadLocalRandom.current().nextInt(equipment.length)]));
@@ -869,6 +879,9 @@ final class ProductionPerkListener implements Listener {
         }
         int level = module.skillLevel(profile.get(), SkillId.FISHING);
         double chance = plugin.configuration().get().skills().levelRewards().fishingTreasureChance(level);
+        var luck = plugin.configuration().get().skills().luck();
+        chance = LuckChanceResolver.rareLootChance(chance, module.globalLuck(profile.get()),
+            luck.maximumPoints(), luck.rareLootChanceBonusPerPoint());
         if (chance <= 0.0 || ThreadLocalRandom.current().nextDouble() >= chance) {
             return;
         }
@@ -1023,6 +1036,21 @@ final class ProductionPerkListener implements Listener {
 
     private static boolean isMature(Block block) {
         return isMature(block.getBlockData());
+    }
+
+    private static boolean isFarmingDoubleDropSource(Block block) {
+        if (isMature(block)) {
+            return true;
+        }
+        String name = block.getType().name();
+        return name.equals("MELON") || name.equals("PUMPKIN")
+            || name.equals("BROWN_MUSHROOM") || name.equals("RED_MUSHROOM")
+            || name.endsWith("_FLOWER") || name.endsWith("_TULIP")
+            || name.equals("DANDELION") || name.equals("POPPY") || name.equals("ALLIUM")
+            || name.equals("AZURE_BLUET") || name.equals("OXEYE_DAISY")
+            || name.equals("CORNFLOWER") || name.equals("LILY_OF_THE_VALLEY")
+            || name.equals("WITHER_ROSE") || name.equals("SUNFLOWER")
+            || name.equals("LILAC") || name.equals("ROSE_BUSH") || name.equals("PEONY");
     }
 
     private static boolean isMature(org.bukkit.block.data.BlockData data) {

@@ -15,6 +15,7 @@ public record SkillsConfig(
     GatheringAbilityConfig drilling,
     GatheringAbilityConfig treeFeller,
     NativeActivityConfig activities,
+    LuckConfig luck,
     WeaponCombatConfig weapons
 ) {
 }
