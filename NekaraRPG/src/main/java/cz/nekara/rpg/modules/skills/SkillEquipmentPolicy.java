@@ -14,14 +14,14 @@ final class SkillEquipmentPolicy {
 
     static Optional<SkillId> meleeSkill(ItemStack item) {
         if (item == null || item.getType().isAir()) {
-            return Optional.of(SkillId.MARTIAL_ARTS);
+            return Optional.empty();
         }
         return WeaponCatalog.resolve(item).map(definition -> definition.family().skill());
     }
 
     static Optional<SkillId> meleeSkill(Material material) {
         if (material == Material.AIR) {
-            return Optional.of(SkillId.MARTIAL_ARTS);
+            return Optional.empty();
         }
         return WeaponCatalog.resolveVanilla(material).map(definition -> definition.family().skill());
     }

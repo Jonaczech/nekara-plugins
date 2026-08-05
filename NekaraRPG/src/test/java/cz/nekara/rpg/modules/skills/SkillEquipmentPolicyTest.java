@@ -10,8 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SkillEquipmentPolicyTest {
     @Test
     void classifiesOnlySupportedMeleeFamilies() {
-        assertEquals(SkillId.MARTIAL_ARTS,
-            SkillEquipmentPolicy.meleeSkill(Material.AIR).orElseThrow());
+        assertTrue(SkillEquipmentPolicy.meleeSkill(Material.AIR).isEmpty());
         assertEquals(SkillId.LIGHT_WEAPONS,
             SkillEquipmentPolicy.meleeSkill(Material.IRON_SWORD).orElseThrow());
         assertEquals(SkillId.LIGHT_WEAPONS,

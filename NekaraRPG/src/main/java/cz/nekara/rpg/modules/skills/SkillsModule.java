@@ -295,20 +295,32 @@ public final class SkillsModule implements NekaraModule {
     }
 
     void openSkillTree(Player player, SkillId skill) {
+        if (!skill.isActive()) {
+            return;
+        }
         loadProfile(player, (profile, snapshot) -> menu.openTree(player, profile, snapshot, skill));
     }
 
     void openSkillTree(Player player, SkillId skill, PerkTreeViewport viewport) {
+        if (!skill.isActive()) {
+            return;
+        }
         loadProfile(player, (profile, snapshot) -> menu.openTree(player, profile, snapshot, skill, viewport));
     }
 
     void openPerkConfirmation(Player player, PerkId perkId) {
         PerkDefinition perk = perkTree.catalog().require(perkId);
+        if (!perk.skill().isActive()) {
+            return;
+        }
         loadProfile(player, (profile, snapshot) ->
             menu.openConfirmation(player, profile, snapshot, perk));
     }
 
     void purchasePerk(Player player, PerkId perkId) {
+        if (!perkTree.catalog().require(perkId).skill().isActive()) {
+            return;
+        }
         PerkPurchaseService activeService = purchaseService;
         if (!enabled || activeService == null || !pendingPurchases.add(player.getUniqueId())) {
             if (activeService == null) {
@@ -411,6 +423,9 @@ public final class SkillsModule implements NekaraModule {
     }
 
     Optional<SkillRuntimeState> runtimeState(UUID playerId, SkillId skill) {
+        if (!skill.isActive()) {
+            return Optional.empty();
+        }
         SkillProfile profile = profileCache.get(playerId);
         if (profile == null) {
             return Optional.empty();
@@ -445,7 +460,7 @@ public final class SkillsModule implements NekaraModule {
         Consumer<ExperienceAwardResult> callback
     ) {
         SkillExperienceService activeService = experienceService;
-        if (!enabled || activeService == null) {
+        if (!request.skill().isActive() || !enabled || activeService == null) {
             return;
         }
         SkillRuntimeMetrics activeMetrics = runtimeMetrics;
@@ -587,6 +602,9 @@ public final class SkillsModule implements NekaraModule {
 
     /** Returns the cached level used by optional gameplay integrations. */
     public int cachedSkillLevel(UUID playerId, SkillId skill) {
+        if (!skill.isActive()) {
+            return 0;
+        }
         SkillProfile profile = profileCache.get(playerId);
         return profile == null ? 0 : skillLevel(profile, skill);
     }
@@ -727,7 +745,7 @@ public final class SkillsModule implements NekaraModule {
     }
 
     public List<String> adminPerkIds() {
-        return SkillId.gameplaySkills().stream()
+        return SkillId.activeGameplaySkills().stream()
             .flatMap(skill -> perkTree.catalog().forSkill(skill).stream())
             .map(perk -> perk.id().value())
             .sorted()
@@ -735,7 +753,11 @@ public final class SkillsModule implements NekaraModule {
     }
 
     public int adminPerkMaxRank(PerkId perkId) {
-        return perkTree.catalog().require(perkId).maxRank();
+        PerkDefinition perk = perkTree.catalog().require(perkId);
+        if (!perk.skill().isActive()) {
+            throw new IllegalArgumentException("Inactive skill perk");
+        }
+        return perk.maxRank();
     }
 
     public AdminDispatchStatus exportAdmin(

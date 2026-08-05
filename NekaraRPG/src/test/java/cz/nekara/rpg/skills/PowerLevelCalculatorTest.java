@@ -11,21 +11,21 @@ class PowerLevelCalculatorTest {
     private final PowerLevelCalculator calculator = new PowerLevelCalculator(100);
 
     @Test
-    void powerIsFloorAverageOfAllGameplaySkills() {
+    void powerIsFloorAverageOfAllActiveGameplaySkills() {
         EnumMap<SkillId, Integer> levels = allAt(50);
         PowerProgress power = calculator.calculate(levels);
 
         assertEquals(50, power.level());
-        assertEquals(750, power.contributingLevelTotal());
-        assertEquals(15, power.levelsUntilNext());
+        assertEquals(650, power.contributingLevelTotal());
+        assertEquals(13, power.levelsUntilNext());
     }
 
     @Test
     void missingSkillsCountAsZeroAndNoSingleSkillCanDominatePower() {
         PowerProgress power = calculator.calculate(Map.of(SkillId.MINING, 100));
 
-        assertEquals(6, power.level());
-        assertEquals(5, power.levelsUntilNext());
+        assertEquals(7, power.level());
+        assertEquals(4, power.levelsUntilNext());
     }
 
     @Test
@@ -33,7 +33,7 @@ class PowerLevelCalculatorTest {
         PowerProgress power = calculator.calculate(allAt(100));
 
         assertEquals(100, power.level());
-        assertEquals(15, power.levelsUntilNext());
+        assertEquals(13, power.levelsUntilNext());
     }
 
     @Test

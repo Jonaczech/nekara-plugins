@@ -497,7 +497,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
     }
 
     private SkillId parseGameplaySkill(String value) {
-        for (SkillId skill : SkillId.gameplaySkills()) {
+        for (SkillId skill : SkillId.activeGameplaySkills()) {
             if (skill.id().equalsIgnoreCase(value)) {
                 return skill;
             }
@@ -656,7 +656,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
             "spent", inspection.profile().spentPerkPoints(),
             "available", availablePoints
         ));
-        for (SkillId skill : SkillId.gameplaySkills()) {
+        for (SkillId skill : SkillId.activeGameplaySkills()) {
             messages.send(sender, "skills-admin-inspect-skill", Map.of(
                 "name", SkillPresentation.czechName(skill),
                 "id", skill.id(),
@@ -779,7 +779,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                 && "admin".equalsIgnoreCase(args[1])) {
             String action = args[2].toLowerCase(Locale.ROOT);
             if ("grant-xp".equals(action)) {
-                return prefix(SkillId.gameplaySkills().stream().map(SkillId::id).toList(), args[4]);
+                return prefix(SkillId.activeGameplaySkills().stream().map(SkillId::id).toList(), args[4]);
             }
             if ("grant-perk".equals(action)) {
                 return prefix(skillsModule.adminPerkIds(), args[4]);
@@ -789,7 +789,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
             }
             if ("reset".equals(action)) {
                 List<String> targets = new ArrayList<>(
-                    SkillId.gameplaySkills().stream().map(SkillId::id).toList());
+                    SkillId.activeGameplaySkills().stream().map(SkillId::id).toList());
                 targets.add("perks");
                 targets.add("all");
                 return prefix(targets, args[4]);

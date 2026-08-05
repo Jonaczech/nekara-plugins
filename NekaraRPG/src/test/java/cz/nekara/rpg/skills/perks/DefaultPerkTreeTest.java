@@ -3,6 +3,7 @@ package cz.nekara.rpg.skills.perks;
 import cz.nekara.rpg.skills.SkillId;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,14 +35,19 @@ class DefaultPerkTreeTest {
     }
 
     @Test
-    void themedSkillsUseTheirOwnPerkLayouts() {
+    void everyGameplaySkillUsesItsOwnThemedLayoutAndNewGamePlusSitsBesideTheRoot() {
         DefaultPerkTree tree = DefaultPerkTree.create();
 
-        assertMatchesLayout(tree, SkillId.HEAVY_WEAPONS);
-        assertMatchesLayout(tree, SkillId.SMITHING);
-        assertMatchesLayout(tree, SkillId.ARCHERY);
-        assertMatchesLayout(tree, SkillId.FISHING);
-        assertMatchesLayout(tree, SkillId.FARMING);
+        for (SkillId skill : SkillId.gameplaySkills()) {
+            assertMatchesLayout(tree, skill);
+            PerkTreeLayout layout = PerkTreeLayout.forSkill(skill);
+            int distance = Math.abs(layout.root().column() - layout.newGamePlus().column())
+                + Math.abs(layout.root().row() - layout.newGamePlus().row());
+            assertEquals(1, distance, skill.id());
+        }
+        assertEquals(SkillId.gameplaySkills().size(), SkillId.gameplaySkills().stream()
+            .map(PerkTreeLayout::forSkill)
+            .collect(Collectors.toSet()).size());
     }
 
     private static void assertMatchesLayout(DefaultPerkTree tree, SkillId skill) {

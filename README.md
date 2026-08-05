@@ -1,59 +1,40 @@
 # Nekara Plugins
 
-Tento repozitář obsahuje serverové Minecraft pluginy pro ekosystém Nekara.
+Repozitář obsahuje serverové pluginy pro ekosystém Nekara. Aktuálně je hlavním
+artefaktem `NekaraRPG` – modulární plugin pro Purpur/Paper 26.1.
 
-## Návaznost projektu
+## Aktuální release
 
-- [`HANDOFF.md`](HANDOFF.md) zachycuje aktuální vydanou verzi, provozní stav a
-  bezprostřední další kroky.
-- [`PROJECT_MEMORY.md`](PROJECT_MEMORY.md) uchovává dlouhodobá produktová,
-  kompatibilitní a release rozhodnutí.
-- [`ROADMAP.md`](ROADMAP.md) určuje schválenou prioritu další práce a rozsah
-  kandidáta NekaraMounts.
-- [`AGENTS.md`](AGENTS.md) říká Codexu na každém zařízení, že má před změnami
-  repozitáře tento kontext přečíst a zachovat.
+**NekaraRPG 2.3.2** přináší nativní RPG postup, perk-tree GUI, vlastní zbraně,
+integrované XP zdroje a přepracované dovednostní rozhraní.
 
-## Projekty
+- 13 aktivních hráčských dovedností a odvozená Hlavní úroveň.
+- `Umění dlaně` a `Obchodování` zůstávají v interní databázové kompatibilitě,
+  ale nejsou viditelné, neudělují XP, nemají aktivní efekty a neovlivňují Power.
+- Každá dovednost má vlastní kompaktní perk-tree siluetu, zelené odemčené cesty
+  a New Game+ vedle počátečního perku.
+- Tooltipy perků ukazují jen relevantní účinek, stav, rank, cenu a skutečný
+  postup podmínek.
 
-| Plugin | Stav | Popis |
-| --- | --- | --- |
-| `NekaraRPG` | aktivní | Centrální modulární plugin s NekaraAuth, činnostmi, Tábořením, NekaraMining, NekaraMounts a vývojovou platformou Nekara Skills. |
+## Resource pack
 
-## Aktuální směr
+NekaraRPG používá namespaced modely a textury z odděleného repozitáře
+[`Jonaczech/nekara-resourcepack`](https://github.com/Jonaczech/nekara-resourcepack).
+Bez packu zůstává plugin hratelný díky vanilla fallbackům; pro finální vzhled GUI,
+cest a vlastních zbraní je pack nutný.
 
-`NekaraRPG` je centrální plugin pro propojené RPG a imerzivní systémy Nekary.
-Každá herní oblast zůstává samostatně zapínatelným modulem uvnitř jednoho JARu.
-Nejnovější stabilní release je 2.1.0. Přidává 16 českých dovedností, původní
-katalog 90 perků, detailní GUI, transakční nákup za body hlavní úrovně, runtime
-vertikály všech 15 trénovaných skillů, eventové perk efekty, omezenou XP frontu a
-rozdělené konfigurace jednotlivých dovedností. Oprava ležení používá nativní
-Paper/Purpur mannequin namísto ručně sestavovaných packetových metadat.
-Součástí releasu je také operátorská staging správa s transakčním auditem v
-SQLite schématu v2.
-
-Vývojová větev 2.2.0 navazuje live-readiness vrstvou: opravuje orientaci a
-duplicitní vybavení mannequin ležení, přidává měřitelné metriky XP fronty a
-konzistentní read-only export SQLite+CSV pro zálohu a budoucí mapování profilů.
-
-Všech 15 skillů je připraveno pro postupnou živou akceptaci, ale nativní modul
-zůstává výchozím stavem vypnutý. ValhallaMMO je produkční autoritou až do ověřené
-migrace, měření MSPT a rollbacku bez dvojího udělování XP nebo odměn. Aktuální rozsah a přesný další krok
-jsou v `HANDOFF.md`, `ROADMAP.md` a
-`NekaraRPG/docs/SKILLS_2_0_ROADMAP.md`.
-
-## Vydání NekaraRPG
+## Build
 
 ```text
 cd NekaraRPG
 scripts\build-release.cmd
 ```
 
-Release skript spustí všechny testy, ověří interní verzi a changelog a vytvoří
-jeden stabilně pojmenovaný artefakt pro nasazení:
+Artefakt vznikne jako `NekaraRPG/dist/NekaraRPG.jar`. Skript vždy spustí testy.
 
-```text
-NekaraRPG/dist/NekaraRPG.jar
-```
+## Dokumentace
 
-Release pravidla jsou v `NekaraRPG/DEVELOPMENT.md`. Postup nasazení a živé
-akceptační testy jsou v `NekaraRPG/LIVE_TESTING.md`.
+- [Handoff](HANDOFF.md) – aktuální stav, release a provozní postup.
+- [Project memory](PROJECT_MEMORY.md) – závazná architektonická rozhodnutí.
+- [Roadmap](ROADMAP.md) – další schválené kroky.
+- [NekaraRPG README](NekaraRPG/README.md) – instalace, moduly a herní chování.

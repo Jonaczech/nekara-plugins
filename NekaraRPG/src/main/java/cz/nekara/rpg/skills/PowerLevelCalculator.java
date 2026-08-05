@@ -21,7 +21,7 @@ public final class PowerLevelCalculator {
         Objects.requireNonNull(skillLevels, "skillLevels");
         Objects.requireNonNull(newGamePlusRanks, "newGamePlusRanks");
         int total = 0;
-        for (SkillId skill : SkillId.gameplaySkills()) {
+        for (SkillId skill : SkillId.activeGameplaySkills()) {
             Integer level = skillLevels.get(skill);
             if (level == null) {
                 level = 0;
@@ -34,7 +34,7 @@ public final class PowerLevelCalculator {
             total = Math.addExact(total, Math.addExact(level, rebirth * maxLevel));
         }
 
-        int skillCount = SkillId.gameplaySkills().size();
+        int skillCount = SkillId.activeGameplaySkills().size();
         int powerLevel = Math.min(maxLevel * 2, total / skillCount);
         int levelsUntilNext = powerLevel == maxLevel * 2
             ? 0

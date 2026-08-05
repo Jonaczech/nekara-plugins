@@ -1,5 +1,17 @@
 # Přehled změn
 
+## 2.3.2
+
+- Skryté a neaktivní `Umění dlaně` a `Obchodování` se nezobrazují v GUI,
+  navigaci ani administrativním výběru; jejich XP a runtime efekty jsou vypnuté.
+- Power počítá jen 13 aktivních dovedností.
+- Každá perk-tree mapa má vlastní tematickou siluetu a New Game+ s `TRIAL_KEY`
+  vedle počátečního perku.
+- Viditelný graf vyplňuje všechny nenavigační sloty perk-tree GUI; šipky nemohou
+  překrýt perk ani cestu.
+- Tooltipy perků dostaly stručný účinek, ikony a konkrétní postup podmínek bez
+  duplicitních popisů.
+
 ## 2.3.1
 
 - NekaraRPG je plně samostatný: byly odstraněny všechny externí skill bridge,

@@ -70,6 +70,8 @@ final class SkillsMenu implements Listener {
     private static final int CANCEL_SLOT = 20;
     private static final int CONFIRM_SLOT = 24;
     private static final int TREE_FIRST_ROW = 0;
+    // The graph fills every non-navigation slot of the 9x5 container.
+    // The eight directional controls stay outside that visible polygon.
     private static final int TREE_VIEWPORT_WIDTH = 9;
     private static final int TREE_VIEWPORT_HEIGHT = 5;
     private static final List<Integer> SKILL_SLOTS = List.of(
@@ -134,8 +136,8 @@ final class SkillsMenu implements Listener {
                 + " dílčích úrovní", NamedTextColor.DARK_GRAY),
             Component.text("Volné body: " + availablePoints, NamedTextColor.GOLD)
         ));
-        for (int index = 0; index < SkillId.gameplaySkills().size(); index++) {
-            SkillId skill = SkillId.gameplaySkills().get(index);
+        for (int index = 0; index < SkillId.activeGameplaySkills().size(); index++) {
+            SkillId skill = SkillId.activeGameplaySkills().get(index);
             inventory.setItem(SKILL_SLOTS.get(index), skillItem(skill, snapshot.skill(skill)));
             holder.skillsBySlot.put(SKILL_SLOTS.get(index), skill);
         }
@@ -238,9 +240,6 @@ final class SkillsMenu implements Listener {
         inventory.setItem(30, productionItem(player, SkillId.ALCHEMY, "Alchymie", Material.BREWING_STAND,
             "Rychlost vaření", StatId.BREWING_SPEED,
             "Síla lektvarů", StatId.POTION_POWER));
-        inventory.setItem(31, productionItem(player, SkillId.TRADING, "Obchodování", Material.EMERALD,
-            "Sleva u obchodníků", StatId.TRADE_DISCOUNT,
-            "Zisk reputace", StatId.REPUTATION_GAIN));
         inventory.setItem(32, GuiItems.item(
             Material.NETHER_STAR,
             Component.text("Jak číst hodnoty", NamedTextColor.LIGHT_PURPLE),
@@ -258,6 +257,9 @@ final class SkillsMenu implements Listener {
     }
 
     void openTree(Player player, SkillProfile profile, SkillProgressSnapshot snapshot, SkillId skill) {
+        if (!skill.isActive()) {
+            return;
+        }
         openTree(player, profile, snapshot, skill,
             PerkTreeViewport.initial(perkTree.catalog().forSkill(skill), TREE_VIEWPORT_WIDTH, TREE_VIEWPORT_HEIGHT));
     }
@@ -269,6 +271,9 @@ final class SkillsMenu implements Listener {
         SkillId skill,
         PerkTreeViewport viewport
     ) {
+        if (!skill.isActive()) {
+            return;
+        }
         List<PerkDefinition> perks = perkTree.catalog().forSkill(skill);
         PerkPosition newGamePlusPosition = PerkTreeLayout.forSkill(skill).newGamePlus();
         SkillsHolder holder = new SkillsHolder(player.getUniqueId(), Screen.TREE, skill, null, viewport);
@@ -280,6 +285,9 @@ final class SkillsMenu implements Listener {
                 continue;
             }
             int slot = treeSlot(viewport, perk.position());
+            if (isNavigationSlot(slot)) {
+                continue;
+            }
             inventory.setItem(slot, perkItem(profile, snapshot, perk));
             holder.perksBySlot.put(slot, perk.id());
             holder.perkStatusesBySlot.put(
@@ -288,9 +296,11 @@ final class SkillsMenu implements Listener {
         }
         if (viewport.contains(newGamePlusPosition)) {
             int slot = treeSlot(viewport, newGamePlusPosition);
-            inventory.setItem(slot, newGamePlusItem(profile, snapshot, skill));
-            holder.newGamePlusSlot = slot;
-            graphSlots.add(slot);
+            if (!isNavigationSlot(slot)) {
+                inventory.setItem(slot, newGamePlusItem(profile, snapshot, skill));
+                holder.newGamePlusSlot = slot;
+                graphSlots.add(slot);
+            }
         }
         holder.graphSlots.addAll(graphSlots);
         // Navigation is an overlay: it intentionally takes visual and click priority over the graph.
@@ -462,7 +472,7 @@ final class SkillsMenu implements Listener {
         int rank = profile.newGamePlusRank(skill);
         boolean ready = module.canUseNewGamePlus(profile, skill);
         double xp = module.newGamePlusExperienceMultiplier(profile, skill);
-        return GuiItems.item(ready ? Material.NETHER_STAR : Material.GRAY_DYE,
+        return GuiItems.item(Material.TRIAL_KEY,
             Component.text("Nová hra+ " + rank, ready ? NamedTextColor.LIGHT_PURPLE : NamedTextColor.DARK_GRAY),
             Component.text("Trvalý bonus perk statistik: +" + Math.round(module.newGamePlusStatBonus(profile, skill) * 100) + " %", NamedTextColor.AQUA),
             Component.text("Další běh: " + Math.round(xp * 100) + " % XP", NamedTextColor.GOLD),
@@ -710,6 +720,9 @@ final class SkillsMenu implements Listener {
                 return;
             }
             int slot = treeSlot(viewport, position);
+            if (isNavigationSlot(slot)) {
+                return;
+            }
             inventory.setItem(slot, GuiItems.modeledItem(
                 "skills/tree/" + connectionStateName(state) + "/" + connectionShape(position, connectionNeighbors),
                 state == 2 ? Material.LIME_STAINED_GLASS_PANE : state == 1 ? Material.WHITE_STAINED_GLASS_PANE : Material.GRAY_STAINED_GLASS_PANE,
@@ -727,6 +740,10 @@ final class SkillsMenu implements Listener {
 
     private int treeSlot(PerkTreeViewport viewport, PerkPosition position) {
         return (TREE_FIRST_ROW * TREE_VIEWPORT_WIDTH) + viewport.slot(position);
+    }
+
+    private static boolean isNavigationSlot(int slot) {
+        return TREE_MOVES.containsKey(slot);
     }
 
     private ItemStack treeArrow(String direction, String label, boolean available) {
@@ -783,30 +800,34 @@ final class SkillsMenu implements Listener {
         int skillLevel = snapshot.skill(perk.skill()).level();
         int freePoints = availablePoints(profile, snapshot);
         PerkPresentation presentation = perkTree.presentation(perk.id());
+        List<String> effects = PerkEffectPresentation.describe(perk, rank);
+        boolean mechanicsOnly = effects.stream().allMatch(effect -> effect.startsWith("Odemkne:"));
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text(presentation.description(), NamedTextColor.GRAY));
-        lore.add(Component.empty());
-        lore.add(Component.text("Přesný účinek", NamedTextColor.LIGHT_PURPLE));
-        for (String effect : PerkEffectPresentation.describe(perk, rank)) {
-            lore.add(Component.text(effect, NamedTextColor.AQUA));
+        if (!mechanicsOnly) {
+            lore.add(Component.text(presentation.description(), NamedTextColor.GRAY));
+        }
+        lore.add(Component.text("✦ Účinek", NamedTextColor.LIGHT_PURPLE));
+        for (String effect : effects) {
+            lore.add(Component.text("  • " + effect, NamedTextColor.AQUA));
         }
         lore.add(Component.empty());
-        lore.add(Component.text(perkStateText(maxed, decision.status()), perkStateColor(maxed, decision.status())));
-        lore.add(Component.text(skillLevel >= perk.requiredSkillLevel()
-            ? "Úroveň dovednosti splněna" : "Chybí úroveň dovednosti", skillLevel >= perk.requiredSkillLevel()
-                ? NamedTextColor.GREEN : NamedTextColor.RED));
-        lore.add(Component.text(maxed || freePoints >= perk.pointCostPerRank()
-            ? "Dostatek volných bodů" : "Chybí volné body", maxed || freePoints >= perk.pointCostPerRank()
-                ? NamedTextColor.GOLD : NamedTextColor.RED));
-        lore.add(Component.text("Hodnost " + rank + "/" + perk.maxRank(), color));
-        lore.add(Component.text("Cena další hodnosti: " + perk.pointCostPerRank(), NamedTextColor.GOLD));
-        lore.add(Component.text("Potřebná úroveň: " + perk.requiredSkillLevel(), NamedTextColor.DARK_GRAY));
-        for (PerkRequirement requirement : perk.requirements()) {
-            lore.add(Component.text("Vyžaduje: " + perkTree.presentation(requirement.perkId()).name()
-                + " " + requirement.minimumRank(), NamedTextColor.DARK_GRAY));
-        }
+        lore.add(Component.text(perkStateLabel(maxed, decision.status()), perkStateColor(maxed, decision.status())));
+        lore.add(Component.text("◆ Hodnost: " + rank + "/" + perk.maxRank(), color));
         if (!maxed) {
-            lore.add(Component.text(statusText(decision.status()), color));
+            lore.add(Component.text("◆ Cena: " + perk.pointCostPerRank() + " body", NamedTextColor.GOLD));
+            boolean levelMet = skillLevel >= perk.requiredSkillLevel();
+            lore.add(Component.text("◆ Úroveň dovednosti: " + skillLevel + "/" + perk.requiredSkillLevel(),
+                levelMet ? NamedTextColor.GREEN : NamedTextColor.RED));
+            boolean pointsMet = freePoints >= perk.pointCostPerRank();
+            lore.add(Component.text("◆ Volné body: " + freePoints + "/" + perk.pointCostPerRank(),
+                pointsMet ? NamedTextColor.GREEN : NamedTextColor.RED));
+            for (PerkRequirement requirement : perk.requirements()) {
+                int requirementRank = profile.perkRank(requirement.perkId());
+                boolean met = requirementRank >= requirement.minimumRank();
+                lore.add(Component.text("◆ Cesta: " + perkTree.presentation(requirement.perkId()).name()
+                    + " " + requirementRank + "/" + requirement.minimumRank(),
+                    met ? NamedTextColor.GREEN : NamedTextColor.RED));
+            }
         }
         return GuiItems.item(
             material,
@@ -815,26 +836,16 @@ final class SkillsMenu implements Listener {
         );
     }
 
-    private String statusText(PerkPurchaseStatus status) {
-        return switch (status) {
-            case PURCHASED -> "Klikni pro naučení";
-            case MAX_RANK -> "Naučeno";
-            case LEVEL_REQUIRED -> "Chybí úroveň dovednosti";
-            case PREREQUISITE_REQUIRED -> "Chybí předchozí perk";
-            case INSUFFICIENT_POINTS -> "Chybí volné body";
-        };
-    }
-
-    private String perkStateText(boolean maxed, PerkPurchaseStatus status) {
+    private String perkStateLabel(boolean maxed, PerkPurchaseStatus status) {
         if (maxed) {
-            return "Stav: Odemčeno";
+            return "✓ Odemčeno";
         }
         return switch (status) {
-            case PURCHASED -> "Stav: Připraveno k odemčení";
-            case MAX_RANK -> "Stav: Odemčeno";
-            case LEVEL_REQUIRED -> "Stav: Zamčeno — chybí úroveň";
-            case PREREQUISITE_REQUIRED -> "Stav: Zamčeno — chybí předchozí perk";
-            case INSUFFICIENT_POINTS -> "Stav: Zamčeno — chybí body";
+            case PURCHASED -> "✦ Připraveno k odemčení";
+            case MAX_RANK -> "✓ Odemčeno";
+            case LEVEL_REQUIRED -> "⚠ Zamčeno — chybí úroveň";
+            case PREREQUISITE_REQUIRED -> "⚠ Zamčeno — chybí předchozí perk";
+            case INSUFFICIENT_POINTS -> "⚠ Zamčeno — chybí body";
         };
     }
 
@@ -856,7 +867,7 @@ final class SkillsMenu implements Listener {
     }
 
     private SkillId adjacent(SkillId skill, int direction) {
-        List<SkillId> skills = SkillId.gameplaySkills();
+        List<SkillId> skills = SkillId.activeGameplaySkills();
         int index = skills.indexOf(skill);
         return skills.get(Math.floorMod(index + direction, skills.size()));
     }

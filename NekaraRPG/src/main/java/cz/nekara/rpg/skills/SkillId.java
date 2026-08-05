@@ -24,6 +24,9 @@ public enum SkillId {
     private static final List<SkillId> GAMEPLAY_SKILLS = Arrays.stream(values())
         .filter(SkillId::gainsExperience)
         .toList();
+    private static final List<SkillId> ACTIVE_GAMEPLAY_SKILLS = GAMEPLAY_SKILLS.stream()
+        .filter(SkillId::isActive)
+        .toList();
 
     private final String id;
     private final boolean gainsExperience;
@@ -41,8 +44,17 @@ public enum SkillId {
         return gainsExperience;
     }
 
+    /** Kept for backwards-compatible profile storage while the path is parked. */
+    public boolean isActive() {
+        return this != MARTIAL_ARTS && this != TRADING;
+    }
+
     public static List<SkillId> gameplaySkills() {
         return GAMEPLAY_SKILLS;
+    }
+
+    public static List<SkillId> activeGameplaySkills() {
+        return ACTIVE_GAMEPLAY_SKILLS;
     }
 
     public static java.util.Map<String, String> renamedIds() {
