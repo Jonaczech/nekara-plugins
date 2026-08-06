@@ -17,6 +17,12 @@ class GatheringMaterialPolicyTest {
     }
 
     @Test
+    void recognizesOnlyHoesAsFarmingTools() {
+        assertTrue(GatheringMaterialPolicy.isHoe(Material.IRON_HOE));
+        assertFalse(GatheringMaterialPolicy.isHoe(Material.IRON_SHOVEL));
+    }
+
+    @Test
     void oreAndWoodFamiliesIncludeTheirNaturalVariants() {
         assertTrue(GatheringMaterialPolicy.sameOreFamily(
             Material.DIAMOND_ORE, Material.DEEPSLATE_DIAMOND_ORE));

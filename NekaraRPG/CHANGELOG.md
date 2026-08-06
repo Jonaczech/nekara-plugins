@@ -1,5 +1,17 @@
 # Přehled změn
 
+## 2.4.1
+
+- Hlavní menu používá pro Dovednosti knihu s brkem ve středovém slotu.
+- Přehled dovedností má kratší tooltipy: výrazný název, úroveň, stávající progress bar,
+  zbývající XP a odkaz na perky; na maximu ukazuje pouze `100/100 • MAX`.
+- Tooltip perků zobrazuje jeden řádek s hodnotou právě kupované hodnosti.
+- Poklady Kopání dostaly rozšířené tematické tabulky pro písek, štěrk, zeminu, clay a mud.
+  Apple, Egg, Soul Sand, Cake a Stick do nich nejsou zařazeny.
+- Těžba, Lesnictví a Kopání už pro XP, pasivní dropy a poklady nevyžadují správný nástroj.
+  Aktivní Vein Mining a Tree Feller jej nadále vyžadují. Pasivní dropy Statkářství
+  nevyžadují motyku, ale aktivní sklizeň a Field Harvest ano.
+
 ## 2.4.0
 
 - Přepracované stromy Kopání a Těžby, rankové levelové brány a New Game+ bonusy.

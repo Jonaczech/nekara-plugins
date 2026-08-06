@@ -24,6 +24,14 @@ final class GatheringMaterialPolicy {
         };
     }
 
+    static boolean isHoe(ItemStack item) {
+        return item != null && isHoe(item.getType());
+    }
+
+    static boolean isHoe(Material material) {
+        return material != null && material.name().endsWith("_HOE");
+    }
+
     static boolean isOre(Material material) {
         return material != null && (material.name().endsWith("_ORE")
             || material == Material.ANCIENT_DEBRIS);

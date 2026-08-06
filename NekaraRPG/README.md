@@ -3,6 +3,13 @@
 Modulární RPG plugin pro Purpur/Paper 26.1 a Java 25. Obsahuje autentizaci,
 rybářskou minihru, táboření/Rested, Echo Vein, mounty a nativní Nekara Skills.
 
+## 2.4.1
+
+Dovednosti jsou v hlavním menu uprostřed jako kniha s brkem. Přehledy dovedností i
+perků používají kompaktní tooltipy bez duplicit. Kopání má rozšířenou tabulku
+tematických nálezů podle bloku. Těžba, Lesnictví a Kopání nevyžadují pro běžný postup
+správný nástroj; Statkářství ponechává motyku pro aktivní sklizeň a Field Harvest.
+
 ## 2.4.0
 
 Těžba a Kopání mají přepracované tematické perk stromy, blokově specifické poklady

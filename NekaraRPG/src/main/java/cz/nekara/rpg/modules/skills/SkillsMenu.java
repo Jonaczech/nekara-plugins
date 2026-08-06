@@ -488,14 +488,20 @@ final class SkillsMenu implements Listener {
     }
 
     private ItemStack skillItem(SkillId skill, SkillLevelProgress progress) {
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text(progress.capped()
+            ? "Úroveň: " + progress.level() + "/100  •  MAX"
+            : "Úroveň: " + progress.level() + "/100", progress.capped() ? NamedTextColor.GOLD : NamedTextColor.GRAY));
+        lore.add(progressBarLine(progress));
+        if (!progress.capped()) {
+            lore.add(Component.text(SkillProgressBar.remainingText(progress), NamedTextColor.GRAY));
+        }
+        lore.add(Component.text("Klikni pro zobrazení perků", NamedTextColor.YELLOW));
         return GuiItems.item(
             SkillIconResolver.resolve(skill),
-            Component.text(SkillPresentation.czechName(skill), NamedTextColor.AQUA),
-            Component.text("Úroveň: " + progress.level() + "/100", NamedTextColor.GRAY),
-            totalExperienceLine(progress),
-            progressBarLine(progress),
-            Component.text(SkillProgressBar.remainingText(progress), NamedTextColor.GRAY),
-            Component.text("Klikni pro otevření stezky", NamedTextColor.YELLOW)
+            Component.text(SkillPresentation.czechName(skill), NamedTextColor.GOLD)
+                .decoration(TextDecoration.BOLD, true),
+            lore.toArray(Component[]::new)
         );
     }
 
@@ -718,7 +724,7 @@ final class SkillsMenu implements Listener {
         return GuiItems.item(
             SkillIconResolver.resolve(skill),
             Component.text(SkillPresentation.czechName(skill), color).decoration(TextDecoration.BOLD, current),
-            Component.text(current ? "Aktuálně zobrazená stezka" : "Klikni pro otevření stezky", NamedTextColor.GRAY),
+            Component.text(current ? "Aktuálně zobrazená stezka" : "Klikni pro zobrazení perků", NamedTextColor.GRAY),
             Component.text("Úroveň: " + progress.level() + "/100", NamedTextColor.DARK_GRAY)
         );
     }
@@ -805,15 +811,6 @@ final class SkillsMenu implements Listener {
             return "continuous_horizontal";
         }
         return "continuous_vertical";
-    }
-
-    private Component totalExperienceLine(SkillLevelProgress progress) {
-        if (progress.capped()) {
-            return Component.text("Celkem zkušeností: " + progress.totalExperience() + " XP (maximum)",
-                NamedTextColor.GOLD);
-        }
-        return Component.text("Celkem zkušeností: " + progress.totalExperience() + "/"
-            + progress.totalExperienceForNextLevel() + " XP", NamedTextColor.DARK_AQUA);
     }
 
     private Component progressBarLine(SkillLevelProgress progress) {

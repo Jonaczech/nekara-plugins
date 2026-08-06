@@ -1,5 +1,19 @@
 # Projektová paměť Nekara Plugins
 
+## Release 2.4.1
+
+- V hlavním menu je vstup do Dovedností `WRITABLE_BOOK` ve středovém slotu. Tooltip
+  dovednosti neukazuje celkové XP: obsahuje úroveň, stávající progress bar, zbývající
+  XP a odkaz na perky; při capu jen `100/100 • MAX`.
+- Těžba, Lesnictví a Kopání při běžném rozbití nevyžadují správný nástroj pro XP,
+  pasivní násobení dropů ani vzácný nález. Aktivní Vein Mining a Tree Feller zůstávají
+  vázané na krumpáč a sekeru.
+- Pasivní sklizňové dropy Statkářství nejsou vázané na motyku. Aktivní Obratná sklizeň
+  a Field Harvest motyku vyžadují; XP za rozbíjení a foraging je nadále vázané na motyku.
+- Výchozí `skills/kopani/loot-tables.yml` obsahuje globální fallback a tabulky podle
+  zdrojového bloku. Při upgradu se existující soubor nepřepisuje, proto je nutné
+  konfiguraci na serveru sloučit ručně.
+
 ## Architektura
 
 - `NekaraRPG` je modulární Purpur/Paper plugin pro Minecraft 26.1 a Java 25.

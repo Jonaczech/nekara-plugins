@@ -38,7 +38,7 @@ public final class NekaraRPGMenu implements Listener {
     private static final int CAMPFIRE_SLOT = 14;
     private static final int MINING_SLOT = 15;
     private static final int MOUNTS_SLOT = 16;
-    private static final int SKILLS_SLOT = 22;
+    private static final int SKILLS_SLOT = 13;
     private static final int OVERVIEW_SLOT = 4;
     private static final int DIAGNOSTICS_SLOT = 26;
     private static final int BACK_SLOT = 18;
@@ -124,7 +124,7 @@ public final class NekaraRPGMenu implements Listener {
             visibleModules++;
         }
         if (canShow(player, SkillsModule.ID, "nekararpg.skills.use")) {
-            inventory.setItem(SKILLS_SLOT, item(Material.NETHER_STAR,
+            inventory.setItem(SKILLS_SLOT, item(Material.WRITABLE_BOOK,
                     Component.text("Dovednosti", NamedTextColor.LIGHT_PURPLE),
                     Component.text("Moc a třináct cest rozvoje", NamedTextColor.GRAY),
                     Component.text("Nahlédni do své kroniky", NamedTextColor.DARK_GRAY)));
