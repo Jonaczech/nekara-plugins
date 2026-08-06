@@ -49,7 +49,7 @@ public final class WeaponFactory {
             default -> 0.0;
         };
         double speed = switch (family) {
-            case DAGGER -> 0.6;
+            case DAGGER -> 0.9;
             case GREATSWORD -> -1.0;
             case HAMMER -> -0.6;
             default -> 0.0;

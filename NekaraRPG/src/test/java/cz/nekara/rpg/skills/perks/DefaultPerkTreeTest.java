@@ -29,8 +29,8 @@ class DefaultPerkTreeTest {
                 PerkDefinition prerequisite = tree.catalog().require(requirement.perkId());
                 int intermediaryCells = Math.abs(perk.position().column() - prerequisite.position().column())
                     + Math.abs(perk.position().row() - prerequisite.position().row()) - 1;
-                assertTrue(intermediaryCells >= 2 && intermediaryCells <= 4,
-                    () -> perk.id().value() + " must use 2-4 intermediary connection cells, got " + intermediaryCells);
+                assertTrue(intermediaryCells >= 2 && intermediaryCells <= 3,
+                    () -> perk.id().value() + " must use 2-3 intermediary connection cells, got " + intermediaryCells);
             }));
         }
     }

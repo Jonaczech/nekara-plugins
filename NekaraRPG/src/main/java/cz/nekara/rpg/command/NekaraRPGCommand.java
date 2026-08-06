@@ -388,6 +388,8 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                 case "grant-perk" -> parseGrantPerk(args);
                 case "points" -> parseBonusPerkPoints(args);
                 case "reset" -> parseReset(args);
+                case "max" -> SkillAdminOperation.maxAll();
+                case "reset-all" -> SkillAdminOperation.resetAll();
                 default -> null;
             };
         } catch (IllegalArgumentException exception) {
@@ -710,6 +712,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                 + " byla vynulována.";
             case RESET_PERKS -> "Perky byly resetovány a utracené body vráceny.";
             case RESET_ALL -> "XP, perky i všechny admin bonus body byly resetovány.";
+            case MAX_ALL -> "Všechny dovednosti, perky i New Game+ byly nastaveny na maximum.";
         };
     }
 

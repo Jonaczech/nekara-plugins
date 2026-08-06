@@ -838,6 +838,9 @@ final class SkillsMenu implements Listener {
             case CRITICAL_DAMAGE_MULTIPLIER -> "✦ Kritické poškození";
             case BLEED_CHANCE -> "☠ Krvácení";
             case BLEED_DAMAGE_MULTIPLIER -> "☠ Síla krvácení";
+            case LIGHT_WEAPON_ATTACK_SPEED -> "✦ Tempo čepelí";
+            case CRITICAL_BLEED_CHANCE -> "☠ Kritické krvácení";
+            case BLEED_FLAT_DAMAGE -> "☠ Bodné krvácení";
             case STUN_CHANCE -> "✦ Omráčení";
             case DOUBLE_DROP_CHANCE -> "✦ Dvojitý výtěžek";
             case TRIPLE_DROP_CHANCE -> "✦ Trojitý výtěžek";
@@ -878,6 +881,7 @@ final class SkillsMenu implements Listener {
             case BEEKEEPING_HONEY_REFILL_CHANCE -> "✦ Obnova medu";
             case LUCK -> "☘ Štěstí";
             case FISHING_SPEED -> "✦ Rychlost záběru";
+            case FISHING_TREASURE_CHANCE -> "✦ Rybářský poklad";
             case EXPERIENCE_ORB_MULTIPLIER -> "✦ XP z koulí";
             case ACCURACY -> "✦ Přesnost";
             case AMMO_CONSUMPTION_REDUCTION -> "✦ Úspora šípů";
@@ -902,7 +906,7 @@ final class SkillsMenu implements Listener {
         return switch (stat) {
             case MINING_BLOCK_EXPERIENCE, WOODCUTTING_LOG_EXPERIENCE, WOODCUTTING_LEAF_EXPERIENCE,
                 FARMING_HARVEST_EXPERIENCE, DIGGING_BLOCK_EXPERIENCE, TRADE_SELECTION_BONUS, LUCK,
-                HEALTH_REGENERATION -> true;
+                HEALTH_REGENERATION, BLEED_FLAT_DAMAGE -> true;
             default -> false;
         };
     }
@@ -921,9 +925,8 @@ final class SkillsMenu implements Listener {
                 PerkDefinition prerequisite = perkTree.catalog().require(requirement.perkId());
                 boolean prerequisiteUnlocked = profile.perkRank(prerequisite.id()) >= requirement.minimumRank();
                 int state = prerequisiteUnlocked ? (profile.perkRank(perk.id()) > 0 ? 2 : 1) : 0;
-                PerkConnectionPath.BendOrder bendOrder = perk.requirements().size() > 1
-                    ? PerkConnectionPath.BendOrder.VERTICAL_FIRST
-                    : PerkConnectionPath.BendOrder.HORIZONTAL_FIRST;
+                PerkConnectionPath.BendOrder bendOrder = PerkTreeLayout.connectionBendOrder(
+                    perk.skill(), perk.requirements().size());
                 for (PerkPosition position : PerkConnectionPath.between(
                     prerequisite.position(), perk.position(), bendOrder)) {
                     if (!perkPositions.contains(position)) {

@@ -12,4 +12,11 @@ class WeaponDamageTypeTest {
         assertEquals(DamageType.PIERCE, WeaponFamily.DAGGER.damageType());
         assertEquals(DamageType.IMPACT, WeaponFamily.HAMMER.damageType());
     }
+
+    @Test
+    void spearAndDaggerHaveDistinctBaseReachModifiers() {
+        assertEquals(1.25, WeaponFamily.SPEAR.interactionRangeModifier());
+        assertEquals(-0.5, WeaponFamily.DAGGER.interactionRangeModifier());
+        assertEquals(0.0, WeaponFamily.SWORD.interactionRangeModifier());
+    }
 }

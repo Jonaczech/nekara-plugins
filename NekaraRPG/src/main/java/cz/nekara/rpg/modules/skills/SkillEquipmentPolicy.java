@@ -63,6 +63,47 @@ final class SkillEquipmentPolicy {
         return Optional.empty();
     }
 
+    static boolean wearsAtLeastLightArmor(PlayerInventory inventory, int minimumPieces) {
+        ItemStack[] armor = inventory.getArmorContents();
+        Material[] materials = new Material[armor.length];
+        for (int index = 0; index < armor.length; index++) {
+            materials[index] = armor[index] == null ? Material.AIR : armor[index].getType();
+        }
+        return wearsAtLeastLightArmor(materials, minimumPieces);
+    }
+
+    static boolean wearsAtLeastLightArmor(Material[] armor, int minimumPieces) {
+        if (minimumPieces < 1 || minimumPieces > 4) {
+            throw new IllegalArgumentException("Light armor piece count must be between 1 and 4");
+        }
+        int lightPieces = 0;
+        for (Material material : armor) {
+            if (material == null || material == Material.AIR) {
+                continue;
+            }
+            String name = material.name();
+            if (!name.startsWith("LEATHER_") && !name.startsWith("CHAINMAIL_")
+                && !name.startsWith("DIAMOND_")) {
+                return false;
+            }
+            lightPieces++;
+        }
+        return lightPieces >= minimumPieces;
+    }
+
+    static boolean wearsAtLeastHeavyArmor(PlayerInventory inventory, int minimumPieces) {
+        if (minimumPieces < 1 || minimumPieces > 4) return false;
+        int heavyPieces = 0;
+        for (ItemStack item : inventory.getArmorContents()) {
+            if (item == null || item.getType() == Material.AIR) continue;
+            String name = item.getType().name();
+            if (!name.startsWith("COPPER_") && !name.startsWith("IRON_")
+                && !name.startsWith("GOLDEN_") && !name.startsWith("NETHERITE_")) return false;
+            heavyPieces++;
+        }
+        return heavyPieces >= minimumPieces;
+    }
+
     static boolean wearsLeatherArmor(PlayerInventory inventory) {
         for (ItemStack item : inventory.getArmorContents()) {
             if (item == null || item.getType().isAir() || !item.getType().name().startsWith("LEATHER_")) {

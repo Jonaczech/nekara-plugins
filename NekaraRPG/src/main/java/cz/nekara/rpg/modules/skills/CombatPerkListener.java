@@ -37,6 +37,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
@@ -64,6 +65,7 @@ import java.util.concurrent.ThreadLocalRandom;
 final class CombatPerkListener implements Listener {
     private static final long ACTIVE_ABILITY_COOLDOWN_MILLIS = 5_000L;
     private static final long SURVIVAL_PROC_COOLDOWN_MILLIS = 20_000L;
+    private static final long ADRENALINE_COOLDOWN_MILLIS = 60_000L;
     private static final int MAXIMUM_ACTIVE_BLEEDS = 2_048;
     private static final int BLEED_TICKS = 3;
 
@@ -73,6 +75,8 @@ final class CombatPerkListener implements Listener {
     private final NamespacedKey scoutArrowKey;
     private final NamespacedKey lightMobilityKey;
     private final NamespacedKey weaponMobilityKey;
+    private final NamespacedKey lightWeaponAttackSpeedKey;
+    private final NamespacedKey weaponInteractionRangeKey;
     private final NamespacedKey heavyStabilityKey;
     private final NamespacedKey proficiencyMobilityKey;
     private final NamespacedKey smithingWeaponDamageKey;
@@ -95,6 +99,8 @@ final class CombatPerkListener implements Listener {
         this.scoutArrowKey = new NamespacedKey(plugin, "skills_scout_arrow");
         this.lightMobilityKey = new NamespacedKey(plugin, "skills_light_mobility");
         this.weaponMobilityKey = new NamespacedKey(plugin, "skills_weapon_mobility");
+        this.lightWeaponAttackSpeedKey = new NamespacedKey(plugin, "skills_light_weapon_attack_speed");
+        this.weaponInteractionRangeKey = new NamespacedKey(plugin, "skills_weapon_interaction_range");
         this.heavyStabilityKey = new NamespacedKey(plugin, "skills_heavy_stability");
         this.proficiencyMobilityKey = new NamespacedKey(plugin, "skills_equipment_proficiency_mobility");
         this.smithingWeaponDamageKey = new NamespacedKey(plugin, "smithing_weapon_damage");
@@ -183,9 +189,11 @@ final class CombatPerkListener implements Listener {
         Optional<SkillRuntimeState> state = module.runtimeState(player.getUniqueId(), SkillId.ARCHERY);
         if (state.isEmpty()) {
             module.preloadProfile(player);
-            return;
         }
-        double accuracy = state.get().stats().value(StatId.ACCURACY);
+        double accuracy = state.map(value -> value.stats().value(StatId.ACCURACY)).orElse(0.0)
+            + armorSkillForSetBonuses(player).filter(skill -> skill == SkillId.HEAVY_ARMOR)
+                .flatMap(skill -> module.runtimeState(player.getUniqueId(), skill))
+                .map(value -> value.stats().value(StatId.ACCURACY)).orElse(0.0);
         if (accuracy > 0.0) {
             Vector current = arrow.getVelocity();
             double speed = current.length();
@@ -194,15 +202,15 @@ final class CombatPerkListener implements Listener {
                 arrow.setVelocity(current.multiply(1.0 - accuracy).add(exact.multiply(accuracy)));
             }
         }
-        if (event.getForce() >= 0.95F && state.get().has(MechanicId.CHARGED_SHOT)) {
+        if (event.getForce() >= 0.95F && state.map(value -> value.has(MechanicId.CHARGED_SHOT)).orElse(false)) {
             arrow.getPersistentDataContainer().set(chargedArrowKey, PersistentDataType.BYTE, (byte) 1);
         }
         ItemStack consumed = event.getConsumable();
-        if (state.get().has(MechanicId.CUSTOM_ARROW_RECIPES)
+        if (state.map(value -> value.has(MechanicId.CUSTOM_ARROW_RECIPES)).orElse(false)
             && consumed != null && consumed.getPersistentDataContainer().has(scoutArrowKey, PersistentDataType.BYTE)) {
             arrow.getPersistentDataContainer().set(scoutArrowKey, PersistentDataType.BYTE, (byte) 1);
         }
-        double saveChance = state.get().stats().value(StatId.AMMO_CONSUMPTION_REDUCTION);
+        double saveChance = state.map(value -> value.stats().value(StatId.AMMO_CONSUMPTION_REDUCTION)).orElse(0.0);
         if (saveChance > 0.0 && ThreadLocalRandom.current().nextDouble() < saveChance) {
             event.setConsumeArrow(false);
         }
@@ -258,7 +266,7 @@ final class CombatPerkListener implements Listener {
         Optional<SkillId> weaponSkill = SkillEquipmentPolicy.meleeSkill(weapon)
             .filter(skill -> skill == SkillId.LIGHT_WEAPONS || skill == SkillId.HEAVY_WEAPONS);
         if (weaponSkill.isEmpty()
-            || !module.runtimeState(player.getUniqueId(), weaponSkill.get())
+            || !module.runtimeState(player.getUniqueId(), SkillId.ALCHEMY)
                 .map(state -> state.has(MechanicId.WEAPON_COATING)).orElse(false)
             || !(offhand.getItemMeta() instanceof PotionMeta potionMeta)) {
             return;
@@ -306,7 +314,7 @@ final class CombatPerkListener implements Listener {
         if (!(event.getEntity() instanceof Player player) || event.getFoodLevel() >= player.getFoodLevel()) {
             return;
         }
-        SkillEquipmentPolicy.armorSkill(player.getInventory()).flatMap(skill ->
+        armorSkillForSetBonuses(player).flatMap(skill ->
             module.runtimeState(player.getUniqueId(), skill)).ifPresent(state -> {
                 double reduction = state.stats().value(StatId.HUNGER_CONSUMPTION_REDUCTION);
                 if (reduction > 0.0 && ThreadLocalRandom.current().nextDouble() < reduction) {
@@ -351,6 +359,11 @@ final class CombatPerkListener implements Listener {
             has(lightState, MechanicId.LIGHT_ARMOR_DIAMOND_MOBILITY),
             has(heavyState, MechanicId.HEAVY_ARMOR_IRON_MOBILITY),
             has(heavyState, MechanicId.HEAVY_ARMOR_NETHERITE_MOBILITY));
+        if (armorSkillForSetBonuses(player).isPresent()) {
+            armorPenalty *= Math.max(0.0, 1.0
+                - armorSkillForSetBonuses(player).flatMap(skill -> module.runtimeState(player.getUniqueId(), skill))
+                    .map(state -> state.stats().value(StatId.MOVEMENT_PENALTY_REDUCTION)).orElse(0.0));
+        }
         addModifier(player, Attribute.MOVEMENT_SPEED, lightMobilityKey, armorPenalty);
         module.cachedProfile(player.getUniqueId()).ifPresent(profile -> {
             int untrainedPieces = untrainedArmorPieces(player, profile);
@@ -365,11 +378,9 @@ final class CombatPerkListener implements Listener {
 
         if (SkillEquipmentPolicy.armorSkill(player.getInventory()).orElse(null) == SkillId.HEAVY_ARMOR) {
             heavyState.ifPresent(state -> {
-            double stability = 0.05;
-            if (state.has(MechanicId.HEAVY_ARMOR_SET_BONUS)) {
-                stability += 0.05;
+            if (state.has(MechanicId.HEAVY_ARMOR_JUGGERNAUT)) {
+                addModifier(player, Attribute.KNOCKBACK_RESISTANCE, heavyStabilityKey, 0.40);
             }
-            addModifier(player, Attribute.KNOCKBACK_RESISTANCE, heavyStabilityKey, stability);
             });
         }
     }
@@ -387,6 +398,14 @@ final class CombatPerkListener implements Listener {
                 has(state, heavy ? MechanicId.HEAVY_WEAPON_DIAMOND_MOBILITY : MechanicId.LIGHT_WEAPON_DIAMOND_MOBILITY),
                 has(state, heavy ? MechanicId.HEAVY_WEAPON_NETHERITE_MOBILITY : MechanicId.LIGHT_WEAPON_NETHERITE_MOBILITY));
             addModifier(player, Attribute.MOVEMENT_SPEED, weaponMobilityKey, penalty);
+            if (weapon.family().skill() == SkillId.LIGHT_WEAPONS) {
+                addModifier(player, Attribute.ATTACK_SPEED, lightWeaponAttackSpeedKey,
+                    state.get().stats().value(StatId.LIGHT_WEAPON_ATTACK_SPEED));
+            }
+            if (hasRequiredOffhand(player, weapon)) {
+                addNumberModifier(player, Attribute.ENTITY_INTERACTION_RANGE, weaponInteractionRangeKey,
+                    weapon.family().interactionRangeModifier());
+            }
             module.cachedProfile(player.getUniqueId()).ifPresent(profile -> {
                 mobilityRequirement(weapon, player.getInventory().getItemInMainHand()).ifPresent(requirement -> {
                     if (module.skillLevel(profile, requirement.skill()) < requirement.requiredLevel()) {
@@ -430,11 +449,13 @@ final class CombatPerkListener implements Listener {
         WeaponCombatConfig weaponConfig = module.weaponCombatConfig();
         double criticalChance = runtime.stats().value(StatId.CRITICAL_CHANCE)
             + (family == null ? 0.0 : weaponConfig.criticalChance(family));
-        if (criticalChance > 0.0 && ThreadLocalRandom.current().nextDouble() < criticalChance) {
+        boolean critical = criticalChance > 0.0 && ThreadLocalRandom.current().nextDouble() < criticalChance;
+        if (critical) {
             multiplier *= runtime.stats().value(StatId.CRITICAL_DAMAGE_MULTIPLIER);
             playEffectSound(target, Sound.ENTITY_PLAYER_ATTACK_CRIT, 0.9F, 1.1F);
         }
-        if (skill == SkillId.HEAVY_WEAPONS && attacker.getAttackCooldown() >= 0.9F) {
+        boolean powerAttack = skill == SkillId.HEAVY_WEAPONS && attacker.getAttackCooldown() >= 0.9F;
+        if (powerAttack) {
             multiplier *= runtime.stats().value(StatId.POWER_ATTACK_DAMAGE_MULTIPLIER);
             multiplier *= 1.0 + runtime.stats().value(StatId.ARMOR_PENETRATION) * 0.5;
         }
@@ -463,9 +484,13 @@ final class CombatPerkListener implements Listener {
         event.setDamage(event.getDamage() * Math.max(0.0, multiplier) * weaponCondition + craftedDamage);
         double bleedChance = runtime.stats().value(StatId.BLEED_CHANCE)
             + (family == null ? 0.0 : weaponConfig.bleedChance(family));
+        if (critical) {
+            bleedChance += runtime.stats().value(StatId.CRITICAL_BLEED_CHANCE);
+        }
         if (bleedChance > 0.0 && ThreadLocalRandom.current().nextDouble() < bleedChance) {
             double damagePerTick = Math.min(4.0, Math.max(0.25,
-                event.getDamage() * 0.08 * runtime.stats().value(StatId.BLEED_DAMAGE_MULTIPLIER)));
+                event.getDamage() * 0.08 * runtime.stats().value(StatId.BLEED_DAMAGE_MULTIPLIER)
+                    + runtime.stats().value(StatId.BLEED_FLAT_DAMAGE)));
             bleeds.apply(target.getUniqueId(), attacker.getUniqueId(), damagePerTick, BLEED_TICKS);
             playEffectSound(target, Sound.ENTITY_BEE_STING, 0.8F, 0.85F);
         }
@@ -474,7 +499,9 @@ final class CombatPerkListener implements Listener {
             target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 20, 4, false, true, true));
             playEffectSound(target, Sound.BLOCK_ANVIL_LAND, 0.55F, 1.35F);
         }
-        if (family == WeaponFamily.GREATSWORD && weaponConfig.greatswordCleaveDamageMultiplier() > 0.0) {
+        if (powerAttack && runtime.has(MechanicId.HEAVY_POWER_SWEEP)) {
+            applyHeavyPowerSweep(attacker, target, event.getDamage(), family);
+        } else if (family == WeaponFamily.GREATSWORD && weaponConfig.greatswordCleaveDamageMultiplier() > 0.0) {
             applyCleave(attacker, target, event.getDamage() * weaponConfig.greatswordCleaveDamageMultiplier());
         }
         if (module.runtimeState(attacker.getUniqueId(), SkillId.ENCHANTING)
@@ -506,6 +533,21 @@ final class CombatPerkListener implements Listener {
             || player.getInventory().getItemInOffHand().getType().isAir();
     }
 
+    private Optional<SkillId> armorSkillForSetBonuses(Player player) {
+        Optional<SkillId> fullSetSkill = SkillEquipmentPolicy.armorSkill(player.getInventory());
+        if (fullSetSkill.isPresent()) {
+            return fullSetSkill;
+        }
+        return module.runtimeState(player.getUniqueId(), SkillId.LIGHT_ARMOR)
+            .filter(state -> state.has(MechanicId.LIGHT_ARMOR_THREE_PIECE_SET_BONUS))
+            .filter(ignored -> SkillEquipmentPolicy.wearsAtLeastLightArmor(player.getInventory(), 3))
+            .map(ignored -> SkillId.LIGHT_ARMOR)
+            .or(() -> module.runtimeState(player.getUniqueId(), SkillId.HEAVY_ARMOR)
+                .filter(state -> state.has(MechanicId.HEAVY_ARMOR_THREE_PIECE_SET_BONUS))
+                .filter(ignored -> SkillEquipmentPolicy.wearsAtLeastHeavyArmor(player.getInventory(), 3))
+                .map(ignored -> SkillId.HEAVY_ARMOR));
+    }
+
     private static boolean isRearAttack(Player attacker, LivingEntity target) {
         Vector targetFacing = target.getLocation().getDirection().setY(0.0);
         Vector towardAttacker = attacker.getLocation().toVector().subtract(target.getLocation().toVector()).setY(0.0);
@@ -515,13 +557,44 @@ final class CombatPerkListener implements Listener {
         return targetFacing.normalize().dot(towardAttacker.normalize()) < -0.5;
     }
 
+    private void applyHeavyPowerSweep(
+        Player attacker,
+        LivingEntity primaryTarget,
+        double primaryDamage,
+        WeaponFamily family
+    ) {
+        if (family == null) {
+            return;
+        }
+        switch (family) {
+            case AXE -> applyCleave(attacker, primaryTarget, primaryDamage * 0.30, 1.5, 1.0, 1.5, 2);
+            case GREATSWORD -> applyCleave(attacker, primaryTarget, primaryDamage * 0.60, 2.75, 1.5, 2.75, 5);
+            case HAMMER -> applyCleave(attacker, primaryTarget, primaryDamage * 0.25, 1.75, 1.0, 1.75, 3);
+            default -> {
+                return;
+            }
+        }
+    }
+
     private void applyCleave(Player attacker, LivingEntity primaryTarget, double damage) {
+        applyCleave(attacker, primaryTarget, damage, 2.25, 1.5, 2.25, 4);
+    }
+
+    private void applyCleave(
+        Player attacker,
+        LivingEntity primaryTarget,
+        double damage,
+        double horizontalRange,
+        double verticalRange,
+        double depthRange,
+        int maximumTargets
+    ) {
         if (damage <= 0.0) {
             return;
         }
         int affected = 0;
-        for (Entity nearby : primaryTarget.getNearbyEntities(2.25, 1.5, 2.25)) {
-            if (affected >= 4 || nearby == attacker || nearby instanceof Player
+        for (Entity nearby : primaryTarget.getNearbyEntities(horizontalRange, verticalRange, depthRange)) {
+            if (affected >= maximumTargets || nearby == attacker || nearby instanceof Player
                 || !(nearby instanceof LivingEntity target) || target.isDead()) {
                 continue;
             }
@@ -571,7 +644,7 @@ final class CombatPerkListener implements Listener {
                     warn(defender, requirement, "Tuto zbroj ještě nemůžeš nosit"));
             }
         });
-        Optional<SkillId> armorSkill = SkillEquipmentPolicy.armorSkill(defender.getInventory());
+        Optional<SkillId> armorSkill = armorSkillForSetBonuses(defender);
         if (armorSkill.isEmpty()) {
             return;
         }
@@ -606,10 +679,12 @@ final class CombatPerkListener implements Listener {
             event.getDamager() instanceof Projectile
         ).ifPresent(type -> event.setDamage(event.getDamage()
             * ArmorProtectionResolver.damageMultiplier(defender.getInventory().getArmorContents(), type)));
-        double reflection = runtime.stats().value(StatId.DAMAGE_REFLECTION);
-        if (reflection > 0.0) {
+        boolean juggernaut = armorSkill.get() == SkillId.HEAVY_ARMOR
+            && SkillEquipmentPolicy.armorSkill(defender.getInventory()).orElse(null) == SkillId.HEAVY_ARMOR
+            && runtime.has(MechanicId.HEAVY_ARMOR_JUGGERNAUT);
+        if (juggernaut && ThreadLocalRandom.current().nextDouble() < 0.10) {
             livingDamager(event.getDamager()).ifPresent(attacker -> {
-                double amount = Math.min(4.0, event.getFinalDamage() * reflection);
+                double amount = Math.min(4.0, event.getFinalDamage() * 0.20);
                 if (amount > 0.0) {
                     Bukkit.getScheduler().runTask(plugin, () -> SyntheticCombatGuard.run(
                         () -> attacker.damage(amount, defender)));
@@ -624,11 +699,11 @@ final class CombatPerkListener implements Listener {
             return;
         }
         if (skill == SkillId.LIGHT_ARMOR && state.has(MechanicId.ADRENALINE)
-            && acquire(player.getUniqueId(), "adrenaline", SURVIVAL_PROC_COOLDOWN_MILLIS)) {
+            && acquire(player.getUniqueId(), "adrenaline", ADRENALINE_COOLDOWN_MILLIS)) {
             player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 100, 1, false, true, true));
-            player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 100, 0, false, true, true));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 100, 0, false, true, true));
         } else if (skill == SkillId.HEAVY_ARMOR && state.has(MechanicId.RAGE)
-            && acquire(player.getUniqueId(), "rage", SURVIVAL_PROC_COOLDOWN_MILLIS)) {
+            && acquire(player.getUniqueId(), "rage", ADRENALINE_COOLDOWN_MILLIS)) {
             player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 100, 0, false, true, true));
             player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 100, 0, false, true, true));
         }
@@ -677,6 +752,8 @@ final class CombatPerkListener implements Listener {
     private void removeArmorModifiers(Player player) {
         removeModifier(player, Attribute.MOVEMENT_SPEED, lightMobilityKey);
         removeModifier(player, Attribute.MOVEMENT_SPEED, weaponMobilityKey);
+        removeModifier(player, Attribute.ATTACK_SPEED, lightWeaponAttackSpeedKey);
+        removeModifier(player, Attribute.ENTITY_INTERACTION_RANGE, weaponInteractionRangeKey);
         removeModifier(player, Attribute.MOVEMENT_SPEED, proficiencyMobilityKey);
         removeModifier(player, Attribute.KNOCKBACK_RESISTANCE, heavyStabilityKey);
     }
@@ -753,6 +830,34 @@ final class CombatPerkListener implements Listener {
         if (instance != null) {
             instance.addTransientModifier(new AttributeModifier(
                 key, amount, AttributeModifier.Operation.ADD_SCALAR));
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void blockJuggernautControlEffects(EntityPotionEffectEvent event) {
+        if (!(event.getEntity() instanceof Player player) || event.getNewEffect() == null
+            || SkillEquipmentPolicy.armorSkill(player.getInventory()).orElse(null) != SkillId.HEAVY_ARMOR) return;
+        if (!module.runtimeState(player.getUniqueId(), SkillId.HEAVY_ARMOR)
+            .map(state -> state.has(MechanicId.HEAVY_ARMOR_JUGGERNAUT)).orElse(false)) return;
+        PotionEffectType type = event.getNewEffect().getType();
+        if (type == PotionEffectType.SLOWNESS || type == PotionEffectType.WEAKNESS || type == PotionEffectType.LEVITATION) {
+            event.setCancelled(true);
+        }
+    }
+
+    private static void addNumberModifier(
+        Player player,
+        Attribute attribute,
+        NamespacedKey key,
+        double amount
+    ) {
+        if (amount == 0.0) {
+            return;
+        }
+        AttributeInstance instance = player.getAttribute(attribute);
+        if (instance != null) {
+            instance.addTransientModifier(new AttributeModifier(
+                key, amount, AttributeModifier.Operation.ADD_NUMBER));
         }
     }
 

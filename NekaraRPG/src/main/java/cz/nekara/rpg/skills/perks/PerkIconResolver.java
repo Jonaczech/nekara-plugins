@@ -43,8 +43,9 @@ public final class PerkIconResolver {
     private static Material statMaterial(StatId stat) {
         return switch (stat) {
             case DAMAGE_MULTIPLIER -> Material.IRON_SWORD;
-            case CRITICAL_CHANCE, CRITICAL_DAMAGE_MULTIPLIER -> Material.NETHERITE_SWORD;
-            case BLEED_CHANCE, BLEED_DAMAGE_MULTIPLIER -> Material.REDSTONE;
+            case CRITICAL_CHANCE, CRITICAL_DAMAGE_MULTIPLIER, CRITICAL_BLEED_CHANCE -> Material.NETHERITE_SWORD;
+            case BLEED_CHANCE, BLEED_DAMAGE_MULTIPLIER, BLEED_FLAT_DAMAGE -> Material.REDSTONE;
+            case LIGHT_WEAPON_ATTACK_SPEED -> Material.IRON_SWORD;
             case STUN_CHANCE -> Material.MACE;
             case DOUBLE_DROP_CHANCE -> Material.CHEST;
             case TRIPLE_DROP_CHANCE -> Material.ENDER_CHEST;
@@ -84,6 +85,7 @@ public final class PerkIconResolver {
             case BEEKEEPING_HONEY_REFILL_CHANCE -> Material.HONEYCOMB;
             case LUCK -> Material.RABBIT_FOOT;
             case FISHING_SPEED -> Material.FISHING_ROD;
+            case FISHING_TREASURE_CHANCE -> Material.HEART_OF_THE_SEA;
             case ACCURACY -> Material.TARGET;
             case AMMO_CONSUMPTION_REDUCTION -> Material.ARROW;
             case POWER_ATTACK_DAMAGE_MULTIPLIER -> Material.NETHERITE_AXE;
@@ -119,9 +121,12 @@ public final class PerkIconResolver {
             case RARE_LEAF_DROPS -> Material.OAK_LEAVES;
             case ARCHAEOLOGY_FINDS, SUSPICIOUS_BLOCK_RESTORATION -> Material.BRUSH;
             case GROUND_REPLICATION -> Material.GRASS_BLOCK;
-            case EQUIPMENT_FISHING, EQUIPMENT_SALVAGING -> Material.FISHING_ROD;
-            case LIGHT_ARMOR_SET_BONUS -> Material.CHAINMAIL_CHESTPLATE;
+            case FISHING_CHEST, FISHING_MASTER_CHEST -> Material.CHEST;
+            case FISHING_WATER_ATTUNEMENT -> Material.BUBBLE_CORAL;
+            case LIGHT_ARMOR_SET_BONUS, LIGHT_ARMOR_THREE_PIECE_SET_BONUS -> Material.CHAINMAIL_CHESTPLATE;
             case HEAVY_ARMOR_SET_BONUS -> Material.NETHERITE_CHESTPLATE;
+            case HEAVY_ARMOR_THREE_PIECE_SET_BONUS -> Material.IRON_CHESTPLATE;
+            case HEAVY_ARMOR_JUGGERNAUT -> Material.NETHERITE_HELMET;
             case LIGHT_ARMOR_CHAINMAIL_MOBILITY -> Material.CHAINMAIL_BOOTS;
             case LIGHT_ARMOR_DIAMOND_MOBILITY -> Material.DIAMOND_BOOTS;
             case HEAVY_ARMOR_IRON_MOBILITY -> Material.IRON_BOOTS;
@@ -129,7 +134,7 @@ public final class PerkIconResolver {
             case LIGHT_WEAPON_IRON_MOBILITY, LIGHT_WEAPON_DIAMOND_MOBILITY,
                 LIGHT_WEAPON_NETHERITE_MOBILITY -> Material.IRON_SWORD;
             case HEAVY_WEAPON_IRON_MOBILITY, HEAVY_WEAPON_DIAMOND_MOBILITY,
-                HEAVY_WEAPON_NETHERITE_MOBILITY -> Material.IRON_AXE;
+                HEAVY_WEAPON_NETHERITE_MOBILITY, HEAVY_POWER_SWEEP -> Material.IRON_AXE;
         };
     }
 }

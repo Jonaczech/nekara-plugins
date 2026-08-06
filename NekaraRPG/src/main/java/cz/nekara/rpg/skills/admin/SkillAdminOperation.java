@@ -56,6 +56,7 @@ public record SkillAdminOperation(
     public static SkillAdminOperation resetAll() {
         return new SkillAdminOperation(Type.RESET_ALL, null, null, 0, 0);
     }
+    public static SkillAdminOperation maxAll() { return new SkillAdminOperation(Type.MAX_ALL, null, null, 0, 0); }
 
     public enum Type {
         GRANT_EXPERIENCE("grant_xp"),
@@ -63,7 +64,7 @@ public record SkillAdminOperation(
         ADJUST_BONUS_PERK_POINTS("adjust_bonus_perk_points"),
         RESET_SKILL("reset_skill"),
         RESET_PERKS("reset_perks"),
-        RESET_ALL("reset_all");
+        RESET_ALL("reset_all"), MAX_ALL("max_all");
 
         private final String auditId;
 

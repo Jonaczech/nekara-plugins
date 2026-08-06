@@ -15,6 +15,13 @@ Výchozí hodnota `0.002` znamená `0,20 %` za úroveň, maximum `0.20` znamená
 `perk-stat-bonus-per-rank: 0.25` a
 `innate-gathering-double-drop-multiplier-per-rank: 1.25`.
 
+## Rybaření
+
+`skills/rybareni/loot-tables.yml` obsahuje doplňkovou tabulku pokladů. Úspěšný
+roll přidá jeden předmět navíc a nikdy nenahradí vanilla úlovek ani jeho zkušenosti.
+Šance vychází z levelu Rybaření, perků, globálního Štěstí a případného Naladění vody.
+Potopená schránka je dočasná a její obsah je uzamčen pouze pro rybáře, který ji získal.
+
 ## Štěstí a kvalita Řemesla
 
 Sekce `luck` v `skills/config.yml` řídí i povýšení kvality vlastní výroby.

@@ -45,6 +45,9 @@ public final class PerkEffectPresentation {
             case CRITICAL_DAMAGE_MULTIPLIER -> "násobitel kritického zásahu " + signedPercentagePoints(value);
             case BLEED_CHANCE -> "šance na krvácení " + signedPercentagePoints(value);
             case BLEED_DAMAGE_MULTIPLIER -> "násobitel poškození krvácením " + signedPercentagePoints(value);
+            case LIGHT_WEAPON_ATTACK_SPEED -> "rychlost útoku lehkou zbraní " + signedPercent(value);
+            case CRITICAL_BLEED_CHANCE -> "šance kritického zásahu vyvolat krvácení " + signedPercentagePoints(value);
+            case BLEED_FLAT_DAMAGE -> "poškození krvácením za tik +" + number(value);
             case STUN_CHANCE -> "šance na omráčení " + signedPercentagePoints(value);
             case DOUBLE_DROP_CHANCE -> "šance na dvojitý výtěžek " + signedPercentagePoints(value);
             case TRIPLE_DROP_CHANCE -> "šance na trojitý výtěžek " + signedPercentagePoints(value);
@@ -91,6 +94,7 @@ public final class PerkEffectPresentation {
             case BEEKEEPING_HONEY_REFILL_CHANCE -> "šance ihned obnovit med v úlu " + signedPercentagePoints(value);
             case LUCK -> "globální štěstí +" + number(value);
             case FISHING_SPEED -> "rychlost záběru " + signedPercent(value);
+            case FISHING_TREASURE_CHANCE -> "šance na rybářský poklad " + signedPercent(value);
             case EXPERIENCE_ORB_MULTIPLIER -> "získané zkušenostní koule " + signedPercent(value);
             case ACCURACY -> "přesnost střel " + signedPercentagePoints(value);
             case AMMO_CONSUMPTION_REDUCTION -> "šance nevyčerpat šíp " + signedPercentagePoints(value);
@@ -139,11 +143,15 @@ public final class PerkEffectPresentation {
             case ARCHAEOLOGY_FINDS -> "rozšířené archeologické nálezy";
             case SUSPICIOUS_BLOCK_RESTORATION -> "20% šanci obnovit vyčištěný podezřelý blok";
             case GROUND_REPLICATION -> "4 travnaté bloky: 4 hlíny + mechový blok + kostní moučka; 4 zakořeněné hlíny: 4 hlíny + visící kořeny + kostní moučka";
-            case EQUIPMENT_FISHING -> "nalezenou výbavu v úlovcích";
-            case EQUIPMENT_SALVAGING -> "rozebrání vylovené výbavy";
+            case FISHING_CHEST -> "Potopenou schránku vedle rybáře po úspěšném úlovku";
+            case FISHING_MASTER_CHEST -> "vyšší šanci na Potopenou schránku";
+            case FISHING_WATER_ATTUNEMENT -> "Naladění vody za úspěšné úlovky";
             case CUSTOM_ARROW_RECIPES -> "4 Šípy průzkumníka: 4 šípy + glow ink sac + ametystový střep; zásah označí cíl na 8 s";
             case LIGHT_ARMOR_SET_BONUS -> "bonus kompletní lehké výstroje";
+            case LIGHT_ARMOR_THREE_PIECE_SET_BONUS -> "bonus lehké výstroje už při 3 kusech";
             case HEAVY_ARMOR_SET_BONUS -> "bonus kompletní těžké výstroje";
+            case HEAVY_ARMOR_THREE_PIECE_SET_BONUS -> "bonus těžké výstroje už při 3 kusech";
+            case HEAVY_ARMOR_JUGGERNAUT -> "Ostnatý Juggernaut: odraz, odolnost proti odhození a imunita kontrolních účinků";
             case LIGHT_ARMOR_CHAINMAIL_MOBILITY -> "volný pohyb v chainmailové lehké výstroji";
             case LIGHT_ARMOR_DIAMOND_MOBILITY -> "volný pohyb v diamantové lehké výstroji";
             case HEAVY_ARMOR_IRON_MOBILITY -> "volný pohyb v železné a zlaté těžké výstroji";
@@ -154,6 +162,7 @@ public final class PerkEffectPresentation {
             case HEAVY_WEAPON_IRON_MOBILITY -> "volný pohyb se železnými a zlatými těžkými zbraněmi";
             case HEAVY_WEAPON_DIAMOND_MOBILITY -> "volný pohyb s diamantovými těžkými zbraněmi";
             case HEAVY_WEAPON_NETHERITE_MOBILITY -> "volný pohyb s netheritovými těžkými zbraněmi";
+            case HEAVY_POWER_SWEEP -> "plošný účinek plně nabitého útoku podle rodiny těžké zbraně";
         };
     }
 

@@ -48,6 +48,8 @@ import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.event.inventory.FurnaceStartSmeltEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.inventory.SmithItemEvent;
@@ -83,6 +85,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 final class ProductionPerkListener implements Listener {
+    private static final double FISHING_NETHER_STAR_TREASURE_CHANCE = 0.001;
     private static final long BREWING_ATTRIBUTION_MILLIS = 120_000L;
     private static final PerkId SMITHING_CRAFT = new PerkId("smithing.craft");
     private static final PerkId SMITHING_FINE_WORK = new PerkId("smithing.fine_work");
@@ -99,7 +102,10 @@ final class ProductionPerkListener implements Listener {
     private final SmithingTier.Keys smithingTierKeys;
     private final org.bukkit.NamespacedKey workshopKitKey;
     private final org.bukkit.NamespacedKey scoutArrowKey;
+    private final org.bukkit.NamespacedKey fishingChestOwnerKey;
     private final Map<UUID, BukkitTask> sharpeningTasks = new HashMap<>();
+    private final Map<UUID, WaterAttunement> waterAttunements = new HashMap<>();
+    private final Map<UUID, BukkitTask> waterAttunementTasks = new HashMap<>();
     private final Map<UUID, Long> fieldHarvestWindows = new HashMap<>();
     private final Map<UUID, Long> fieldHarvestCooldowns = new HashMap<>();
     private final Map<BlockKey, BrewingActor> brewingActors = new HashMap<>();
@@ -119,6 +125,7 @@ final class ProductionPerkListener implements Listener {
         this.smithingTierKeys = SmithingTier.keys(plugin);
         this.workshopKitKey = new org.bukkit.NamespacedKey(plugin, "skills_workshop_kit");
         this.scoutArrowKey = new org.bukkit.NamespacedKey(plugin, "skills_scout_arrow");
+        this.fishingChestOwnerKey = new org.bukkit.NamespacedKey(plugin, "skills_fishing_chest_owner");
     }
 
     void enable() {
@@ -142,6 +149,9 @@ final class ProductionPerkListener implements Listener {
         fieldHarvestCooldowns.clear();
         sharpeningTasks.values().forEach(BukkitTask::cancel);
         sharpeningTasks.clear();
+        waterAttunementTasks.values().forEach(BukkitTask::cancel);
+        waterAttunementTasks.clear();
+        waterAttunements.clear();
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -816,22 +826,17 @@ final class ProductionPerkListener implements Listener {
                 }
             });
             rewardFishingLevelTreasure(player);
+            if (state.has(MechanicId.FISHING_WATER_ATTUNEMENT)) {
+                addWaterAttunement(player);
+            }
+            if (state.has(MechanicId.FISHING_CHEST)) {
+                module.cachedProfile(player.getUniqueId()).ifPresent(profile -> rewardFishingChest(player, profile,
+                    state.has(MechanicId.FISHING_MASTER_CHEST) ? 0.03 : 0.01));
+            }
             int extraExperience = (int) Math.floor(vanillaExperience
                 * Math.max(0.0, state.stats().value(StatId.EXPERIENCE_ORB_MULTIPLIER) - 1.0));
             if (extraExperience > 0) {
                 player.giveExp(extraExperience);
-            }
-            if (state.has(MechanicId.EQUIPMENT_FISHING)) {
-                double chance = 0.02;
-                if (ThreadLocalRandom.current().nextDouble() < chance) {
-                    Material[] equipment = {Material.FISHING_ROD, Material.BOW, Material.LEATHER_BOOTS};
-                    giveLater(player, new ItemStack(equipment[ThreadLocalRandom.current().nextInt(equipment.length)]));
-                }
-            }
-            if (state.has(MechanicId.EQUIPMENT_SALVAGING)
-                && SkillEquipmentPolicy.isSmithingProduct(catchItem)) {
-                giveLater(player, new ItemStack(Material.IRON_NUGGET,
-                    ThreadLocalRandom.current().nextInt(1, 4)));
             }
         });
     }
@@ -1110,11 +1115,118 @@ final class ProductionPerkListener implements Listener {
         var luck = plugin.configuration().get().skills().luck();
         chance = LuckChanceResolver.rareLootChance(chance, module.globalLuck(profile.get()),
             luck.maximumPoints(), luck.rareLootChanceBonusPerPoint());
+        chance *= module.runtimeState(player.getUniqueId(), SkillId.FISHING)
+            .map(state -> state.stats().value(StatId.FISHING_TREASURE_CHANCE)).orElse(1.0);
+        chance *= waterAttunementTreasureMultiplier(player.getUniqueId());
         if (chance <= 0.0 || ThreadLocalRandom.current().nextDouble() >= chance) {
+            return;
+        }
+        if (ThreadLocalRandom.current().nextDouble() < FISHING_NETHER_STAR_TREASURE_CHANCE) {
+            giveLater(player, new ItemStack(Material.NETHER_STAR));
             return;
         }
         selectWeighted(rewards.treasureWeights()).ifPresent(material ->
             giveLater(player, new ItemStack(material)));
+    }
+
+    private void rewardFishingChest(Player player, SkillProfile profile, double baseChance) {
+        var luck = plugin.configuration().get().skills().luck();
+        double chance = LuckChanceResolver.rareLootChance(baseChance, module.globalLuck(profile),
+            luck.maximumPoints(), luck.rareLootChanceBonusPerPoint());
+        if (ThreadLocalRandom.current().nextDouble() >= chance) return;
+        for (BlockFace face : List.of(BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST)) {
+            Block block = player.getLocation().getBlock().getRelative(face);
+            if (block.getType() != Material.AIR || block.getRelative(BlockFace.DOWN).isPassable()) continue;
+            block.setType(Material.CHEST, false);
+            org.bukkit.block.Chest chest = (org.bukkit.block.Chest) block.getState();
+            chest.getPersistentDataContainer().set(fishingChestOwnerKey, PersistentDataType.STRING,
+                player.getUniqueId().toString());
+            Material[] loot = {Material.FISHING_ROD, Material.COOKED_SALMON, Material.ARROW,
+                Material.POTION, Material.IRON_INGOT, Material.GOLDEN_CARROT};
+            chest.getBlockInventory().addItem(new ItemStack(loot[ThreadLocalRandom.current().nextInt(loot.length)],
+                ThreadLocalRandom.current().nextInt(1, 4)));
+            chest.update(true, false);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (isFishingChest(block)) block.setType(Material.AIR, false);
+            }, 20L * 90L);
+            return;
+        }
+    }
+
+    private void addWaterAttunement(Player player) {
+        long expiresAt = System.currentTimeMillis() + 60_000L;
+        WaterAttunement current = waterAttunements.get(player.getUniqueId());
+        int stacks = current != null && current.expiresAt() > System.currentTimeMillis()
+            ? Math.min(10, current.stacks() + 1) : 1;
+        waterAttunements.put(player.getUniqueId(), new WaterAttunement(stacks, expiresAt));
+        waterAttunementTasks.computeIfAbsent(player.getUniqueId(), ignored -> Bukkit.getScheduler().runTaskTimer(plugin, () ->
+            renderWaterAttunement(player), 10L, 10L));
+    }
+
+    private void renderWaterAttunement(Player player) {
+        WaterAttunement attunement = waterAttunements.get(player.getUniqueId());
+        if (!player.isOnline() || attunement == null || attunement.expiresAt() <= System.currentTimeMillis()) {
+            waterAttunements.remove(player.getUniqueId());
+            BukkitTask task = waterAttunementTasks.remove(player.getUniqueId());
+            if (task != null) task.cancel();
+            return;
+        }
+        FishHook hook = player.getFishHook();
+        if (hook == null || !hook.isValid()) return;
+        double radius = Math.min(4.0, 1.0 + (attunement.stacks() - 1) / 3.0);
+        hook.getWorld().spawnParticle(Particle.BUBBLE_POP, hook.getLocation(), 2 + attunement.stacks(), radius, 0.15, radius, 0.01);
+        if (attunement.stacks() == 10) {
+            hook.getWorld().spawnParticle(Particle.SPLASH, hook.getLocation(), 4, radius, 0.05, radius, 0.01);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void protectFishingChestOpen(InventoryOpenEvent event) {
+        if (!(event.getPlayer() instanceof Player player) || event.getInventory().getLocation() == null) return;
+        Block block = event.getInventory().getLocation().getBlock();
+        if (!isFishingChest(block) || isFishingChestOwner(block, player)) return;
+        event.setCancelled(true);
+        player.sendMessage("Tato rybarska schranka patri jinemu rybari.");
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void protectFishingChestBreak(BlockBreakEvent event) {
+        if (!isFishingChest(event.getBlock()) || isFishingChestOwner(event.getBlock(), event.getPlayer())) return;
+        event.setCancelled(true);
+        event.getPlayer().sendMessage("Tato rybarska schranka patri jinemu rybari.");
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void preventFishingChestAutomation(InventoryMoveItemEvent event) {
+        if (isFishingChest(event.getSource().getLocation()) || isFishingChest(event.getDestination().getLocation())) {
+            event.setCancelled(true);
+        }
+    }
+
+    private double waterAttunementTreasureMultiplier(UUID playerId) {
+        WaterAttunement attunement = waterAttunements.get(playerId);
+        if (attunement == null || attunement.expiresAt() <= System.currentTimeMillis()) {
+            return 1.0;
+        }
+        return 1.0 + attunement.stacks() * 0.02;
+    }
+
+    private boolean isFishingChest(Block block) {
+        return block != null && block.getState() instanceof org.bukkit.block.Chest chest
+            && chest.getPersistentDataContainer().has(fishingChestOwnerKey, PersistentDataType.STRING);
+    }
+
+    private boolean isFishingChest(Location location) {
+        return location != null && isFishingChest(location.getBlock());
+    }
+
+    private boolean isFishingChestOwner(Block block, Player player) {
+        if (!(block.getState() instanceof org.bukkit.block.Chest chest)) return false;
+        String owner = chest.getPersistentDataContainer().get(fishingChestOwnerKey, PersistentDataType.STRING);
+        return player.getUniqueId().toString().equals(owner);
+    }
+
+    private record WaterAttunement(int stacks, long expiresAt) {
     }
 
     private static Optional<Material> selectWeighted(Map<Material, Integer> weights) {

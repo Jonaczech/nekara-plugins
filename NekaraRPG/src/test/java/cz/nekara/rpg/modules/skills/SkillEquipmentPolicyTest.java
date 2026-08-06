@@ -37,6 +37,18 @@ class SkillEquipmentPolicyTest {
     }
 
     @Test
+    void threeLightPiecesCanBeRecognizedWithoutAllowingMixedArmor() {
+        assertTrue(SkillEquipmentPolicy.wearsAtLeastLightArmor(new Material[]{
+            Material.LEATHER_BOOTS, Material.CHAINMAIL_LEGGINGS,
+            Material.DIAMOND_CHESTPLATE, Material.AIR
+        }, 3));
+        assertTrue(!SkillEquipmentPolicy.wearsAtLeastLightArmor(new Material[]{
+            Material.LEATHER_BOOTS, Material.IRON_LEGGINGS,
+            Material.DIAMOND_CHESTPLATE, Material.AIR
+        }, 3));
+    }
+
+    @Test
     void recognizesEquipmentCraftsWithoutTreatingMaterialsAsProducts() {
         assertTrue(SkillEquipmentPolicy.isSmithingProduct(Material.BOW));
         assertTrue(SkillEquipmentPolicy.isSmithingProduct(Material.NETHERITE_CHESTPLATE));

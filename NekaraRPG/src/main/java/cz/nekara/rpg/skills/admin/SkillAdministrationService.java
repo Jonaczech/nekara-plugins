@@ -97,6 +97,7 @@ public final class SkillAdministrationService {
             case RESET_SKILL -> resetSkill(profile, operation.skill());
             case RESET_PERKS -> resetPerks(profile);
             case RESET_ALL -> resetAll(profile);
+            case MAX_ALL -> maxAll(profile);
         };
     }
 
@@ -225,6 +226,17 @@ public final class SkillAdministrationService {
                 + profile.perkRanks().size() + ";refunded_points=" + profile.spentPerkPoints()
                 + ";removed_bonus_points=" + profile.adminBonusPerkPoints()
         );
+    }
+    private PreparedMutation maxAll(SkillProfile profile) {
+        EnumMap<SkillId, Long> experience = new EnumMap<>(SkillId.class);
+        EnumMap<SkillId, Integer> rebirths = new EnumMap<>(SkillId.class);
+        long cap = progressionCurve.cumulativeExperienceForLevel(progressionCurve.maxLevel());
+        for (SkillId skill : SkillId.gameplaySkills()) { experience.put(skill, cap); rebirths.put(skill, 1); }
+        Map<PerkId, Integer> perks = new HashMap<>();
+        int spent = 0;
+        for (SkillId skill : SkillId.gameplaySkills()) for (PerkDefinition perk : perkCatalog.forSkill(skill)) { perks.put(perk.id(), perk.maxRank()); spent += perk.maxRank() * perk.pointCostPerRank(); }
+        SkillProfile updated = new SkillProfile(profile.playerKey(), experience, rebirths, perks, spent, 0, profile.revision());
+        return changed(updated, perks.size(), "maxed_all_skills_perks_and_new_game_plus");
     }
 
     private SkillAdminResult result(

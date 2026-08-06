@@ -58,7 +58,8 @@ public final class DefaultPerkTree {
             node("ingredients", "Střídmá dávka", "Při vaření se šetří přísady.", stat(StatId.RESOURCE_COST_REDUCTION, 0.012)),
             node("vials", "Letící sklo", "Zlepšuje vrhací a přetrvávající lektvary.", stat(StatId.THROWING_SPEED, 0.06), stat(StatId.POTION_POWER, 0.04)),
             node("recipes", "Herbář Nekary", "Odemkne recept Tonika vitality ze vzácných plodů.", mechanic(MechanicId.ALCHEMY_RECIPES)),
-            node("merging", "Spojené esence", "Odemkne sloučení účinků dvou lektvarů.", mechanic(MechanicId.POTION_MERGING)));
+            node("merging", "Bojové esence", "Odemkne sloučení lektvarů i nanášení jejich účinků na zbraně.",
+                mechanic(MechanicId.POTION_MERGING), mechanic(MechanicId.WEAPON_COATING)));
         builder.tree(SkillId.MINING,
             node("yield", "Křehká skála", "Zrychluje těžbu a za vytěžený blok dává vanilkové zkušenosti.",
                 stat(StatId.MINING_SPEED, 0.02), stat(StatId.MINING_BLOCK_EXPERIENCE, 0.4)),
@@ -115,26 +116,26 @@ public final class DefaultPerkTree {
                 mechanic(MechanicId.BEEKEEPER), stat(StatId.BEEKEEPING_HONEY_REFILL_CHANCE, 0.50)),
             node("field", "Záběr pole", "Při plížení spustí dočasnou sklizeň a opětovné sázení v ploše 5×5.", mechanic(MechanicId.FIELD_HARVEST)));
         builder.tree(SkillId.FISHING,
-            node("luck", "Čtení proudu", "Dává 1 bod globálního štěstí pro vzácné nálezy.", stat(StatId.LUCK, 1.0)),
+            node("luck", "Čtení proudu", "Zvyšuje šanci na poklad z vlastní rybářské tabulky.", stat(StatId.FISHING_TREASURE_CHANCE, 0.10)),
             node("speed", "Napjatý vlasec", "Zkracuje čekání na záběr.", stat(StatId.FISHING_SPEED, 0.05)),
-            node("wisdom", "Moudrost hlubin", "Úlovky vydají více zkušenostních koulí.", stat(StatId.EXPERIENCE_ORB_MULTIPLIER, 0.05)),
-            node("equipment", "Ztracená výstroj", "Do úlovků přidává nalezenou výbavu.", mechanic(MechanicId.EQUIPMENT_FISHING)),
-            node("salvage", "Druhý život", "Odemkne rozebrání vylovené výbavy.", mechanic(MechanicId.EQUIPMENT_SALVAGING)),
-            node("master", "Pán tichých vod", "Spojuje nejvyšší rychlost, globální štěstí a výtěžek.", stat(StatId.LUCK, 1.0), stat(StatId.FISHING_SPEED, 0.20), stat(StatId.DOUBLE_DROP_CHANCE, 0.05)));
+            node("wisdom", "Moudrost hlubin", "Úlovky vydají více zkušenostních koulí.", stat(StatId.EXPERIENCE_ORB_MULTIPLIER, 0.15)),
+            node("equipment", "Potopená schránka", "Po úspěšném úlovku může vedle rybáře vytvořit dočasnou truhlu s vybavením nebo spotřebními zásobami.", mechanic(MechanicId.FISHING_CHEST)),
+            node("salvage", "Naladění vody", "Úspěšné úlovky budují až 10 stacků Naladění vody a zvyšují šanci na poklad.", mechanic(MechanicId.FISHING_WATER_ATTUNEMENT)),
+            node("master", "Pán tichých vod", "Spojuje nejvyšší rychlost, poklady, výtěžek a vyšší šanci Potopené schránky.", stat(StatId.FISHING_TREASURE_CHANCE, 0.15), stat(StatId.FISHING_SPEED, 0.20), stat(StatId.DOUBLE_DROP_CHANCE, 0.05), mechanic(MechanicId.FISHING_MASTER_CHEST)));
         builder.tree(SkillId.LIGHT_WEAPONS,
-            node("damage", "Ostrá odpověď", "Zvyšuje poškození a šanci na krvácení.", stat(StatId.DAMAGE_MULTIPLIER, 0.03), stat(StatId.BLEED_CHANCE, 0.006)),
-            node("critical", "Mezera v obraně", "Zvyšuje šanci a sílu kritického zásahu; odemyká volný pohyb se železnými a zlatými lehkými zbraněmi.", stat(StatId.CRITICAL_CHANCE, 0.012), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.04), mechanic(MechanicId.LIGHT_WEAPON_IRON_MOBILITY)),
-            node("parry", "Včasný kryt", "Odemkne volný pohyb s diamantovými lehkými zbraněmi.", mechanic(MechanicId.LIGHT_WEAPON_DIAMOND_MOBILITY)),
-            node("coating", "Jed na ostří", "Odemkne nanášení lektvarových účinků na zbraň.", mechanic(MechanicId.WEAPON_COATING)),
-            node("immunity", "Pod kůži", "Prohlubuje krvácení, zvyšuje šanci na jeho obnovení a odemyká volný pohyb s netheritovými lehkými zbraněmi.", stat(StatId.BLEED_DAMAGE_MULTIPLIER, 0.20), stat(StatId.BLEED_CHANCE, 0.02), mechanic(MechanicId.LIGHT_WEAPON_NETHERITE_MOBILITY)),
-            node("master", "Sto rychlých ran", "Vrchol stezky posiluje kritické zásahy i krvácení.", stat(StatId.CRITICAL_CHANCE, 0.08), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.20), stat(StatId.BLEED_CHANCE, 0.07), stat(StatId.BLEED_DAMAGE_MULTIPLIER, 0.25)));
+            node("damage", "Čepel v pohybu", "Zvyšuje poškození lehkých zbraní a šanci na krvácení.", stat(StatId.DAMAGE_MULTIPLIER, 0.02), stat(StatId.BLEED_CHANCE, 0.008)),
+            node("critical", "Rytmus souboje", "Zrychluje útoky lehkou zbraní, zvyšuje kritickou šanci a odemyká volný pohyb se železnými a zlatými lehkými zbraněmi.", stat(StatId.LIGHT_WEAPON_ATTACK_SPEED, 0.02), stat(StatId.CRITICAL_CHANCE, 0.01), mechanic(MechanicId.LIGHT_WEAPON_IRON_MOBILITY)),
+            node("parry", "Lehký krok", "Dále zrychluje útoky lehkou zbraní a odemyká volný pohyb s diamantovými lehkými zbraněmi.", stat(StatId.LIGHT_WEAPON_ATTACK_SPEED, 0.04), mechanic(MechanicId.LIGHT_WEAPON_DIAMOND_MOBILITY)),
+            node("coating", "Hluboký řez", "Zvyšuje šanci a poškození krvácení.", stat(StatId.BLEED_CHANCE, 0.03), stat(StatId.BLEED_DAMAGE_MULTIPLIER, 0.25)),
+            node("immunity", "Vražedný úhel", "Kritické zásahy mají vlastní šanci vyvolat krvácení a odemyká volný pohyb s netheritovými lehkými zbraněmi.", stat(StatId.CRITICAL_BLEED_CHANCE, 0.35), mechanic(MechanicId.LIGHT_WEAPON_NETHERITE_MOBILITY)),
+            node("master", "Tisíc řezů", "Vrchol stezky posiluje kritické zásahy a krvácení po kritickém úderu.", stat(StatId.CRITICAL_CHANCE, 0.06), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.25), stat(StatId.CRITICAL_BLEED_CHANCE, 0.35), stat(StatId.BLEED_FLAT_DAMAGE, 1.0)));
         builder.tree(SkillId.HEAVY_WEAPONS,
-            node("damage", "Váha rozsudku", "Zvyšuje poškození těžkých zbraní.", stat(StatId.DAMAGE_MULTIPLIER, 0.035)),
-            node("power", "Drtivý nápřah", "Zesiluje silové útoky a odemyká volný pohyb se železnými a zlatými těžkými zbraněmi.", stat(StatId.POWER_ATTACK_DAMAGE_MULTIPLIER, 0.05), mechanic(MechanicId.HEAVY_WEAPON_IRON_MOBILITY)),
-            node("critical", "Prasklá obrana", "Zvyšuje šanci a sílu kritického zásahu; odemyká volný pohyb s diamantovými těžkými zbraněmi.", stat(StatId.CRITICAL_CHANCE, 0.01), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.05), mechanic(MechanicId.HEAVY_WEAPON_DIAMOND_MOBILITY)),
-            node("penetration", "Průlom plátu", "Část úderu pronikne zbrojí.", stat(StatId.ARMOR_PENETRATION, 0.015)),
-            node("coating", "Nános zkázy", "Odemkne nanášení lektvarových účinků na zbraň a volný pohyb s netheritovými těžkými zbraněmi.", mechanic(MechanicId.WEAPON_COATING), mechanic(MechanicId.HEAVY_WEAPON_NETHERITE_MOBILITY)),
-            node("master", "Otřes země", "Vrchol stezky spojuje průraznost a kritickou sílu.", stat(StatId.ARMOR_PENETRATION, 0.08), stat(StatId.CRITICAL_DAMAGE_MULTIPLIER, 0.25)));
+            node("damage", "Váha rozsudku", "Zvyšuje poškození těžkých zbraní.", stat(StatId.DAMAGE_MULTIPLIER, 0.02)),
+            node("power", "Drtivý nápřah", "Zesiluje plně nabité útoky, zvyšuje kritickou šanci a odemyká volný pohyb se železnými a zlatými těžkými zbraněmi.", stat(StatId.POWER_ATTACK_DAMAGE_MULTIPLIER, 0.04), stat(StatId.CRITICAL_CHANCE, 0.006), mechanic(MechanicId.HEAVY_WEAPON_IRON_MOBILITY)),
+            node("critical", "Prasklá obrana", "Zvyšuje průraznost zbroje a odemyká volný pohyb s diamantovými těžkými zbraněmi.", stat(StatId.ARMOR_PENETRATION, 0.08), mechanic(MechanicId.HEAVY_WEAPON_DIAMOND_MOBILITY)),
+            node("penetration", "Široký rozmach", "Plně nabitý útok získá rodinový plošný účinek: sekera krátký rozmach, obouruční meč širší cleave a kladivo rázovou vlnu.", mechanic(MechanicId.HEAVY_POWER_SWEEP)),
+            node("coating", "Drtivý průlom", "Zvyšuje průraznost, šanci omráčit a odemyká volný pohyb s netheritovými těžkými zbraněmi.", stat(StatId.ARMOR_PENETRATION, 0.12), stat(StatId.STUN_CHANCE, 0.12), mechanic(MechanicId.HEAVY_WEAPON_NETHERITE_MOBILITY)),
+            node("master", "Otřes země", "Vrchol stezky dále posiluje plně nabité útoky, průraznost a kritické zásahy.", stat(StatId.POWER_ATTACK_DAMAGE_MULTIPLIER, 0.20), stat(StatId.ARMOR_PENETRATION, 0.10), stat(StatId.CRITICAL_CHANCE, 0.04)));
         builder.tree(SkillId.ARCHERY,
             node("damage", "Pevná tětiva", "Zvyšuje poškození luků a kuší.", stat(StatId.DAMAGE_MULTIPLIER, 0.03)),
             node("accuracy", "Klidný dech", "Zlepšuje přesnost střelby.", stat(StatId.ACCURACY, 0.025)),
@@ -143,19 +144,19 @@ public final class DefaultPerkTree {
             node("charged", "Zadržený výstřel", "Odemkne nabité výstřely s volitelným posílením.", mechanic(MechanicId.CHARGED_SHOT)),
             node("master", "Oko bouře", "Vrchol stezky posiluje přesnost i kritický zásah.", stat(StatId.ACCURACY, 0.12), stat(StatId.CRITICAL_CHANCE, 0.08)));
         builder.tree(SkillId.LIGHT_ARMOR,
-            node("armor", "Pružná ochrana", "Zvyšuje ochranu lehké výstroje.", stat(StatId.ARMOR_MULTIPLIER, 0.04)),
-            node("mobility", "Beztížný krok", "Odemyká volný pohyb v chainmailové lehké výstroji.", mechanic(MechanicId.LIGHT_ARMOR_CHAINMAIL_MOBILITY)),
-            node("dodge", "Prázdné místo", "Zvyšuje šanci zcela uniknout zásahu.", stat(StatId.DODGE_CHANCE, 0.012)),
-            node("sustenance", "Dlouhý dech", "Snižuje spotřebu hladu při pohybu a boji; odemyká volný pohyb v diamantové lehké výstroji.", stat(StatId.HUNGER_CONSUMPTION_REDUCTION, 0.015), mechanic(MechanicId.LIGHT_ARMOR_SET_BONUS), mechanic(MechanicId.LIGHT_ARMOR_DIAMOND_MOBILITY)),
-            node("adrenaline", "Poslední únik", "Odemkne Adrenalin při nízkém zdraví.", mechanic(MechanicId.ADRENALINE)),
-            node("master", "Stín mezi čepelemi", "Vrchol stezky spojuje úhyb a ochranu.", stat(StatId.DODGE_CHANCE, 0.08), stat(StatId.ARMOR_MULTIPLIER, 0.15)));
+            node("armor", "Železné cvoky", "Zvyšuje účinnost lehké výstroje.", stat(StatId.ARMOR_MULTIPLIER, 0.02)),
+            node("mobility", "Nespoutaný krok", "Snižuje zátěž lehké výstroje o polovinu a odemyká volný pohyb v chainmailové lehké výstroji.", stat(StatId.MOVEMENT_PENALTY_REDUCTION, 0.50), mechanic(MechanicId.LIGHT_ARMOR_CHAINMAIL_MOBILITY)),
+            node("dodge", "Řízený metabolismus", "Kompletní lehká sada šetří hlad, zvyšuje ochranu a odemyká volný pohyb v diamantové lehké výstroji.", stat(StatId.HUNGER_CONSUMPTION_REDUCTION, 0.30), stat(StatId.ARMOR_MULTIPLIER, 0.10), mechanic(MechanicId.LIGHT_ARMOR_SET_BONUS), mechanic(MechanicId.LIGHT_ARMOR_DIAMOND_MOBILITY)),
+            node("sustenance", "Vynalézavý tulák", "Pro bonusy lehké sady stačí tři kusy výstroje a lehká výstroj už nezpůsobuje pohybovou zátěž.", stat(StatId.MOVEMENT_PENALTY_REDUCTION, 0.50), mechanic(MechanicId.LIGHT_ARMOR_THREE_PIECE_SET_BONUS)),
+            node("adrenaline", "Adrenalin", "Při nízkém zdraví krátce udělí Rychlost II a Regeneraci I; znovu jej lze spustit po 60 s.", mechanic(MechanicId.ADRENALINE)),
+            node("master", "Bleskové reflexy", "Kompletní lehká sada získá šanci zcela uhnout zásahu a další ochranu.", stat(StatId.DODGE_CHANCE, 0.20), stat(StatId.ARMOR_MULTIPLIER, 0.10)));
         builder.tree(SkillId.HEAVY_ARMOR,
-            node("armor", "Vrstvený plát", "Zvyšuje ochranu těžké výstroje.", stat(StatId.ARMOR_MULTIPLIER, 0.05)),
-            node("burden", "Nesené břemeno", "Odemyká volný pohyb v železné a zlaté těžké výstroji.", mechanic(MechanicId.HEAVY_ARMOR_IRON_MOBILITY)),
-            node("reflection", "Odplata oceli", "Část přijatého poškození se vrací útočníkovi.", stat(StatId.DAMAGE_REFLECTION, 0.012)),
-            node("recovery", "Nezlomný dech", "Zlepšuje obnovu zdraví a bonus celé sady; odemyká volný pohyb v netheritové těžké výstroji.", stat(StatId.HEALTH_REGENERATION, 0.04), mechanic(MechanicId.HEAVY_ARMOR_SET_BONUS), mechanic(MechanicId.HEAVY_ARMOR_NETHERITE_MOBILITY)),
-            node("rage", "Hněv pod plátem", "Odemkne Hněv při nízkém zdraví.", mechanic(MechanicId.RAGE)),
-            node("master", "Kráčející hradba", "Vrchol stezky spojuje ochranu a odplatu.", stat(StatId.ARMOR_MULTIPLIER, 0.20), stat(StatId.DAMAGE_REFLECTION, 0.06)));
+            node("armor", "Zpevněná výstroj", "Zvyšuje účinnost těžké výstroje.", stat(StatId.ARMOR_MULTIPLIER, 0.02)),
+            node("burden", "Nohy z oceli", "Snižuje zátěž těžké výstroje o polovinu, zlepšuje regeneraci, úsporu hladu a přesnost střelby; odemyká pohyb v železné a zlaté zbroji.", stat(StatId.MOVEMENT_PENALTY_REDUCTION, 0.50), stat(StatId.HEALTH_REGENERATION, 0.10), stat(StatId.HUNGER_CONSUMPTION_REDUCTION, 0.10), stat(StatId.ACCURACY, 0.10), mechanic(MechanicId.HEAVY_ARMOR_IRON_MOBILITY)),
+            node("recovery", "Vitální ocel", "Kompletní těžká sada zlepší regeneraci a ochranu; odemyká pohyb v netheritové zbroji.", stat(StatId.HEALTH_REGENERATION, 0.40), stat(StatId.ARMOR_MULTIPLIER, 0.10), mechanic(MechanicId.HEAVY_ARMOR_SET_BONUS), mechanic(MechanicId.HEAVY_ARMOR_NETHERITE_MOBILITY)),
+            node("reflection", "Hněv", "Při nízkém zdraví krátce udělí Sílu I a Odolnost I; znovu jej lze spustit po 60 s.", mechanic(MechanicId.RAGE)),
+            node("rage", "Vynalézavý pěšák", "Pro běžné bonusy těžké sady stačí tři kusy výstroje; zátěž těžké výstroje se dále sníží.", stat(StatId.MOVEMENT_PENALTY_REDUCTION, 0.25), mechanic(MechanicId.HEAVY_ARMOR_THREE_PIECE_SET_BONUS)),
+            node("master", "Ostnatý Juggernaut", "Kompletní těžká sada má 10% šanci vrátit 20% poškození, získá +40% odolnost proti odhození a imunitu vůči Slowness, Weakness a Levitation.", mechanic(MechanicId.HEAVY_ARMOR_JUGGERNAUT)));
         return builder.build();
     }
 

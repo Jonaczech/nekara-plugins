@@ -1,5 +1,49 @@
 # Přehled změn
 
+## 2.5.0
+
+- Lehké zbraně mají nový strom ve tvaru meče: rukojeť tvoří Čepel v pohybu,
+  Rytmus souboje a Lehký krok tvoří záštitu, Hluboký řez a Vražedný úhel čepel
+  a Tisíc řezů její hrot. Cesty používají vlastní směry ohybů, aby silueta
+  zůstala čitelná i ve viewportu.
+- Strom přidává rychlost útoku při držení lehké zbraně, samostatnou šanci
+  krvácení po kritickém zásahu a malý plochý bonus poškození krvácením.
+  Materiálové levelové požadavky pro používání zbraní zůstávají beze změny.
+- Jed na ostří už není perk lehkých ani těžkých zbraní. Odemčení nanášení
+  lektvarů na libovolnou podporovanou zbraň nyní vlastní alchymistický perk
+  Bojové esence, který nadále zachovává i slučování lektvarů.
+- Těžké zbraně mají nový asymetrický strom ve tvaru sekyry. Plně nabitý útok
+  je nyní základ společného „brutálního“ stylu: Drtivý nápřah a Otřes země jej
+  zesilují, Prasklá obrana a Drtivý průlom přidávají průraznost a Široký rozmach
+  odemyká odlišný plošný účinek pro sekeru, obouruční meč a kladivo.
+- Kopí má při prázdné vedlejší ruce skutečný bonus dosahu +1,25 bloku. Vlastní
+  dýky dostaly vyšší základní rychlost útoku a kratší dosah -0,5 bloku.
+  Materiálové levelové požadavky všech zbraní zůstávají beze změny.
+- Stínový oděv nyní nabízí Železné cvoky, Nespoutaný krok, Řízený metabolismus,
+  Vynalézavého tuláka, Adrenalin a Bleskové reflexy. Dokončený strom poskytuje
+  +30% účinnost lehké zbroje, +30% úsporu hladu, +20% šanci úhybu a odstraní její
+  pohybovou zátěž. Po Vynalézavém tulákovi fungují setové bonusy už se třemi
+  čistě lehkými kusy zbroje.
+- Adrenalin při ≤25% zdraví udělí na 5 s Rychlost II a Regeneraci I; jeho cooldown
+  je 60 s. Požadavky materiálů pro chainmail a diamantovou lehkou zbroj zůstávají.
+- Plátová ochrana má nový strom se šesti perky: Zpevněná výstroj, Nohy z oceli,
+  Vitální ocel, Hněv, Vynalézavý pěšák a Ostnatý Juggernaut. Hněv má cooldown 60 s;
+  Juggernaut vyžaduje kompletní těžkou sadu a poskytuje odraz poškození, odolnost
+  proti knockbacku a imunitu vůči Slowness, Weakness a Levitation.
+- Rybaření získalo vlastní doplňkovou loot tabulku, která nikdy nenahrazuje vanilla
+  úlovek. Obsahuje prismarine crystals, slime ball, echo shard, armor trimy,
+  netherite upgrade a velmi vzácný nether star. Globální Štěstí se promítá do
+  šance na poklad i Potopenou schránku.
+- Potopená schránka se vytváří vedle rybáře na 90 s, je trvale označená vlastníkem
+  a otevře či rozbije ji pouze on; hoppery do ní ani z ní nepřenášejí předměty.
+  Naladění vody ukládá až 10 stacků po 2% šance na poklad a zobrazuje je výhradně
+  částicemi vody v místě háčku.
+- New Game+ Rybaření násobí přirozenou šanci na dvojitý úlovek `×1,25` za rank.
+- Cesty mezi perky používají nejvýše 3 mezilehlé sloty. Všechny aktivní stromy mají
+  navzájem odlišnou tematickou siluetu a viditelné rohové spoje cest.
+- Přidány příkazy `/nekararpg skills admin max <hráč>` pro úroveň 100, všechny perky
+  a New Game+ a `/nekararpg skills admin reset-all <hráč>` pro úplné vynulování.
+
 ## 2.4.2
 
 - Kvalita vlastnoručně vyrobené výbavy používá pět jasně odlišených pečetí:

@@ -30,4 +30,12 @@ public enum WeaponFamily {
     public DamageType damageType() { return damageType; }
     public boolean custom() { return custom; }
     public boolean requiresEmptyOffhand() { return requiresEmptyOffhand; }
+
+    public double interactionRangeModifier() {
+        return switch (this) {
+            case DAGGER -> -0.5;
+            case SPEAR -> 1.25;
+            default -> 0.0;
+        };
+    }
 }

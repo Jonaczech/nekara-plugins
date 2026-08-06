@@ -3,6 +3,41 @@
 Modulární RPG plugin pro Purpur/Paper 26.1 a Java 25. Obsahuje autentizaci,
 rybářskou minihru, táboření/Rested, Echo Vein, mounty a nativní Nekara Skills.
 
+## 2.5.0 – boj, výstroj, rybaření a perk-tree
+
+- Perk strom Lehké zbraně tvoří siluetu meče a zachovává stabilní interní ID
+  uložených ranků. Rychlejší útok platí pouze při držení meče, dýky nebo kopí.
+- Nové perky posilují poškození, kritické zásahy a krvácení; materiálové
+  požadavky na výrobu i plné používání dřevěných až netheritových zbraní se
+  nemění.
+- Nanášení lektvarového účinku na zbraň je odemknutí Alchymie přes Bojové esence.
+- Těžké zbraně používají asymetrický strom ve tvaru sekyry. Plně nabitý útok je
+  společný základ stromu a perk Široký rozmach mu dává plošný účinek odlišný pro
+  sekeru, obouruční meč a kladivo.
+- Kopí má při prázdné vedlejší ruce dosah +1,25 bloku; vlastní dýky mají rychlejší
+  základní útok, ale dosah kratší o 0,5 bloku. Požadavky levelu na materiál zbraně
+  jsou zachované.
+- Stínový oděv poskytuje až +30% účinnost zbroje, +30% úsporu hladu, +20% úhyb a
+  bez pohybové zátěže. Perk Vynalézavý tulák zpřístupní setové bonusy i se třemi
+  kusy čistě lehké zbroje; Adrenalin při ≤25% zdraví na 5 s udělí Rychlost II a
+  Regeneraci I s cooldownem 60 s.
+- Plátová ochrana má šest perků ve vlastní siluetě: Zpevněná výstroj, Nohy z oceli,
+  Vitální ocel, Hněv, Vynalézavý pěšák a Ostnatý Juggernaut. Kompletní sada dává
+  obranu, léčení, odraz poškození, odolnost proti knockbacku a imunitu vůči Slowness,
+  Weakness a Levitation; Hněv má cooldown 60 s.
+- Rybaření používá vlastní doplňkovou tabulku pokladů vedle původního vanilla úlovku:
+  mimo jiné prismarine, slime ball, echo shard, armor trimy, netherite upgrade a
+  velmi vzácně nether star. Globální Štěstí ovlivňuje poklady i Potopenou schránku.
+  Schránka je na 90 s zamčená pouze pro rybáře a nelze ji vytěžit jiným hráčem ani
+  vybrat pomocí hopperu. Naladění vody přidává až 10 stacků po 2% šance na poklad,
+  které jsou vidět jen jako vodní částice u háčku.
+- New Game+ zvyšuje přirozenou šanci na dvojitý úlovek stejně jako u ostatních
+  sběratelských dovedností (`×1,25` za rank).
+- Cesty perk stromů jsou zkrácené na 2–3 mezilehlé sloty. Každá aktivní dovednost
+  má odlišnou tematickou siluetu; rohové spoje zůstávají viditelné ve viewportu.
+- Pro testování jsou dostupné příkazy `/nekararpg skills admin max <hráč>` (level 100,
+  všechny perky a New Game+) a `/nekararpg skills admin reset-all <hráč>` (úplný reset).
+
 ## 2.4.2
 
 Řemeslo nyní odděluje odemčení materiálu od kvality vyrobené výbavy. Po perku
@@ -26,7 +61,7 @@ správný nástroj; Statkářství ponechává motyku pro aktivní sklizeň a Fi
 Těžba a Kopání mají přepracované tematické perk stromy, blokově specifické poklady
 a napojení Echo Vein na úroveň Těžby. Statkářství urychluje pouze přípravu jídla.
 
-## Nevydáno – sběratelské perky a Nová hra+
+### Sběratelské perky a Nová hra+
 
 - Pětihodnostní perky už nelze koupit celé hned na začátku: kořenový uzel
   vyžaduje pro hodnosti `1–5` levely `0 / 10 / 20 / 35 / 50` a navazující
