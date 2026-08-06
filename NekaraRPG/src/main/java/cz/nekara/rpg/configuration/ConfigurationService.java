@@ -109,8 +109,8 @@ public final class ConfigurationService {
         LyingConfig lying = new LyingConfig(
                 config.getBoolean("campfire.lying.enabled", true),
                 config.getBoolean("campfire.lying.mannequin-visual-enabled", true),
-                validateDouble(config.getDouble("campfire.lying.mannequin.yaw-offset-degrees", -90.0),
-                        -180.0, 180.0, -90.0,
+                validateDouble(config.getDouble("campfire.lying.mannequin.yaw-offset-degrees", 0.0),
+                        -180.0, 180.0, 0.0,
                         "campfire.lying.mannequin.yaw-offset-degrees", warning),
                 validateDouble(config.getDouble("campfire.lying.mannequin.forward-offset", -0.9),
                         -2.0, 2.0, -0.9,

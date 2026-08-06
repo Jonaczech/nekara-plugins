@@ -1,5 +1,15 @@
 # Projektová paměť Nekara Plugins
 
+## Release 2.5.1
+
+- Plazení je serverově autoritativní, nemá permission gate a může se zapnout příkazem,
+  z `/nrpg` nebo klientskou klávesou `C`. Shift jej ruší; dočasný bonus step height
+  umožňuje přejít jeden blok vysokou překážku bez skoku.
+- Ležící hráč používá native mannequin jako vizuál a ne vynucenou `Player` `SLEEPING`
+  pózu, protože tu klient může při změně kamery přepsat. `yaw-offset-degrees: 0.0`
+  znamená nohy vpřed a hlavu za hráčem; dosavadní výchozí `-90.0` se migruje při startu.
+- `PerkIconResolver` musí zachovat unikátní materiál pro každé stabilní perk ID.
+
 ## Release 2.4.2
 
 - `SmithingTier` drží pět kvalit: Běžná, Neobyčejná, Vzácná, Epická a Legendární.

@@ -47,6 +47,7 @@ help: |-
   &f/nekararpg stand &7- ukončí sezení
   &f/nekararpg lay &7- ulehneš na aktuálním místě
   &f/nekararpg rise &7- ukončíš ležení
+  &f/nekararpg crawl &7- zapne nebo ukončí dobrovolné plazení
   &f/nekararpg mount [menu|status|call|dismiss|whistle] &7- spravuje tvého koně
   &f/nekararpg test <fishing|vein> &7- spustí vybranou testovací minihru
   &f/nekararpg cancel [hráč] &7- zruší aktivní minihru
@@ -69,6 +70,9 @@ sitting-invalid-state: "%prefix%&cV tomto stavu si nemůžeš sednout."
 sitting-disabled: "%prefix%&cTáboření je nyní uzavřené."
 sitting-failed: "%prefix%&cNepodařilo se vytvořit místo k sezení."
 sitting-not-seated: "%prefix%&7Právě nesedíš."
+crawling-started: "%prefix%&7Plazíš se. Opětovným stiskem klávesy nebo příkazem se postavíš."
+crawling-stopped: "%prefix%&7Znovu stojíš."
+crawling-invalid-state: "%prefix%&cV tomto stavu se nemůžeš plazit."
 campfire-rest-start: "<gold>Teplo ohně tě zve k odpočinku.</gold>"
 campfire-resting-early: "<gold>Teplo ohně pomalu zahání únavu.</gold> <gray>%elapsed%/%required% s</gray>"
 campfire-resting-mid: "<gold>Praskání ohně ti vrací sílu.</gold> <gray>%elapsed%/%required% s</gray>"

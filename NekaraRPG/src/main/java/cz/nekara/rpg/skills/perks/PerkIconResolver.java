@@ -3,19 +3,84 @@ package cz.nekara.rpg.skills.perks;
 import cz.nekara.rpg.skills.stats.StatId;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.bukkit.Material;
 
 public final class PerkIconResolver {
+    /**
+     * Curated iconography for the shipped perk catalog. Keep this keyed by the stable perk ID:
+     * a perk's visual identity must not change when its effect composition changes.
+     */
+    private static final Map<String, Material> CATALOG_ICONS = Map.ofEntries(
+        entry("martial_arts.discipline", Material.MACE), entry("martial_arts.footwork", Material.RABBIT_FOOT),
+        entry("martial_arts.held_punch", Material.LEATHER), entry("martial_arts.air_combo", Material.WIND_CHARGE),
+        entry("martial_arts.grapple", Material.LEAD), entry("martial_arts.meditation", Material.AMETHYST_CLUSTER),
+        entry("trading.reputation", Material.EMERALD), entry("trading.discount", Material.GOLD_NUGGET),
+        entry("trading.selection", Material.WRITABLE_BOOK), entry("trading.ordering", Material.BOOK),
+        entry("trading.services", Material.ANVIL), entry("trading.black_market", Material.END_CRYSTAL),
+        entry("smithing.craft", Material.SMITHING_TABLE), entry("smithing.economy", Material.BUNDLE),
+        entry("smithing.recipes", Material.CRAFTING_TABLE), entry("smithing.fine_work", Material.DIAMOND),
+        entry("smithing.tinkering", Material.GRINDSTONE), entry("smithing.masterwork", Material.NETHER_STAR),
+        entry("runotepectvi.runes", Material.ENCHANTED_BOOK), entry("runotepectvi.experience", Material.EXPERIENCE_BOTTLE),
+        entry("runotepectvi.lapis", Material.LAPIS_LAZULI), entry("runotepectvi.insight", Material.SCULK_CATALYST),
+        entry("runotepectvi.limits", Material.ENCHANTING_TABLE), entry("runotepectvi.hexblade", Material.CRYING_OBSIDIAN),
+        entry("alchemy.potency", Material.POTION), entry("alchemy.brew_speed", Material.BREWING_STAND),
+        entry("alchemy.ingredients", Material.NETHER_WART), entry("alchemy.vials", Material.SPLASH_POTION),
+        entry("alchemy.recipes", Material.WRITTEN_BOOK), entry("alchemy.merging", Material.LINGERING_POTION),
+        entry("tezba.yield", Material.IRON_PICKAXE), entry("tezba.tempo", Material.DIAMOND_PICKAXE),
+        entry("tezba.furnace", Material.FURNACE), entry("tezba.vein", Material.DIAMOND_ORE),
+        entry("tezba.blast", Material.TNT), entry("tezba.triple", Material.DEEPSLATE),
+        entry("lesnictvi.yield", Material.STONE_AXE), entry("lesnictvi.tempo", Material.GOLDEN_AXE),
+        entry("lesnictvi.recipes", Material.COOKED_BEEF), entry("lesnictvi.feller", Material.OAK_LOG),
+        entry("lesnictvi.leaves", Material.OAK_LEAVES), entry("lesnictvi.triple", Material.AMETHYST_SHARD),
+        entry("kopani.yield", Material.IRON_SHOVEL), entry("kopani.tempo", Material.DIAMOND_SHOVEL),
+        entry("kopani.finds", Material.SNIFFER_EGG), entry("kopani.archaeology", Material.BRUSH),
+        entry("kopani.deep_soil", Material.GRASS_BLOCK), entry("kopani.triple", Material.CHEST),
+        entry("statkarstvi.yield", Material.WHEAT), entry("statkarstvi.growth", Material.BONE_MEAL),
+        entry("statkarstvi.husbandry", Material.COW_SPAWN_EGG), entry("statkarstvi.instant", Material.GOLDEN_HOE),
+        entry("statkarstvi.triple", Material.BEE_NEST), entry("statkarstvi.field", Material.HAY_BLOCK),
+        entry("rybareni.luck", Material.HEART_OF_THE_SEA), entry("rybareni.speed", Material.FISHING_ROD),
+        entry("rybareni.wisdom", Material.KNOWLEDGE_BOOK), entry("rybareni.equipment", Material.BARREL),
+        entry("rybareni.salvage", Material.BUBBLE_CORAL), entry("rybareni.master", Material.NAUTILUS_SHELL),
+        entry("lehke_zbrane.damage", Material.IRON_SWORD), entry("lehke_zbrane.critical", Material.DIAMOND_SWORD),
+        entry("lehke_zbrane.parry", Material.SHIELD), entry("lehke_zbrane.coating", Material.REDSTONE),
+        entry("lehke_zbrane.immunity", Material.FERMENTED_SPIDER_EYE), entry("lehke_zbrane.master", Material.NETHERITE_SWORD),
+        entry("heavy_weapons.damage", Material.IRON_AXE), entry("heavy_weapons.power", Material.NETHERITE_AXE),
+        entry("heavy_weapons.critical", Material.ARMOR_STAND), entry("heavy_weapons.penetration", Material.GOAT_HORN),
+        entry("heavy_weapons.coating", Material.MAGMA_BLOCK), entry("heavy_weapons.master", Material.DRAGON_BREATH),
+        entry("archery.damage", Material.BOW), entry("archery.accuracy", Material.TARGET),
+        entry("archery.critical", Material.CROSSBOW), entry("archery.arrows", Material.ARROW),
+        entry("archery.charged", Material.SPECTRAL_ARROW), entry("archery.master", Material.FIREWORK_ROCKET),
+        entry("light_armor.armor", Material.LEATHER_CHESTPLATE), entry("light_armor.mobility", Material.CHAINMAIL_BOOTS),
+        entry("light_armor.dodge", Material.FEATHER), entry("light_armor.sustenance", Material.LEATHER_LEGGINGS),
+        entry("light_armor.adrenaline", Material.SUGAR), entry("light_armor.master", Material.TURTLE_HELMET),
+        entry("heavy_armor.armor", Material.IRON_CHESTPLATE), entry("heavy_armor.burden", Material.IRON_BOOTS),
+        entry("heavy_armor.recovery", Material.GLISTERING_MELON_SLICE), entry("heavy_armor.reflection", Material.PRISMARINE_CRYSTALS),
+        entry("heavy_armor.rage", Material.BLAZE_POWDER), entry("heavy_armor.master", Material.NETHERITE_CHESTPLATE)
+    );
+
     private PerkIconResolver() {
     }
 
     public static Material resolve(PerkDefinition perk) {
         Objects.requireNonNull(perk, "perk");
+        Material catalogIcon = CATALOG_ICONS.get(perk.id().value());
+        if (catalogIcon != null) {
+            return catalogIcon;
+        }
         return perk.effects().stream()
             .min(Comparator.comparingInt(PerkIconResolver::priority))
             .map(PerkIconResolver::material)
             .orElse(Material.BOOK);
+    }
+
+    static boolean hasCatalogIcon(PerkId perkId) {
+        return CATALOG_ICONS.containsKey(Objects.requireNonNull(perkId, "perkId").value());
+    }
+
+    private static Map.Entry<String, Material> entry(String perkId, Material material) {
+        return Map.entry(perkId, material);
     }
 
     private static int priority(PerkEffectDefinition effect) {

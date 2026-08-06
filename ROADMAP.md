@@ -2,16 +2,16 @@
 
 ## Aktuální release
 
-**NekaraRPG 2.4.2**: nativní RPG postup, pět kvalit Řemesla, dokončení výkovu,
-Štěstí pro kvalitu, 13 aktivních dovedností a přehledné perk-tree GUI.
+**NekaraRPG 2.5.1**: nativní RPG postup, jedinečné perk ikony, dobrovolné plazení
+s klávesou `C` a stabilní mannequin ležení, vedle 13 aktivních dovedností.
 
 ## Bezprostřední priorita
 
-1. Živě ověřit kvalitu vlastní výroby: minimum Neobyčejné, šance vyšších tierů,
-   pec, kotlík, broušení zbraně a bonus Štěstí.
-2. Živě ověřit `Dovednosti`, skutečné hodnoty v tooltipech a všech 13 perk-tree map
+1. Živě ověřit plazení: klávesu `C`, ikonu `/nrpg`, zrušení Shiftem, nízký hitbox a
+   plynulý krok přes jednoblokovou překážku.
+2. Živě ověřit ležení ve třetí osobě i při pohybu kamerou; potvrdit natočení mannequinu.
+3. Ověřit `Dovednosti`, skutečné hodnoty v tooltipech a všech 13 perk-tree map
    s aktuálním resource packem.
-3. Ověřit restart, SQLite migraci, Rested XP, Rybaření, Echo Vein a custom zbraně.
 4. Teprve po ověření nasadit přesný release JAR na produkční server.
 
 ## Následné směry
