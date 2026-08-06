@@ -3,6 +3,15 @@
 Modulární RPG plugin pro Purpur/Paper 26.1 a Java 25. Obsahuje autentizaci,
 rybářskou minihru, táboření/Rested, Echo Vein, mounty a nativní Nekara Skills.
 
+## 2.5.1 – plazení, ležení a ikony perků
+
+- `/nekararpg crawl` přepíná serverem řízené plazení se skutečným nízkým hitboxem.
+  Je dostupné všem hráčům, funguje i z `/nrpg`, klientská klávesa je ve výchozím stavu
+  `C` a Shift plazení ukončí. Při plazení lze plynule vystoupat na překážku vysokou blok.
+- Ležení zobrazuje stabilní mannequin natočený nohama ve směru pohybu; změna pohledu
+  hráče ležící animaci neruší. Dřívější výchozí natočení `-90°` se při upgradu opraví.
+- Perk-tree používá pro každý perk jedinečnou tematickou ikonu.
+
 ## 2.5.0 – boj, výstroj, rybaření a perk-tree
 
 - Perk strom Lehké zbraně tvoří siluetu meče a zachovává stabilní interní ID

@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class LyingVisualTransformTest {
     private final LyingVisualTransform transform =
-        new LyingVisualTransform(-90.0, -0.9, 0.0, 0.0);
+        new LyingVisualTransform(0.0, -0.9, 0.0, 0.0);
 
     @Test
     void alignsSouthFacingPlayerAndCentresTheSleepingBody() {
@@ -16,7 +16,7 @@ class LyingVisualTransformTest {
         assertEquals(10.0, result.getX(), 0.0001);
         assertEquals(64.0, result.getY(), 0.0001);
         assertEquals(19.1, result.getZ(), 0.0001);
-        assertEquals(-90.0F, result.getYaw(), 0.0001);
+        assertEquals(0.0F, result.getYaw(), 0.0001);
         assertEquals(0.0F, result.getPitch(), 0.0001);
     }
 
@@ -26,7 +26,7 @@ class LyingVisualTransformTest {
 
         assertEquals(10.9, result.getX(), 0.0001);
         assertEquals(20.0, result.getZ(), 0.0001);
-        assertEquals(0.0F, result.getYaw(), 0.0001);
+        assertEquals(90.0F, result.getYaw(), 0.0001);
     }
 
     @Test

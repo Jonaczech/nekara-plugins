@@ -2,6 +2,7 @@ package cz.nekara.rpg.menu;
 
 import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.campfire.LieResult;
+import cz.nekara.rpg.crawling.CrawlResult;
 import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.modules.ModuleRegistry;
 import cz.nekara.rpg.modules.auth.AuthModule;
@@ -35,6 +36,7 @@ import java.util.UUID;
 public final class NekaraRPGMenu implements Listener {
     private static final int AUTH_SLOT = 10;
     private static final int FISHING_SLOT = 11;
+    private static final int CRAWL_SLOT = 12;
     private static final int CAMPFIRE_SLOT = 14;
     private static final int MINING_SLOT = 15;
     private static final int MOUNTS_SLOT = 16;
@@ -107,6 +109,15 @@ public final class NekaraRPGMenu implements Listener {
                     Component.text(seated ? "Ukončíš sezení" : "Posadíš se na tomto místě",
                             NamedTextColor.GRAY)));
         }
+        boolean crawlingAvailable = modules.isEnabled(CampfireModule.ID);
+        boolean crawling = sitting.isCrawling(player);
+        inventory.setItem(CRAWL_SLOT, item(crawling ? Material.LIME_DYE : Material.TURTLE_HELMET,
+                Component.text(crawling ? "Postavit se" : crawlingAvailable ? "Plazit se" : "Plazení nedostupné",
+                        crawlingAvailable ? NamedTextColor.DARK_GREEN : NamedTextColor.GRAY),
+                Component.text(crawling ? "Ukončíš dobrovolné plazení"
+                        : crawlingAvailable ? "Snížíš se a projdeš nízkými průlezy"
+                        : "Vyžaduje aktivní Táboření a oprávnění", NamedTextColor.GRAY),
+                Component.text(crawlingAvailable ? "Klávesa C" : "Aktuálně uzamčeno", NamedTextColor.DARK_GRAY)));
         if (canShow(player, CampfireModule.ID, "nekararpg.campfire.use")) {
             boolean lying = sitting.isLying(player);
             inventory.setItem(MINING_SLOT, item(lying ? Material.LIME_BED : Material.WHITE_BED,
@@ -224,6 +235,7 @@ public final class NekaraRPGMenu implements Listener {
                 }
             }
             case FISHING_SLOT -> toggleSitting(player);
+            case CRAWL_SLOT -> toggleCrawling(player);
             case MINING_SLOT -> toggleLying(player);
             case MOUNTS_SLOT -> {
                 if (canShow(player, MountsModule.ID, "nekararpg.mount.use")
@@ -464,6 +476,21 @@ public final class NekaraRPGMenu implements Listener {
             }, Map.of());
         }
         reopenPostureMenu(player);
+    }
+
+    private void toggleCrawling(Player player) {
+        if (!modules.isEnabled(CampfireModule.ID)) {
+            messages.sendActionBar(player, "module-disabled", Map.of("module", CampfireModule.ID));
+            return;
+        }
+        CrawlResult result = sitting.toggleCrawling(player);
+        messages.sendActionBar(player, switch (result) {
+            case STARTED -> "crawling-started";
+            case STOPPED -> "crawling-stopped";
+            case INVALID_STATE -> "crawling-invalid-state";
+            case MODULE_DISABLED -> "sitting-disabled";
+        }, Map.of());
+        open(player);
     }
 
     private void reopenPostureMenu(Player player) {

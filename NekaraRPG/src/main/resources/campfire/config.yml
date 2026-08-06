@@ -15,10 +15,9 @@ lying:
   # Uses the native 26.1 mannequin entity; no hand-crafted metadata packets.
   mannequin-visual-enabled: true
   mannequin:
-    # Sleeping pose rotates the model around its anchor. These defaults align
-    # the body with the direction the player was facing and centre it on the
-    # original standing position. They can be tuned live without a new JAR.
-    yaw-offset-degrees: -90.0
+    # A zero offset keeps the mannequin's feet in the direction the player was
+    # facing; its head is therefore behind the player. It can be tuned live.
+    yaw-offset-degrees: 0.0
     forward-offset: -0.9
     side-offset: 0.0
     y-offset: 0.0

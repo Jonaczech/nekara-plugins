@@ -2,6 +2,7 @@ package cz.nekara.rpg.command;
 
 import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.campfire.LieResult;
+import cz.nekara.rpg.crawling.CrawlResult;
 import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.menu.NekaraRPGMenu;
 import cz.nekara.rpg.minigame.FishingMinigameManager;
@@ -223,6 +224,24 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
                     case INVALID_STATE -> "sitting-invalid-state";
                     case MODULE_DISABLED -> "sitting-disabled";
                     case FAILED -> "sitting-failed";
+                });
+                yield true;
+            }
+            case "crawl", "plazeni" -> {
+                if (!modules.isEnabled(CampfireModule.ID)) {
+                    messages.send(sender, "module-disabled", Map.of("module", CampfireModule.ID));
+                    yield true;
+                }
+                if (!(sender instanceof Player player)) {
+                    messages.send(sender, "player-only");
+                    yield true;
+                }
+                CrawlResult result = sittingModule.toggleCrawling(player);
+                messages.send(player, switch (result) {
+                    case STARTED -> "crawling-started";
+                    case STOPPED -> "crawling-stopped";
+                    case INVALID_STATE -> "crawling-invalid-state";
+                    case MODULE_DISABLED -> "sitting-disabled";
                 });
                 yield true;
             }
@@ -752,7 +771,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return prefix(List.of("menu", "prehled", "help", "reload", "status", "update", "skills", "sit", "stand", "lay", "rise", "mount", "test", "cancel"), args[0]);
+            return prefix(List.of("menu", "prehled", "help", "reload", "status", "update", "skills", "sit", "stand", "lay", "rise", "crawl", "mount", "test", "cancel"), args[0]);
         }
         if (sender.hasPermission("nekararpg.skills.admin")
                 && args.length == 2 && "skills".equalsIgnoreCase(args[0])) {

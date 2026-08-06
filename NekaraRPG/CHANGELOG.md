@@ -1,5 +1,16 @@
 # Přehled změn
 
+## 2.5.1
+
+- Každý perk má vlastní tematickou vanilla ikonu; strom už nepoužívá stejné
+  materiály pro rozdílné perky.
+- Plazení je dostupné všem hráčům přes `/nekararpg crawl`, položku v `/nrpg` a
+  klientskou klávesu `C`. Shift plazení ukončí a během plazení hráč přejde
+  jednoblokovou překážku bez nutnosti skákat.
+- Ležení používá stabilní mannequin vizualizaci. Tělo míří nohama vpřed a hlava
+  je za hráčem; pohyb kamery již nemůže zrušit ležící animaci. Starý výchozí
+  offset `-90°` se při upgradu automaticky opraví na `0°`.
+
 ## 2.5.0
 
 - Lehké zbraně mají nový strom ve tvaru meče: rukojeť tvoří Čepel v pohybu,

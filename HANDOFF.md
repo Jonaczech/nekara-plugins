@@ -1,5 +1,17 @@
 # Předání projektu Nekara Plugins
 
+## Release 2.5.1
+
+- Každý perk má vlastní tematickou vanilla ikonu, aby se rozdílné uzly ve stromech
+  vizuálně nepletly.
+- Plazení je dostupné všem hráčům přes `/nekararpg crawl`, ikonu v `/nrpg` a klávesu
+  `C` v klientském modu. Shift jej ukončí; hráč při plazení vystoupá na jednoblokovou
+  překážku bez skoku.
+- Ležení používá mannequin místo nestabilní klientské hráčské pózy. Model je otočen
+  nohama vpřed a hlava vzad; výchozí konfigurace se při upgradu opraví z `-90°` na `0°`.
+- GitHub release a živé nasazení zůstávají samostatné kroky. Před FTP výměnou musí být
+  server vypnutý a finální JAR ověřen SHA-256.
+
 ## Release 2.4.2
 
 - Řemeslo rozlišuje materiál a kvalitu. `Poctivé řemeslo` dává vlastní výbavě

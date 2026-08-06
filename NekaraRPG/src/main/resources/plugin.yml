@@ -11,7 +11,7 @@ softdepend:
 commands:
   nekararpg:
     description: Manage NekaraRPG.
-    usage: /nekararpg [menu|prehled|help|reload|status|update|skills admin|sit|stand|lay|rise|mount|test [fishing|vein]|cancel [player]]
+    usage: /nekararpg [menu|prehled|help|reload|status|update|skills admin|sit|stand|lay|rise|crawl|mount|test [fishing|vein]|cancel [player]]
     aliases: [nrpg, nekarafishing, nfishing]
   nekaraauth:
     description: Opens and administers NekaraAuth.

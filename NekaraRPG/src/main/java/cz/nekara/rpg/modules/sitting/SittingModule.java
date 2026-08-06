@@ -5,6 +5,8 @@ import cz.nekara.rpg.configuration.SittingConfig;
 import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.sitting.SitResult;
 import cz.nekara.rpg.sitting.LyingMovementPolicy;
+import cz.nekara.rpg.crawling.CrawlResult;
+import cz.nekara.rpg.crawling.CrawlingPolicy;
 import io.papermc.paper.event.player.PlayerTrackEntityEvent;
 import io.papermc.paper.event.player.PlayerUntrackEntityEvent;
 import org.bukkit.Bukkit;
@@ -27,6 +29,10 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.NamespacedKey;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
@@ -40,11 +46,14 @@ import java.util.UUID;
 
 public final class SittingModule implements Listener {
     private static final String SEAT_TAG = "nekararpg-seat";
+    private static final double CRAWLING_STEP_HEIGHT_BONUS = 0.4;
 
     private final NekaraRPGPlugin plugin;
     private final MessageService messages;
+    private final NamespacedKey crawlingStepHeightKey;
     private final Map<UUID, ArmorStand> seats = new HashMap<>();
     private final Map<UUID, Long> lyingSince = new HashMap<>();
+    private final Set<UUID> crawlingPlayers = new LinkedHashSet<>();
     private LyingVisualService lyingVisuals = new ServerPoseLyingVisualService();
     private BukkitTask cleanupTask;
     private boolean enabled;
@@ -52,6 +61,7 @@ public final class SittingModule implements Listener {
     public SittingModule(NekaraRPGPlugin plugin, MessageService messages) {
         this.plugin = plugin;
         this.messages = messages;
+        this.crawlingStepHeightKey = new NamespacedKey(plugin, "crawling_step_height");
     }
 
     public void enable() {
@@ -79,6 +89,9 @@ public final class SittingModule implements Listener {
         for (UUID playerId : new ArrayList<>(lyingSince.keySet())) {
             rise(playerId, false);
         }
+        for (UUID playerId : List.copyOf(crawlingPlayers)) {
+            stopCrawling(playerId, false);
+        }
         lyingVisuals.close();
         lyingVisuals = new ServerPoseLyingVisualService();
         enabled = false;
@@ -90,7 +103,7 @@ public final class SittingModule implements Listener {
         for (UUID playerId : List.copyOf(lyingSince.keySet())) {
             Player player = Bukkit.getPlayer(playerId);
             if (player != null && player.isOnline()) {
-                lyingVisuals.show(player, trackedViewers(player));
+                refreshLyingPresentation(player);
             }
         }
         cleanupInvalidSeats();
@@ -145,14 +158,13 @@ public final class SittingModule implements Listener {
                 || player.isFlying()) {
             return false;
         }
-        player.setPose(Pose.SLEEPING, true);
         UUID playerId = player.getUniqueId();
         lyingSince.put(playerId, System.currentTimeMillis());
+        refreshLyingPresentation(player);
         Bukkit.getScheduler().runTask(plugin, () -> {
             Player current = Bukkit.getPlayer(playerId);
             if (enabled && current != null && current.isOnline() && isLying(playerId)) {
-                current.setPose(Pose.SLEEPING, true);
-                lyingVisuals.show(current, trackedViewers(current));
+                refreshLyingPresentation(current);
             }
         });
         return true;
@@ -177,6 +189,27 @@ public final class SittingModule implements Listener {
     public boolean isSitting(UUID playerId) {
         ArmorStand seat = seats.get(playerId);
         return seat != null && seat.isValid();
+    }
+
+    public CrawlResult toggleCrawling(Player player) {
+        if (!enabled) return CrawlResult.MODULE_DISABLED;
+        UUID playerId = player.getUniqueId();
+        if (crawlingPlayers.contains(playerId)) {
+            stopCrawling(playerId, true);
+            return CrawlResult.STOPPED;
+        }
+        if (isSeated(player) || isLying(player) || !CrawlingPolicy.canStart(player.isOnGround(), player.isDead(),
+                player.isSleeping(), player.isGliding(), player.isSwimming(), player.isInsideVehicle(), player.isFlying())) {
+            return CrawlResult.INVALID_STATE;
+        }
+        crawlingPlayers.add(playerId);
+        addCrawlingStepHeight(player);
+        player.setPose(Pose.SWIMMING, true);
+        return CrawlResult.STARTED;
+    }
+
+    public boolean isCrawling(Player player) {
+        return crawlingPlayers.contains(player.getUniqueId());
     }
 
     public Collection<Player> seatedPlayers() {
@@ -225,6 +258,7 @@ public final class SittingModule implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         removeSeat(event.getPlayer().getUniqueId(), false);
         rise(event.getPlayer().getUniqueId(), false);
+        stopCrawling(event.getPlayer().getUniqueId(), false);
         lyingVisuals.forgetViewer(event.getPlayer().getUniqueId());
     }
 
@@ -232,6 +266,7 @@ public final class SittingModule implements Listener {
     public void onKick(PlayerKickEvent event) {
         removeSeat(event.getPlayer().getUniqueId(), false);
         rise(event.getPlayer().getUniqueId(), false);
+        stopCrawling(event.getPlayer().getUniqueId(), false);
         lyingVisuals.forgetViewer(event.getPlayer().getUniqueId());
     }
 
@@ -239,12 +274,14 @@ public final class SittingModule implements Listener {
     public void onDeath(PlayerDeathEvent event) {
         removeSeat(event.getPlayer().getUniqueId(), false);
         rise(event.getPlayer().getUniqueId(), false);
+        stopCrawling(event.getPlayer().getUniqueId(), false);
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent event) {
         removeSeat(event.getPlayer().getUniqueId(), false);
         rise(event.getPlayer().getUniqueId(), false);
+        stopCrawling(event.getPlayer().getUniqueId(), false);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -275,6 +312,9 @@ public final class SittingModule implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onToggleSneak(PlayerToggleSneakEvent event) {
+        if (event.isSneaking() && stopCrawling(event.getPlayer().getUniqueId(), true)) {
+            return;
+        }
         if (event.isSneaking()) {
             rise(event.getPlayer().getUniqueId(), false);
         }
@@ -328,11 +368,17 @@ public final class SittingModule implements Listener {
             Player player = Bukkit.getPlayer(playerId);
             if (player == null || !player.isOnline() || player.isDead()) {
                 rise(playerId, false);
-            } else if (LyingMovementPolicy.shouldRefreshPose(player.getPose())) {
-                player.setPose(Pose.SLEEPING, true);
+            } else {
+                refreshLyingPresentation(player);
             }
-            if (player != null && player.isOnline() && !player.isDead()) {
-                lyingVisuals.show(player, trackedViewers(player));
+        }
+        for (UUID playerId : List.copyOf(crawlingPlayers)) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player == null || !player.isOnline() || player.isDead() || player.isInsideVehicle()
+                    || player.isGliding() || player.isSwimming() || player.isFlying()) {
+                stopCrawling(playerId, false);
+            } else if (player.getPose() != Pose.SWIMMING) {
+                player.setPose(Pose.SWIMMING, true);
             }
         }
     }
@@ -369,6 +415,50 @@ public final class SittingModule implements Listener {
             }
         }
         return true;
+    }
+
+    private boolean stopCrawling(UUID playerId, boolean notify) {
+        if (!crawlingPlayers.remove(playerId)) return false;
+        Player player = Bukkit.getPlayer(playerId);
+        if (player != null) {
+            removeCrawlingStepHeight(player);
+            player.setPose(Pose.STANDING, false);
+            if (notify && player.isOnline()) messages.sendActionBar(player, "crawling-stopped", Map.of());
+        }
+        return true;
+    }
+
+    /**
+     * The player entity is only a collision and interaction anchor while the native mannequin
+     * is available. The client can reset a player's sleeping pose after a look packet, but it
+     * cannot reset the mannequin pose seen by the player and other viewers.
+     */
+    private void refreshLyingPresentation(Player player) {
+        if (lyingVisuals.isAvailable()) {
+            if (player.getPose() != Pose.STANDING) {
+                player.setPose(Pose.STANDING, false);
+            }
+            lyingVisuals.show(player, trackedViewers(player));
+        }
+        if (!lyingVisuals.isAvailable() && LyingMovementPolicy.shouldRefreshPose(player.getPose())) {
+            player.setPose(Pose.SLEEPING, true);
+        }
+    }
+
+    private void addCrawlingStepHeight(Player player) {
+        AttributeInstance stepHeight = player.getAttribute(Attribute.STEP_HEIGHT);
+        if (stepHeight != null) {
+            stepHeight.removeModifier(crawlingStepHeightKey);
+            stepHeight.addTransientModifier(new AttributeModifier(
+                crawlingStepHeightKey, CRAWLING_STEP_HEIGHT_BONUS, AttributeModifier.Operation.ADD_NUMBER));
+        }
+    }
+
+    private void removeCrawlingStepHeight(Player player) {
+        AttributeInstance stepHeight = player.getAttribute(Attribute.STEP_HEIGHT);
+        if (stepHeight != null) {
+            stepHeight.removeModifier(crawlingStepHeightKey);
+        }
     }
 
     private Collection<Player> trackedViewers(Player subject) {

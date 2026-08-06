@@ -107,7 +107,7 @@ class ResourceYamlTest {
             assertTrue((Boolean) lying.get("enabled"));
             assertTrue((Boolean) lying.get("mannequin-visual-enabled"));
             Map<String, Object> mannequin = (Map<String, Object>) lying.get("mannequin");
-            assertEquals(-90.0, ((Number) mannequin.get("yaw-offset-degrees")).doubleValue(), 0.0001);
+            assertEquals(0.0, ((Number) mannequin.get("yaw-offset-degrees")).doubleValue(), 0.0001);
             assertEquals(-0.9, ((Number) mannequin.get("forward-offset")).doubleValue(), 0.0001);
             assertEquals(0.0, ((Number) mannequin.get("side-offset")).doubleValue(), 0.0001);
             assertEquals(0.0, ((Number) mannequin.get("y-offset")).doubleValue(), 0.0001);
