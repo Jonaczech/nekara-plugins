@@ -52,7 +52,9 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
@@ -80,6 +82,7 @@ final class NativeGatheringListener implements Listener {
     private final NamespacedKey proficiencyMobilityKey;
     private final Set<UUID> automatedPlayers = ConcurrentHashMap.newKeySet();
     private final Map<UUID, String> proficiencyWarnings = new ConcurrentHashMap<>();
+    private final Set<String> pendingSuspiciousRestores = ConcurrentHashMap.newKeySet();
     private boolean enabled;
 
     NativeGatheringListener(
@@ -130,6 +133,7 @@ final class NativeGatheringListener implements Listener {
         physicalInputs.clear();
         validatedBreaks.clear();
         automatedPlayers.clear();
+        pendingSuspiciousRestores.clear();
         Bukkit.getOnlinePlayers().forEach(player -> {
             removeSpeedModifier(player);
             removeProficiencyMobility(player);
@@ -177,6 +181,46 @@ final class NativeGatheringListener implements Listener {
                     actionKey(definition.skill(), sourceKey(block, block.getType())));
             }
         });
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void instantlyBreakLeaves(BlockDamageEvent event) {
+        if (!enabled || !GatheringMaterialPolicy.isLeaves(event.getBlock().getType())
+            || !GatheringMaterialPolicy.suitableTool(GatheringTool.AXE, event.getPlayer().getInventory().getItemInMainHand())) {
+            return;
+        }
+        module.runtimeState(event.getPlayer().getUniqueId(), SkillId.WOODCUTTING).ifPresent(state -> {
+            if (state.has(MechanicId.INSTANT_LEAF_BREAK)) {
+                event.setInstaBreak(true);
+            }
+        });
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void restoreSuspiciousBlockAfterBrushing(PlayerInteractEvent event) {
+        if (!enabled || event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null
+            || event.getMaterial() != Material.BRUSH || !isSuspiciousBlock(event.getClickedBlock().getType())) {
+            return;
+        }
+        Player player = event.getPlayer();
+        if (unsupportedMode(player) || !plugin.configuration().get().worlds().isEnabled(player.getWorld().getName())
+            || !module.runtimeState(player.getUniqueId(), SkillId.DIGGING)
+                .map(state -> state.has(MechanicId.SUSPICIOUS_BLOCK_RESTORATION)).orElse(false)
+            || !roll(0.20)) {
+            return;
+        }
+        Block block = event.getClickedBlock();
+        Material original = block.getType();
+        String key = sourceKey(block, original);
+        if (!pendingSuspiciousRestores.add(key)) {
+            return;
+        }
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            pendingSuspiciousRestores.remove(key);
+            if (enabled && block.getType() != original && isUnderlyingSuspiciousBlock(block.getType(), original)) {
+                block.setType(original, false);
+            }
+        }, 110L);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -263,6 +307,29 @@ final class NativeGatheringListener implements Listener {
                 module.innateGatheringDoubleDropChance(profile, definition.skill()),
                 new RandomChanceRoller(ThreadLocalRandom.current()));
             bonusDrops.addAll(createBonusDrops(event.getItems(), multiplier - 1));
+        }
+        if (definition.skill() == SkillId.WOODCUTTING && GatheringMaterialPolicy.isLog(material)) {
+            awardVanillaExperience(player, stats.value(StatId.WOODCUTTING_LOG_EXPERIENCE));
+            if (roll(module.woodcuttingNewGamePlusBonusDropChance(profile))) {
+                bonusDrops.addAll(createBonusDrops(event.getItems(), 1));
+            }
+        }
+        if (definition.skill() == SkillId.DIGGING) {
+            awardVanillaExperience(player, stats.value(StatId.DIGGING_BLOCK_EXPERIENCE));
+            if (roll(module.diggingNewGamePlusBonusDropChance(profile))) {
+                bonusDrops.addAll(createBonusDrops(event.getItems(), 1));
+            }
+        }
+        if (definition.skill() == SkillId.MINING) {
+            awardVanillaExperience(player, stats.value(StatId.MINING_BLOCK_EXPERIENCE));
+        }
+        if (definition.skill() == SkillId.WOODCUTTING && GatheringMaterialPolicy.isLeaves(material)
+            && perkMechanics.has(profile, SkillId.WOODCUTTING, MechanicId.GOLDEN_LEAVES)) {
+            awardVanillaExperience(player, stats.value(StatId.WOODCUTTING_LEAF_EXPERIENCE));
+            if (roll(stats.value(StatId.GOLDEN_LEAF_APPLE_CHANCE))) {
+                bonusDrops.add(new BonusDrop(block.getLocation().add(0.5, 0.5, 0.5),
+                    new ItemStack(Material.GOLDEN_APPLE, 1)));
+            }
         }
         try {
             rareDrop(definition, profile, level, stats, material, block.getLocation())
@@ -396,8 +463,9 @@ final class NativeGatheringListener implements Listener {
             return Optional.empty();
         }
         Map<Material, Integer> weights = new EnumMap<>(Material.class);
-        weights.putAll(gathering.rareDropWeights());
+        weights.putAll(gathering.rareDropWeightsFor(source));
         if (definition.skill() == SkillId.DIGGING
+            && isArchaeologySource(source)
             && perkMechanics.has(profile, SkillId.DIGGING, MechanicId.ARCHAEOLOGY_FINDS)) {
             weights.merge(Material.BRICK, 3, Integer::sum);
             weights.merge(Material.ECHO_SHARD, 1, Integer::sum);
@@ -482,6 +550,35 @@ final class NativeGatheringListener implements Listener {
             }
         }
         return List.copyOf(bonus);
+    }
+
+    private void awardVanillaExperience(Player player, double amount) {
+        int experience = (int) Math.round(amount);
+        if (experience < 1) {
+            return;
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (enabled && player.isOnline()) {
+                player.giveExp(experience);
+            }
+        });
+    }
+
+    private static boolean roll(double chance) {
+        return chance > 0.0 && ThreadLocalRandom.current().nextDouble() < chance;
+    }
+
+    private static boolean isSuspiciousBlock(Material material) {
+        return material == Material.SUSPICIOUS_SAND || material == Material.SUSPICIOUS_GRAVEL;
+    }
+
+    private static boolean isArchaeologySource(Material material) {
+        return material == Material.SAND || material == Material.RED_SAND || material == Material.GRAVEL;
+    }
+
+    private static boolean isUnderlyingSuspiciousBlock(Material material, Material original) {
+        return original == Material.SUSPICIOUS_SAND && material == Material.SAND
+            || original == Material.SUSPICIOUS_GRAVEL && material == Material.GRAVEL;
     }
 
     private static Material selectWeighted(Map<Material, Integer> weights) {

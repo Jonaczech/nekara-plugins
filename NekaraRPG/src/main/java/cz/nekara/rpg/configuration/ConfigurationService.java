@@ -427,14 +427,23 @@ public final class ConfigurationService {
                         0, 100_000, 2, "skills.progression.quadratic-growth", warning),
                 new NewGamePlusConfig(
                     config.getBoolean("skills.new-game-plus.enabled", true),
-                    validateDouble(config.getDouble("skills.new-game-plus.experience-multiplier", 0.75),
-                        0.01, 1.0, 0.75, "skills.new-game-plus.experience-multiplier", warning),
-                    validateDouble(config.getDouble("skills.new-game-plus.perk-stat-bonus-per-rank", 0.10),
-                        0.0, 1.0, 0.10, "skills.new-game-plus.perk-stat-bonus-per-rank", warning),
+                    validateDouble(config.getDouble("skills.new-game-plus.experience-multiplier", 0.50),
+                        0.01, 1.0, 0.50, "skills.new-game-plus.experience-multiplier", warning),
+                    validateDouble(config.getDouble("skills.new-game-plus.perk-stat-bonus-per-rank", 0.25),
+                        0.0, 1.0, 0.25, "skills.new-game-plus.perk-stat-bonus-per-rank", warning),
                     validateDouble(config.getDouble(
                             "skills.new-game-plus.innate-gathering-double-drop-multiplier-per-rank", 1.25),
                         1.0, 10.0, 1.25,
-                        "skills.new-game-plus.innate-gathering-double-drop-multiplier-per-rank", warning)),
+                        "skills.new-game-plus.innate-gathering-double-drop-multiplier-per-rank", warning),
+                    validateDouble(config.getDouble("skills.new-game-plus.farming-and-butchery-bonus-drop-chance", 0.30),
+                        0.0, 1.0, 0.30,
+                        "skills.new-game-plus.farming-and-butchery-bonus-drop-chance", warning),
+                    validateDouble(config.getDouble("skills.new-game-plus.woodcutting-bonus-drop-chance", 0.30),
+                        0.0, 1.0, 0.30,
+                        "skills.new-game-plus.woodcutting-bonus-drop-chance", warning),
+                    validateDouble(config.getDouble("skills.new-game-plus.digging-bonus-drop-chance", 0.30),
+                        0.0, 1.0, 0.30,
+                        "skills.new-game-plus.digging-bonus-drop-chance", warning)),
                 nativeMining,
                 nativeWoodcutting,
                 nativeDigging,
@@ -767,8 +776,33 @@ public final class ConfigurationService {
                 config.getBoolean(root + ".rewards.final-drop-multiplier-enabled", true),
                 config.getBoolean(root + ".rewards.rare-drops-enabled", true),
                 experience,
-                parseMaterialIntTable(config, root + ".rewards.rare-drops", defaultRareDrops, warning)
+                parseMaterialIntTable(config, root + ".rewards.rare-drops", defaultRareDrops, warning),
+                parseSourceMaterialIntTables(config, root + ".rewards.rare-drops-by-source", warning)
         );
+    }
+
+    private Map<Material, Map<Material, Integer>> parseSourceMaterialIntTables(
+        FileConfiguration config,
+        String path,
+        Consumer<String> warning
+    ) {
+        ConfigurationSection sources = config.getConfigurationSection(path);
+        if (sources == null) {
+            return Map.of();
+        }
+        Map<Material, Map<Material, Integer>> values = new HashMap<>();
+        for (String sourceKey : sources.getKeys(false)) {
+            Material source = Material.matchMaterial(sourceKey);
+            if (source == null || !source.isBlock()) {
+                warning.accept("Invalid rare-drop source " + path + "." + sourceKey + "; ignoring it.");
+                continue;
+            }
+            Map<Material, Integer> weights = parseMaterialIntTable(config, path + "." + sourceKey, Map.of(), warning);
+            if (!weights.isEmpty()) {
+                values.put(source, weights);
+            }
+        }
+        return Map.copyOf(values);
     }
 
     private LevelRewardConfig parseLevelRewards(

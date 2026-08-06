@@ -49,9 +49,18 @@ public final class PerkIconResolver {
             case DOUBLE_DROP_CHANCE -> Material.CHEST;
             case TRIPLE_DROP_CHANCE -> Material.ENDER_CHEST;
             case MINING_SPEED -> Material.GOLDEN_PICKAXE;
+            case MINING_BLOCK_EXPERIENCE -> Material.EXPERIENCE_BOTTLE;
+            case DRILLING_SPEED_MULTIPLIER, DRILLING_COOLDOWN_REDUCTION, TNT_BONUS_DROP_CHANCE -> Material.TNT;
             case WOODCUTTING_SPEED -> Material.GOLDEN_AXE;
+            case WOODCUTTING_LOG_EXPERIENCE, WOODCUTTING_LEAF_EXPERIENCE -> Material.EXPERIENCE_BOTTLE;
+            case GOLDEN_LEAF_APPLE_CHANCE -> Material.GOLDEN_APPLE;
+            case SAPLING_GROWTH_MULTIPLIER -> Material.OAK_SAPLING;
+            case FOOD_SATURATION_MULTIPLIER -> Material.COOKED_BEEF;
             case DIGGING_SPEED -> Material.GOLDEN_SHOVEL;
+            case DIGGING_BLOCK_EXPERIENCE -> Material.EXPERIENCE_BOTTLE;
             case CROP_GROWTH_MULTIPLIER -> Material.BONE_MEAL;
+            case FARMING_BONUS_DROP_CHANCE -> Material.WHEAT;
+            case FARMING_HARVEST_EXPERIENCE -> Material.EXPERIENCE_BOTTLE;
             case ARMOR_MULTIPLIER -> Material.IRON_CHESTPLATE;
             case ARMOR_PENETRATION -> Material.ARMOR_STAND;
             case DODGE_CHANCE, MOVEMENT_PENALTY_REDUCTION -> Material.FEATHER;
@@ -67,10 +76,12 @@ public final class PerkIconResolver {
             case BREWING_SPEED -> Material.BREWING_STAND;
             case THROWING_SPEED -> Material.SPLASH_POTION;
             case FURNACE_SPEED -> Material.BLAST_FURNACE;
+            case FOOD_COOKING_SPEED -> Material.SMOKER;
             case TNT_POWER -> Material.TNT;
             case RARE_DROP_CHANCE -> Material.AMETHYST_SHARD;
-            case ANIMAL_DAMAGE_MULTIPLIER -> Material.IRON_AXE;
-            case BEEKEEPING_YIELD -> Material.HONEYCOMB;
+            case ANIMAL_DAMAGE_MULTIPLIER, ANIMAL_BONUS_DROP_CHANCE -> Material.IRON_AXE;
+            case ANIMAL_GROWTH_MULTIPLIER, BREEDING_EXPERIENCE_MULTIPLIER -> Material.WHEAT;
+            case BEEKEEPING_HONEY_REFILL_CHANCE -> Material.HONEYCOMB;
             case LUCK -> Material.RABBIT_FOOT;
             case FISHING_SPEED -> Material.FISHING_ROD;
             case ACCURACY -> Material.TARGET;
@@ -86,9 +97,13 @@ public final class PerkIconResolver {
     private static Material mechanicMaterial(MechanicId mechanic) {
         return switch (mechanic) {
             case VEIN_MINING -> Material.DIAMOND_ORE;
-            case DRILLING -> Material.TNT;
+            case DRILLING, TNT_MASTERY -> Material.TNT;
+            case VEIN_CLUSTER_EXTRACTION -> Material.DEEPSLATE;
             case TREE_FELLER -> Material.OAK_LOG;
             case INSTANT_HARVEST, FIELD_HARVEST -> Material.GOLDEN_HOE;
+            case BEEKEEPER -> Material.BEE_NEST;
+            case GOLDEN_LEAVES -> Material.GOLDEN_APPLE;
+            case INSTANT_LEAF_BREAK -> Material.SHEARS;
             case WEAPON_COATING -> Material.LINGERING_POTION;
             case CHARGED_SHOT, CUSTOM_ARROW_RECIPES -> Material.SPECTRAL_ARROW;
             case ADRENALINE -> Material.SUGAR;
@@ -101,9 +116,9 @@ public final class PerkIconResolver {
             case VILLAGER_ORDERING, VILLAGER_UPGRADING, VILLAGER_TRAINING,
                     VILLAGER_GIFTS, BLACK_MARKET -> Material.EMERALD;
             case SMITHING_RECIPES, BULK_CRAFTING, TINKERING -> Material.SMITHING_TABLE;
-            case WOOD_RECIPES -> Material.CRAFTING_TABLE;
             case RARE_LEAF_DROPS -> Material.OAK_LEAVES;
-            case ARCHAEOLOGY_FINDS -> Material.BRUSH;
+            case ARCHAEOLOGY_FINDS, SUSPICIOUS_BLOCK_RESTORATION -> Material.BRUSH;
+            case GROUND_REPLICATION -> Material.GRASS_BLOCK;
             case EQUIPMENT_FISHING, EQUIPMENT_SALVAGING -> Material.FISHING_ROD;
             case LIGHT_ARMOR_SET_BONUS -> Material.CHAINMAIL_CHESTPLATE;
             case HEAVY_ARMOR_SET_BONUS -> Material.NETHERITE_CHESTPLATE;

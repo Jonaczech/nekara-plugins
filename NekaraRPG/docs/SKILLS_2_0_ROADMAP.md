@@ -48,8 +48,9 @@ hodnoty, vazby, ikony či rozložení. Zjištěné počty musí být před tvorb
 zapsány jako samostatná ověřitelná tabulka; do té doby se přesná shoda netvrdí.
 
 Každý uzel musí mít stabilní ID, pozici v 9×6 viewportu, maximální rank, cenu,
-požadovanou úroveň, předchůdce a typované efekty. Konfigurace s cyklem, chybějícím
-předchůdcem, kolizí pozic nebo cizím stromem se při startu odmítne.
+požadovanou úroveň (u vícenásobného ranku samostatně pro každou příští hodnost),
+předchůdce a typované efekty. Konfigurace s cyklem, chybějícím předchůdcem,
+kolizí pozic nebo cizím stromem se při startu odmítne.
 
 ## Implementační fáze
 
@@ -94,7 +95,9 @@ předchůdcem, kolizí pozic nebo cizím stromem se při startu odmítne.
 ### 4. Bezpečný nákup perků — hráčský průchod hotov
 
 - hotovo: potvrzovací dialog,
-- hotovo: serverová kontrola úrovně, bodů, ranku a předchůdců,
+- hotovo: serverová kontrola úrovně, bodů, ranku a předchůdců; pětihodnostní
+  uzly kontrolují úroveň cílové hodnosti (`0/10/20/35/50`, resp.
+  `20/35/50/70/85`) a GUI ji zobrazuje,
 - hotovo: atomické compare-and-save nad revision profilu,
 - hotovo: zámek souběžného nákupu jednoho hráče a bezpečné znovunačtení profilu,
 - hotovo: administrativní grant/reset s auditem; grantovaný rank započítává
@@ -112,15 +115,18 @@ předchůdcem, kolizí pozic nebo cizím stromem se při startu odmítne.
   dvojitý výtěžek za úroveň až do `20 %` na úrovni 100. Lesnictví násobí pouze
   logy/stemy, Rybaření jen skutečný vanilla catch. Tyto hodnoty jsou
   konfigurovatelné, skládají se s perky a nepřepisují vanilla loot ani Fortune,
+- rozpracováno po 2.3.3: Kopání má Kopáče/Bagr s rankovanou rychlostí lopaty,
+  Síto a Skrytý poklad pro vzácný loot, přesné ground recepty, obnovu dokončeně
+  vyčištěného suspicious sand/gravel a vlastní nezávislý NG+ bonusový roll,
 - hotovo v kódu: rychlost nástroje, hornická pec, Žilobití, Řízený odstřel, Pád
   velikána, úsporná prkna a vzácné nálezy Zeměrytectví i listí,
 - hromadné schopnosti používají skutečný hráčský break pro každý blok, nevynucují
   zrušené regionové bloky, nenačítají chunky a respektují limity, cooldown i
   vanilla durability,
-- hotovo v kódu: Hospodářství ověřuje zralost, odměňuje zralé bobule a přírodní sběr,
-  násobí pouze finální dropy, umí bezpečně
-  sklidit a znovu zasadit nejvýše devět bloků a zrychluje jen chunky s nedávným
-  hráčským správcem; Fishing navazuje na skutečně doručený deferred catch a jeho
+- rozpracováno po 2.3.3: Hospodářství ověřuje zralost, odměňuje zralé bobule a přírodní sběr,
+  používá samostatné rolly dodatečného crop/animal lootu vedle capované standardní
+  šance, umí bezpečně sklidit a znovu zasadit plodiny v aktivní ploše `5×5` a
+  zrychluje jen chunky s nedávným hráčským správcem; Fishing navazuje na skutečně doručený deferred catch a jeho
   malé levelové poklady se přidávají vedle něj z vlastní vážené tabulky,
 - zbývá před produkcí: živá Purpur/Lands/exploit akceptace všech pěti vertikál.
 

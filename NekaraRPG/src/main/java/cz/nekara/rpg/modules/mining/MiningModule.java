@@ -8,6 +8,7 @@ import cz.nekara.rpg.echovein.OreHeightDistribution;
 import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.modules.NekaraModule;
 import cz.nekara.rpg.modules.fishing.FishingModule;
+import cz.nekara.rpg.skills.SkillId;
 import cz.nekara.rpg.sounds.SoundService;
 import org.bukkit.FluidCollisionMode;
 import org.bukkit.GameMode;
@@ -309,7 +310,7 @@ public final class MiningModule implements NekaraModule, Listener {
                 player.getName(), action.material(), action.experienceEventCount(), action.experience()));
 
         if (!EchoVeinMath.winsChance(
-                ThreadLocalRandom.current().nextDouble(), config.triggerChance())) {
+                ThreadLocalRandom.current().nextDouble(), echoVeinTriggerChance(player))) {
             return;
         }
 
@@ -327,6 +328,12 @@ public final class MiningModule implements NekaraModule, Listener {
     private long nativeMiningExperience(Material material) {
         return plugin.configuration().get().skills().mining().experienceByMaterial()
                 .getOrDefault(material, 0L);
+    }
+
+    private double echoVeinTriggerChance(Player player) {
+        int level = plugin.skillsModule().cachedSkillLevel(player.getUniqueId(), SkillId.MINING);
+        // Mining level adds at most five percentage points; the configured baseline remains intact.
+        return Math.min(1.0, config.triggerChance() + Math.min(100, level) * 0.0005);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

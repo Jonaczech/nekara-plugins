@@ -591,12 +591,12 @@ final class SkillsMenu implements Listener {
         return GuiItems.item(
             SkillIconResolver.resolve(skill),
             Component.text(SkillPresentation.czechName(skill), NamedTextColor.GREEN),
-            Component.text("Dvojitá sklizeň: " + AttributePresentation.percentage(
-                stat(player, skill, StatId.DOUBLE_DROP_CHANCE)), NamedTextColor.AQUA),
+            Component.text("Dodatečná sklizeň: " + AttributePresentation.percentage(
+                stat(player, skill, StatId.FARMING_BONUS_DROP_CHANCE)), NamedTextColor.AQUA),
             Component.text("Růst plodin: " + AttributePresentation.bonusPercentage(
                 stat(player, skill, StatId.CROP_GROWTH_MULTIPLIER)), NamedTextColor.AQUA),
-            Component.text("Výtěžek včel: " + AttributePresentation.bonusPercentage(
-                stat(player, skill, StatId.BEEKEEPING_YIELD)), NamedTextColor.AQUA)
+            Component.text("Obnovení medu: " + AttributePresentation.percentage(
+                stat(player, skill, StatId.BEEKEEPING_HONEY_REFILL_CHANCE)), NamedTextColor.AQUA)
         );
     }
 
@@ -851,8 +851,10 @@ final class SkillsMenu implements Listener {
         lore.add(Component.text("◆ Hodnost: " + rank + "/" + perk.maxRank(), color));
         if (!maxed) {
             lore.add(Component.text("◆ Cena: " + perk.pointCostPerRank() + " body", NamedTextColor.GOLD));
-            boolean levelMet = skillLevel >= perk.requiredSkillLevel();
-            lore.add(Component.text("◆ Úroveň dovednosti: " + skillLevel + "/" + perk.requiredSkillLevel(),
+            int requiredSkillLevel = perk.requiredSkillLevelForRank(rank + 1);
+            boolean levelMet = skillLevel >= requiredSkillLevel;
+            lore.add(Component.text("◆ Úroveň dovednosti pro hodnost " + (rank + 1) + ": "
+                + skillLevel + "/" + requiredSkillLevel,
                 levelMet ? NamedTextColor.GREEN : NamedTextColor.RED));
             boolean pointsMet = freePoints >= perk.pointCostPerRank();
             lore.add(Component.text("◆ Volné body: " + freePoints + "/" + perk.pointCostPerRank(),

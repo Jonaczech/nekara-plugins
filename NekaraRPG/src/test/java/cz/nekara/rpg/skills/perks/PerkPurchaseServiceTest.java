@@ -52,7 +52,7 @@ class PerkPurchaseServiceTest {
     }
 
     @Test
-    void cannotSpendMoreThanPowerLevel() throws Exception {
+    void nextRankNeedsItsOwnSkillLevelEvenWhenThePlayerHasPoints() throws Exception {
         SkillProgressionCurve curve = SkillProgressionCurve.defaultCurve();
         DefaultPerkTree tree = DefaultPerkTree.create();
         try (SqliteSkillProfileRepository repository = repository()) {
@@ -61,9 +61,26 @@ class PerkPurchaseServiceTest {
 
             assertEquals(PerkPurchaseStatus.PURCHASED,
                 service.purchase("player-1", new PerkId("tezba.yield")).status());
-            assertEquals(PerkPurchaseStatus.INSUFFICIENT_POINTS,
+            assertEquals(PerkPurchaseStatus.LEVEL_REQUIRED,
                 service.purchase("player-1", new PerkId("tezba.yield")).status());
             assertEquals(1, repository.find("player-1").orElseThrow().spentPerkPoints());
+        }
+    }
+
+    @Test
+    void secondFiveRankBranchUsesItsOwnRankLevelRequirements() throws Exception {
+        SkillProgressionCurve curve = SkillProgressionCurve.defaultCurve();
+        DefaultPerkTree tree = DefaultPerkTree.create();
+        try (SqliteSkillProfileRepository repository = repository()) {
+            repository.save(profileAtEverySkillLevel(curve, 20), 0);
+            PerkPurchaseService service = service(repository, curve, tree);
+
+            service.purchase("player-1", new PerkId("tezba.yield"));
+            service.purchase("player-1", new PerkId("tezba.yield"));
+            service.purchase("player-1", new PerkId("tezba.tempo"));
+
+            assertEquals(PerkPurchaseStatus.LEVEL_REQUIRED,
+                service.purchase("player-1", new PerkId("tezba.tempo")).status());
         }
     }
 

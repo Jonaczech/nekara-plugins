@@ -679,6 +679,30 @@ public final class SkillsModule implements NekaraModule {
         return 1.0 + newGamePlusStatBonus(profile, skill);
     }
 
+    double farmingNewGamePlusBonusDropChance(SkillProfile profile) {
+        SkillsConfig config = activeConfig;
+        if (config == null || profile.newGamePlusRank(SkillId.FARMING) == 0) {
+            return 0.0;
+        }
+        return config.newGamePlus().farmingAndButcheryBonusDropChance();
+    }
+
+    double woodcuttingNewGamePlusBonusDropChance(SkillProfile profile) {
+        SkillsConfig config = activeConfig;
+        if (config == null || profile.newGamePlusRank(SkillId.WOODCUTTING) == 0) {
+            return 0.0;
+        }
+        return config.newGamePlus().woodcuttingBonusDropChance();
+    }
+
+    double diggingNewGamePlusBonusDropChance(SkillProfile profile) {
+        SkillsConfig config = activeConfig;
+        if (config == null || profile.newGamePlusRank(SkillId.DIGGING) == 0) {
+            return 0.0;
+        }
+        return config.newGamePlus().diggingBonusDropChance();
+    }
+
     void showExperienceFeedback(
         UUID playerId,
         SkillId skill,

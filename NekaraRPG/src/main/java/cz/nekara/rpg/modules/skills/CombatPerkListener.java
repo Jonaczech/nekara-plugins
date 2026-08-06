@@ -388,13 +388,13 @@ final class CombatPerkListener implements Listener {
                 has(state, heavy ? MechanicId.HEAVY_WEAPON_NETHERITE_MOBILITY : MechanicId.LIGHT_WEAPON_NETHERITE_MOBILITY));
             addModifier(player, Attribute.MOVEMENT_SPEED, weaponMobilityKey, penalty);
             module.cachedProfile(player.getUniqueId()).ifPresent(profile -> {
-                EquipmentProficiencyPolicy.Requirement requirement = mobilityRequirement(weapon,
-                    player.getInventory().getItemInMainHand());
-                if (module.skillLevel(profile, requirement.skill()) < requirement.requiredLevel()) {
-                    addModifier(player, Attribute.MOVEMENT_SPEED, proficiencyMobilityKey,
-                        EquipmentProficiencyPolicy.weaponMovementPenalty(requirement.skill()));
-                    warn(player, requirement, "Tuto zbraň ještě neumíš používat");
-                }
+                mobilityRequirement(weapon, player.getInventory().getItemInMainHand()).ifPresent(requirement -> {
+                    if (module.skillLevel(profile, requirement.skill()) < requirement.requiredLevel()) {
+                        addModifier(player, Attribute.MOVEMENT_SPEED, proficiencyMobilityKey,
+                            EquipmentProficiencyPolicy.weaponMovementPenalty(requirement.skill()));
+                        warn(player, requirement, "Tuto zbraň ještě neumíš používat");
+                    }
+                });
             });
         });
     }
@@ -684,7 +684,7 @@ final class CombatPerkListener implements Listener {
     private void applyWeaponProficiency(EntityDamageByEntityEvent event, Player attacker) {
         ItemStack held = attacker.getInventory().getItemInMainHand();
         Optional<EquipmentProficiencyPolicy.Requirement> requirement = WeaponCatalog.resolve(held)
-            .map(EquipmentProficiencyPolicy::weapon)
+            .flatMap(EquipmentProficiencyPolicy::weapon)
             .or(() -> EquipmentProficiencyPolicy.heldTool(held));
         requirement.ifPresent(value -> {
             module.cachedProfile(attacker.getUniqueId()).ifPresent(profile -> {
@@ -721,12 +721,12 @@ final class CombatPerkListener implements Listener {
         return Optional.empty();
     }
 
-    private static EquipmentProficiencyPolicy.Requirement mobilityRequirement(
+    private static Optional<EquipmentProficiencyPolicy.Requirement> mobilityRequirement(
         WeaponDefinition weapon,
         ItemStack item
     ) {
         return weapon.family() == WeaponFamily.AXE
-            ? EquipmentProficiencyPolicy.heldTool(item).orElseGet(() -> EquipmentProficiencyPolicy.weapon(weapon))
+            ? EquipmentProficiencyPolicy.heldTool(item).or(() -> EquipmentProficiencyPolicy.weapon(weapon))
             : EquipmentProficiencyPolicy.weapon(weapon);
     }
 

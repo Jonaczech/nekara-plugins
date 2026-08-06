@@ -28,7 +28,7 @@ class PerkEffectPresentationTest {
     void givesAConcreteDescriptionForMechanics() {
         PerkDefinition perk = perk(1, new MechanicPerkEffect(MechanicId.FIELD_HARVEST));
 
-        assertTrue(PerkEffectPresentation.describe(perk, 0).getFirst().contains("nejvýše 3×3"));
+        assertTrue(PerkEffectPresentation.describe(perk, 0).getFirst().contains("5×5"));
     }
 
     @Test

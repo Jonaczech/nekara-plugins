@@ -62,4 +62,17 @@ class SmithingTierTest {
             Material.ARROW, Material.GLOW_INK_SAC, Material.AMETHYST_SHARD
         }));
     }
+
+    @Test
+    void groundReplicationHasExplicitRecipesAndDoesNotAcceptIncompleteIngredients() {
+        assertEquals(Material.GRASS_BLOCK, ProductionPerkListener.groundReplicationMaterial(new Material[] {
+            Material.DIRT, Material.DIRT, Material.DIRT, Material.DIRT, Material.MOSS_BLOCK, Material.BONE_MEAL
+        }).orElseThrow());
+        assertEquals(Material.ROOTED_DIRT, ProductionPerkListener.groundReplicationMaterial(new Material[] {
+            Material.DIRT, Material.DIRT, Material.DIRT, Material.DIRT, Material.HANGING_ROOTS, Material.BONE_MEAL
+        }).orElseThrow());
+        assertTrue(ProductionPerkListener.groundReplicationMaterial(new Material[] {
+            Material.DIRT, Material.DIRT, Material.DIRT, Material.DIRT, Material.BONE_MEAL
+        }).isEmpty());
+    }
 }

@@ -115,6 +115,12 @@ final class GatheringAbilityListener implements Listener {
                 GatheringTool.PICKAXE, config.veinMining(),
                 candidate -> GatheringMaterialPolicy.sameOreFamily(material, candidate.getType()),
                 false);
+        } else if (GatheringMaterialPolicy.isVeinCluster(material)) {
+            tryConnectedAbility(
+                player, source, material, SkillId.MINING, MechanicId.VEIN_CLUSTER_EXTRACTION,
+                GatheringTool.PICKAXE, config.veinMining(),
+                candidate -> candidate.getType() == material,
+                false);
         } else if (GatheringMaterialPolicy.isLog(material)) {
             tryConnectedAbility(
                 player, source, material, SkillId.WOODCUTTING, MechanicId.TREE_FELLER,
@@ -167,7 +173,8 @@ final class GatheringAbilityListener implements Listener {
         event.setFire(false);
         enhancedTnt.put(tnt.getUniqueId(), new EnhancedTnt(
             player.getUniqueId(), config.drilling().maximumBlocks()));
-        setCooldown(player.getUniqueId(), MechanicId.DRILLING, config.drilling());
+        setCooldown(player.getUniqueId(), MechanicId.DRILLING, config.drilling(),
+            stats.resolve(profile.get(), SkillId.MINING).value(StatId.DRILLING_COOLDOWN_REDUCTION));
         messages.sendActionBar(player, "skills-drilling-ready", Map.of());
     }
 
@@ -256,7 +263,9 @@ final class GatheringAbilityListener implements Listener {
             return;
         }
         setCooldown(player.getUniqueId(), mechanic, ability);
-        runBatchedBreak(player, targets, tool, accepted, ability.blocksPerTick(),
+        int blocksPerTick = ability.blocksPerTick();
+        if (mechanic == MechanicId.VEIN_CLUSTER_EXTRACTION) blocksPerTick *= 2;
+        runBatchedBreak(player, targets, tool, accepted, blocksPerTick,
             sourceMaterial, source.getLocation());
     }
 
@@ -358,9 +367,13 @@ final class GatheringAbilityListener implements Listener {
     }
 
     private void setCooldown(UUID playerId, MechanicId mechanic, GatheringAbilityConfig ability) {
+        setCooldown(playerId, mechanic, ability, 0.0);
+    }
+
+    private void setCooldown(UUID playerId, MechanicId mechanic, GatheringAbilityConfig ability, double reduction) {
         if (ability.cooldownSeconds() > 0) {
             cooldowns.put(new CooldownKey(playerId, mechanic),
-                System.currentTimeMillis() + ability.cooldownSeconds() * 1_000L);
+                System.currentTimeMillis() + Math.round(ability.cooldownSeconds() * (1.0 - reduction) * 1_000L));
         }
     }
 

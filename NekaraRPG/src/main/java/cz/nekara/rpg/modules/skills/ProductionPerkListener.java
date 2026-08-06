@@ -17,12 +17,15 @@ import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.BrewingStand;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.Levelled;
 import org.bukkit.block.data.type.Beehive;
 import org.bukkit.entity.FishHook;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.Animals;
+import org.bukkit.entity.Bee;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.ThrownPotion;
 import org.bukkit.entity.Villager;
@@ -34,11 +37,13 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.block.BlockGrowEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BrewingStartEvent;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.inventory.BrewEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
+import org.bukkit.event.inventory.FurnaceStartSmeltEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
@@ -46,7 +51,13 @@ import org.bukkit.event.inventory.SmithItemEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.entity.EntityBreedEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
+import org.bukkit.event.entity.EntityRegainHealthEvent;
+import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.inventory.EnchantingInventory;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -70,7 +81,10 @@ import java.util.concurrent.ThreadLocalRandom;
 
 final class ProductionPerkListener implements Listener {
     private static final long BREWING_ATTRIBUTION_MILLIS = 120_000L;
-    private static final int MAX_FIELD_BLOCKS = 9;
+    private static final int FIELD_RADIUS = 2;
+    private static final int MAX_FIELD_BLOCKS = 25;
+    private static final long FIELD_HARVEST_DURATION_MILLIS = 8_000L;
+    private static final long FIELD_HARVEST_COOLDOWN_MILLIS = 45_000L;
     private static final long CROP_CARE_MILLIS = 600_000L;
     private static final int MAX_CARED_CHUNKS = 16_384;
 
@@ -80,7 +94,10 @@ final class ProductionPerkListener implements Listener {
     private final org.bukkit.NamespacedKey workshopKitKey;
     private final org.bukkit.NamespacedKey scoutArrowKey;
     private final Map<UUID, BukkitTask> sharpeningTasks = new HashMap<>();
+    private final Map<UUID, Long> fieldHarvestWindows = new HashMap<>();
+    private final Map<UUID, Long> fieldHarvestCooldowns = new HashMap<>();
     private final Map<BlockKey, BrewingActor> brewingActors = new HashMap<>();
+    private final Map<BlockKey, BrewingActor> foodCookingActors = new HashMap<>();
     private final Map<ChunkKey, CropCaretaker> cropCaretakers = new LinkedHashMap<>() {
         @Override
         protected boolean removeEldestEntry(Map.Entry<ChunkKey, CropCaretaker> eldest) {
@@ -113,7 +130,10 @@ final class ProductionPerkListener implements Listener {
         enabled = false;
         HandlerList.unregisterAll(this);
         brewingActors.clear();
+        foodCookingActors.clear();
         cropCaretakers.clear();
+        fieldHarvestWindows.clear();
+        fieldHarvestCooldowns.clear();
         sharpeningTasks.values().forEach(BukkitTask::cancel);
         sharpeningTasks.clear();
     }
@@ -462,10 +482,10 @@ final class ProductionPerkListener implements Listener {
         }
         List<Block> harvest = new ArrayList<>();
         harvest.add(event.getClickedBlock());
-        if (player.isSneaking() && state.get().has(MechanicId.FIELD_HARVEST)) {
+        if (state.get().has(MechanicId.FIELD_HARVEST) && activateOrContinueFieldHarvest(player)) {
             Material crop = event.getClickedBlock().getType();
-            for (int x = -1; x <= 1 && harvest.size() < MAX_FIELD_BLOCKS; x++) {
-                for (int z = -1; z <= 1 && harvest.size() < MAX_FIELD_BLOCKS; z++) {
+            for (int x = -FIELD_RADIUS; x <= FIELD_RADIUS && harvest.size() < MAX_FIELD_BLOCKS; x++) {
+                for (int z = -FIELD_RADIUS; z <= FIELD_RADIUS && harvest.size() < MAX_FIELD_BLOCKS; z++) {
                     Block candidate = event.getClickedBlock().getRelative(x, 0, z);
                     if (candidate.getType() == crop && isMature(candidate) && !harvest.contains(candidate)) {
                         harvest.add(candidate);
@@ -508,6 +528,31 @@ final class ProductionPerkListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void rememberFoodCook(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)
+            || !(event.getView().getTopInventory().getHolder() instanceof org.bukkit.block.Furnace furnace)) {
+            return;
+        }
+        ItemStack cursor = event.getCursor();
+        ItemStack current = event.getCurrentItem();
+        if (isCookableFood(cursor == null ? null : cursor.getType())
+            || isCookableFood(current == null ? null : current.getType())) {
+            foodCookingActors.put(BlockKey.of(furnace.getBlock()), new BrewingActor(player.getUniqueId(), System.currentTimeMillis()));
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void speedUpAttributedFoodCooking(FurnaceStartSmeltEvent event) {
+        if (!isCookableFood(event.getSource().getType())) return;
+        BrewingActor actor = foodCookingActors.get(BlockKey.of(event.getBlock()));
+        if (actor == null || System.currentTimeMillis() - actor.recordedAt() > BREWING_ATTRIBUTION_MILLIS) return;
+        module.runtimeState(actor.playerId(), SkillId.FARMING).ifPresent(state -> {
+            double speed = state.stats().value(StatId.FOOD_COOKING_SPEED);
+            if (speed > 1.0) event.setTotalCookTime(Math.max(1, (int) Math.ceil(event.getTotalCookTime() / speed)));
+        });
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void improveBeekeepingYield(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getHand() != EquipmentSlot.HAND
             || event.getClickedBlock() == null
@@ -516,20 +561,17 @@ final class ProductionPerkListener implements Listener {
             return;
         }
         Material held = event.getPlayer().getInventory().getItemInMainHand().getType();
-        Material reward;
-        if (held == Material.SHEARS) {
-            reward = Material.HONEYCOMB;
-        } else if (held == Material.GLASS_BOTTLE) {
-            reward = Material.HONEY_BOTTLE;
-        } else {
+        if (held != Material.SHEARS && held != Material.GLASS_BOTTLE) {
             return;
         }
+        BlockKey hiveKey = BlockKey.of(event.getClickedBlock());
         module.runtimeState(event.getPlayer().getUniqueId(), SkillId.FARMING).ifPresent(state -> {
-            double extraYieldChance = Math.max(0.0,
-                state.stats().value(StatId.BEEKEEPING_YIELD) - 1.0);
-            if (ThreadLocalRandom.current().nextDouble() < extraYieldChance) {
-                giveLater(event.getPlayer(), new ItemStack(reward, 1));
+            if (!state.has(MechanicId.BEEKEEPER)
+                || ThreadLocalRandom.current().nextDouble()
+                >= state.stats().value(StatId.BEEKEEPING_HONEY_REFILL_CHANCE)) {
+                return;
             }
+            Bukkit.getScheduler().runTask(plugin, () -> refillHoney(hiveKey));
         });
     }
 
@@ -543,19 +585,144 @@ final class ProductionPerkListener implements Listener {
             int multiplier = dropMultiplier.resolve(
                 state.stats(), module.innateGatheringDoubleDropChance(profile, SkillId.FARMING),
                 new RandomChanceRoller(ThreadLocalRandom.current()));
-            if (multiplier <= 1) {
-                return;
-            }
             List<ItemStack> bonuses = new ArrayList<>();
-            for (Item item : event.getItems()) {
-                ItemStack original = item.getItemStack();
-                for (int copy = 1; copy < multiplier; copy++) {
-                    bonuses.add(original.clone());
-                }
+            addItemCopies(event.getItems(), multiplier - 1, bonuses);
+            if (roll(state.stats().value(StatId.FARMING_BONUS_DROP_CHANCE))) {
+                addItemCopies(event.getItems(), 1, bonuses);
+            }
+            if (roll(module.farmingNewGamePlusBonusDropChance(profile))) {
+                addItemCopies(event.getItems(), 1, bonuses);
+            }
+            int harvestExperience = (int) Math.round(state.stats().value(StatId.FARMING_HARVEST_EXPERIENCE));
+            if (harvestExperience > 0) {
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (enabled && event.getPlayer().isOnline()) {
+                        event.getPlayer().giveExp(harvestExperience);
+                    }
+                });
+            }
+            if (bonuses.isEmpty()) {
+                return;
             }
             Bukkit.getScheduler().runTask(plugin, () -> bonuses.forEach(item ->
                 event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation().add(0.5, 0.5, 0.5), item)));
         }));
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void keepBeesCalm(EntityTargetLivingEntityEvent event) {
+        if (!(event.getEntity() instanceof Bee) || !(event.getTarget() instanceof Player player)) {
+            return;
+        }
+        module.runtimeState(player.getUniqueId(), SkillId.FARMING).ifPresent(state -> {
+            if (state.has(MechanicId.BEEKEEPER)) {
+                event.setCancelled(true);
+            }
+        });
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void improveAnimalBreeding(EntityBreedEvent event) {
+        if (!(event.getBreeder() instanceof Player player) || !(event.getEntity() instanceof Animals)
+            || !(event.getEntity() instanceof org.bukkit.entity.Ageable child) || !supported(player)) {
+            return;
+        }
+        module.runtimeState(player.getUniqueId(), SkillId.FARMING).ifPresent(state -> {
+            double growthMultiplier = state.stats().value(StatId.ANIMAL_GROWTH_MULTIPLIER);
+            if (growthMultiplier > 1.0 && child.getAge() < 0) {
+                child.setAge((int) Math.ceil(child.getAge() / growthMultiplier));
+            }
+            event.setExperience((int) Math.ceil(event.getExperience()
+                * state.stats().value(StatId.BREEDING_EXPERIENCE_MULTIPLIER)));
+        });
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void improveAnimalDrops(EntityDeathEvent event) {
+        if (!(event.getEntity() instanceof Animals) || !(event.getEntity().getKiller() instanceof Player player)
+            || !supported(player) || event.getDrops().isEmpty()) {
+            return;
+        }
+        module.cachedProfile(player.getUniqueId()).ifPresent(profile ->
+            module.runtimeState(player.getUniqueId(), SkillId.FARMING).ifPresent(state -> {
+                List<ItemStack> original = event.getDrops().stream().map(ItemStack::clone).toList();
+                if (roll(state.stats().value(StatId.ANIMAL_BONUS_DROP_CHANCE))) {
+                    addCopies(original, 1, event.getDrops());
+                }
+                if (roll(module.farmingNewGamePlusBonusDropChance(profile))) {
+                    addCopies(original, 1, event.getDrops());
+                }
+            }));
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void conserveWoodcutterFood(FoodLevelChangeEvent event) {
+        if (!(event.getEntity() instanceof Player player) || !supported(player)
+            || event.getFoodLevel() >= player.getFoodLevel()) {
+            return;
+        }
+        module.runtimeState(player.getUniqueId(), SkillId.WOODCUTTING).ifPresent(state -> {
+            if (roll(state.stats().value(StatId.HUNGER_CONSUMPTION_REDUCTION))) {
+                event.setFoodLevel(Math.min(20, event.getFoodLevel() + 1));
+            }
+        });
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void improveWoodcutterRegeneration(EntityRegainHealthEvent event) {
+        if (!(event.getEntity() instanceof Player player) || !supported(player)) {
+            return;
+        }
+        module.runtimeState(player.getUniqueId(), SkillId.WOODCUTTING).ifPresent(state ->
+            event.setAmount(event.getAmount() * (1.0 + state.stats().value(StatId.HEALTH_REGENERATION))));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void improveWoodcutterNutrition(PlayerItemConsumeEvent event) {
+        Player player = event.getPlayer();
+        if (!event.getItem().getType().isEdible() || !supported(player)) {
+            return;
+        }
+        float previousSaturation = player.getSaturation();
+        module.runtimeState(player.getUniqueId(), SkillId.WOODCUTTING).ifPresent(state -> {
+            double multiplier = state.stats().value(StatId.FOOD_SATURATION_MULTIPLIER);
+            if (multiplier <= 1.0) {
+                return;
+            }
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (!enabled || !player.isOnline()) {
+                    return;
+                }
+                float gainedSaturation = Math.max(0.0F, player.getSaturation() - previousSaturation);
+                float bonus = (float) (gainedSaturation * (multiplier - 1.0));
+                player.setSaturation(Math.min(player.getFoodLevel(), player.getSaturation() + bonus));
+            });
+        });
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void acceleratePlantedSapling(BlockPlaceEvent event) {
+        Block sapling = event.getBlockPlaced();
+        if (!isSapling(sapling) || !supported(event.getPlayer())) {
+            return;
+        }
+        module.runtimeState(event.getPlayer().getUniqueId(), SkillId.WOODCUTTING).ifPresent(state -> {
+            double multiplier = state.stats().value(StatId.SAPLING_GROWTH_MULTIPLIER);
+            if (multiplier <= 1.0) {
+                return;
+            }
+            long delayTicks = Math.max(20L, Math.round(12_000.0 / multiplier));
+            BlockKey key = BlockKey.of(sapling);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (!enabled) {
+                    return;
+                }
+                Block current = key.block();
+                if (current != null && isSapling(current)) {
+                    current.applyBoneMeal(BlockFace.UP);
+                }
+            }, delayTicks);
+        });
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -630,13 +797,6 @@ final class ProductionPerkListener implements Listener {
             return;
         }
         ItemStack vanillaResult = event.getRecipe().getResult();
-        if (hasMechanic(player, SkillId.WOODCUTTING, MechanicId.WOOD_RECIPES)
-            && isSingleLogRecipe(event.getInventory().getMatrix(), vanillaResult)) {
-            ItemStack result = vanillaResult.clone();
-            result.setAmount(5);
-            event.getInventory().setResult(result);
-            return;
-        }
         if (vanillaResult.getType().isAir() || !isEfficientConstructionOutput(vanillaResult.getType())) {
             return;
         }
@@ -683,6 +843,9 @@ final class ProductionPerkListener implements Listener {
         } else if (hasMechanic(player, SkillId.ARCHERY, MechanicId.CUSTOM_ARROW_RECIPES)
             && isScoutArrowIngredients(matrix)) {
             event.getInventory().setResult(scoutArrows());
+        } else if (hasMechanic(player, SkillId.DIGGING, MechanicId.GROUND_REPLICATION)) {
+            groundReplicationMaterial(matrix).map(material -> new ItemStack(material, 4))
+                .ifPresent(event.getInventory()::setResult);
         }
     }
 
@@ -751,6 +914,33 @@ final class ProductionPerkListener implements Listener {
         return hasExactly(matrix, Map.of(Material.ARROW, 4, Material.GLOW_INK_SAC, 1, Material.AMETHYST_SHARD, 1));
     }
 
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void previewMiningTntMastery(PrepareItemCraftEvent event) {
+        if (event.isRepair() || !(event.getView().getPlayer() instanceof Player player)
+            || !supported(player) || event.getInventory().getResult() == null
+            || event.getInventory().getResult().getType() != Material.TNT
+            || !hasMechanic(player, SkillId.MINING, MechanicId.TNT_MASTERY)) {
+            return;
+        }
+        ItemStack result = event.getInventory().getResult().clone();
+        result.setAmount(Math.min(result.getMaxStackSize(), result.getAmount() * 3));
+        event.getInventory().setResult(result);
+    }
+
+    static Optional<Material> groundReplicationMaterial(ItemStack[] matrix) {
+        return groundReplicationMaterial(materialGrid(matrix));
+    }
+
+    static Optional<Material> groundReplicationMaterial(Material[] matrix) {
+        if (hasExactly(matrix, Map.of(Material.DIRT, 4, Material.MOSS_BLOCK, 1, Material.BONE_MEAL, 1))) {
+            return Optional.of(Material.GRASS_BLOCK);
+        }
+        if (hasExactly(matrix, Map.of(Material.DIRT, 4, Material.HANGING_ROOTS, 1, Material.BONE_MEAL, 1))) {
+            return Optional.of(Material.ROOTED_DIRT);
+        }
+        return Optional.empty();
+    }
+
     private static boolean isVitalityTonicIngredients(ItemStack[] matrix) {
         if (!hasExactly(matrix, Map.of(Material.POTION, 1, Material.SWEET_BERRIES, 1, Material.GLOW_BERRIES, 1))) {
             return false;
@@ -786,21 +976,6 @@ final class ProductionPerkListener implements Listener {
             materials[index] = matrix[index] == null ? Material.AIR : matrix[index].getType();
         }
         return materials;
-    }
-
-    private static boolean isSingleLogRecipe(ItemStack[] matrix, ItemStack vanillaResult) {
-        if (vanillaResult == null || !vanillaResult.getType().name().endsWith("_PLANKS")) {
-            return false;
-        }
-        List<ItemStack> ingredients = java.util.Arrays.stream(matrix)
-            .filter(item -> item != null && !item.getType().isAir())
-            .toList();
-        return ingredients.size() == 1 && isLogOrStem(ingredients.getFirst().getType());
-    }
-
-    private static boolean isLogOrStem(Material material) {
-        String name = material.name();
-        return name.endsWith("_LOG") || name.endsWith("_STEM") || name.endsWith("_HYPHAE");
     }
 
     private ItemStack workshopKit() {
@@ -922,6 +1097,75 @@ final class ProductionPerkListener implements Listener {
         });
     }
 
+    private static boolean isCookableFood(Material material) {
+        return material == Material.BEEF || material == Material.CHICKEN || material == Material.COD
+            || material == Material.SALMON || material == Material.MUTTON || material == Material.PORKCHOP
+            || material == Material.RABBIT || material == Material.POTATO || material == Material.KELP
+            || material == Material.CHORUS_FRUIT;
+    }
+
+    private boolean activateOrContinueFieldHarvest(Player player) {
+        long now = System.currentTimeMillis();
+        long activeUntil = fieldHarvestWindows.getOrDefault(player.getUniqueId(), 0L);
+        if (activeUntil > now) {
+            return true;
+        }
+        if (!player.isSneaking()) {
+            return false;
+        }
+        long cooldownUntil = fieldHarvestCooldowns.getOrDefault(player.getUniqueId(), 0L);
+        if (cooldownUntil > now) {
+            long remainingSeconds = Math.max(1L, (cooldownUntil - now + 999L) / 1_000L);
+            player.sendActionBar(net.kyori.adventure.text.Component.text(
+                "Záběr pole bude připraven za " + remainingSeconds + " s.",
+                net.kyori.adventure.text.format.NamedTextColor.GRAY));
+            return false;
+        }
+        fieldHarvestWindows.put(player.getUniqueId(), now + FIELD_HARVEST_DURATION_MILLIS);
+        fieldHarvestCooldowns.put(player.getUniqueId(), now + FIELD_HARVEST_COOLDOWN_MILLIS);
+        player.sendActionBar(net.kyori.adventure.text.Component.text(
+            "Záběr pole: 8 s sklizně v ploše 5×5.", net.kyori.adventure.text.format.NamedTextColor.GREEN));
+        return true;
+    }
+
+    private void refillHoney(BlockKey key) {
+        if (!enabled) {
+            return;
+        }
+        Block block = key.block();
+        if (block == null || !(block.getBlockData() instanceof Beehive hive)) {
+            return;
+        }
+        hive.setHoneyLevel(hive.getMaximumHoneyLevel());
+        block.setBlockData(hive, true);
+    }
+
+    private static boolean roll(double chance) {
+        return chance > 0.0 && ThreadLocalRandom.current().nextDouble() < chance;
+    }
+
+    private static void addItemCopies(List<Item> originals, int copies, List<ItemStack> destination) {
+        if (copies < 1) {
+            return;
+        }
+        for (Item original : originals) {
+            for (int copy = 0; copy < copies; copy++) {
+                destination.add(original.getItemStack().clone());
+            }
+        }
+    }
+
+    private static void addCopies(List<ItemStack> originals, int copies, List<ItemStack> destination) {
+        if (copies < 1) {
+            return;
+        }
+        for (ItemStack original : originals) {
+            for (int copy = 0; copy < copies; copy++) {
+                destination.add(original.clone());
+            }
+        }
+    }
+
     private Optional<Player> recentBrewer(Block block) {
         BrewingActor actor = brewingActors.get(BlockKey.of(block));
         if (actor == null || System.currentTimeMillis() - actor.recordedAt() > BREWING_ATTRIBUTION_MILLIS) {
@@ -1036,6 +1280,11 @@ final class ProductionPerkListener implements Listener {
 
     private static boolean isMature(Block block) {
         return isMature(block.getBlockData());
+    }
+
+    private static boolean isSapling(Block block) {
+        String name = block.getType().name();
+        return name.endsWith("_SAPLING") || name.equals("MANGROVE_PROPAGULE");
     }
 
     private static boolean isFarmingDoubleDropSource(Block block) {

@@ -72,6 +72,11 @@ final class GatheringMaterialPolicy {
         return material != null && material.name().endsWith("_LEAVES");
     }
 
+    static boolean isVeinCluster(Material material) {
+        return material == Material.ANDESITE || material == Material.DIORITE || material == Material.GRANITE
+            || material == Material.TUFF || material == Material.DEEPSLATE;
+    }
+
     enum GatheringTool {
         PICKAXE,
         AXE,

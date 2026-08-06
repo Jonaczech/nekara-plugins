@@ -2,6 +2,7 @@ package cz.nekara.rpg.skills.perks;
 
 import cz.nekara.rpg.skills.SkillId;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -74,5 +75,27 @@ class DefaultPerkTreeTest {
         }
 
         assertTrue(found.containsAll(EnumSet.allOf(MechanicId.class)));
+    }
+
+    @Test
+    void fiveRankNodesExposeProgressiveLevelRequirements() {
+        DefaultPerkTree tree = DefaultPerkTree.create();
+        PerkDefinition root = tree.catalog().require(new PerkId("kopani.yield"));
+        PerkDefinition branch = tree.catalog().require(new PerkId("kopani.tempo"));
+
+        assertEquals(List.of(0, 10, 20, 35, 50), root.requiredSkillLevelsByRank());
+        assertEquals(List.of(20, 35, 50, 70, 85), branch.requiredSkillLevelsByRank());
+    }
+
+    @Test
+    void diggingTreeUsesTheImplementedExcavationPerks() {
+        DefaultPerkTree tree = DefaultPerkTree.create();
+
+        assertEquals("Kopáč", tree.presentation(new PerkId("kopani.yield")).name());
+        assertEquals("Bagr", tree.presentation(new PerkId("kopani.tempo")).name());
+        assertEquals("Síto", tree.presentation(new PerkId("kopani.finds")).name());
+        assertEquals("Archeolog", tree.presentation(new PerkId("kopani.archaeology")).name());
+        assertEquals("Replikace zeminy", tree.presentation(new PerkId("kopani.deep_soil")).name());
+        assertEquals("Skrytý poklad", tree.presentation(new PerkId("kopani.triple")).name());
     }
 }

@@ -1,5 +1,38 @@
 # Předání projektu Nekara Plugins
 
+## Release 2.4.0
+
+- Těžba, Kopání, Echo Vein a food-only vaření ve Statkářství jsou součástí 2.4.0.
+- Před FTP nasazením živě ověř TNT/Vein Mining, Echo Vein a společnou pec.
+
+## Pracovní strom – Statkářství / Nová hra+ (dosud nevydáno)
+
+- Pětihodnostní perky nyní používají explicitní levelovou bránu pro cílový
+  rank: startovní větev `0 / 10 / 20 / 35 / 50`, navazující větev
+  `20 / 35 / 50 / 70 / 85`. `PerkPurchasePolicy` ji kontroluje před každým
+  nákupem, takže ji nelze obejít GUI; tooltip ukazuje vždy požadavek další
+  hodnosti. Dříve uložené ranky se nemigrují ani nemažou.
+- Lokální pracovní strom obsahuje necommitnutou změnu šesti perků Statkářství:
+  Plná ošatka, Živá půda, Péče o stádo, Obratná sklizeň, Včelařova péče a Záběr pole.
+- Nová hra+ vrací perk body a resetuje jen danou dovednost. Pro Statkářství má
+  další běh `50 %` XP, `+25 %` síly perk statistik a samostatný trvalý `30 %`
+  roll dodatečného výtěžku ze sklizně a zvířat zabitých hráčem.
+- Tento roll se nepřičítá ke standardnímu double dropu; šance z levelu/perků
+  proto nikdy nepřesáhne `100 %`.
+- `gradlew.bat test --no-daemon` po změně prošel. Oprava požadavků dřevěných
+  zbraní je rovněž stále ve worktree a nebyla vydána.
+- Stejný worktree nyní obsahuje i lesnický strom: rychlost a vanilla XP z logů,
+  Arboristu, Aktivní život, Tree Feller, Zlaté/Křišťálové listí a nezávislý
+  `30 %` NG+ roll na přirozené logy a stemy. Zlaté jablko není ovlivněné Luckem.
+- Kopání je ve stejném nevydaném stromu dokončeno se stabilními ID `yield`,
+  `tempo`, `finds`, `archaeology`, `deep_soil`, `triple`: Kopáč, Bagr, Síto,
+  Archeolog, Replikace zeminy a Skrytý poklad. Archeolog po úspěšném vyčištění
+  obnovuje suspicious sand/gravel samostatným `20 %` rollem; NG+ Kopání přidává
+  nezávislý `30 %` roll dalšího finálního dropu přirozeně vykopaného bloku.
+- Loot Kopání je nyní v `skills/kopani/loot-tables.yml` jako globální fallback
+  `rare-drops` a prioritní `rare-drops-by-source`. Archeolog přidává Brick a
+  Echo Shard pouze při kopání písku/červeného písku/štěrku.
+
 ## Aktuální stav – NekaraRPG 2.3.3
 
 `NekaraRPG` je nativní autorita RPG postupu. XP z Rested, Rybaření a Echo Vein

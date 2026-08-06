@@ -19,7 +19,8 @@ public final class PerkPurchasePolicy {
         if (currentRank >= perk.maxRank()) {
             return new PerkPurchaseDecision(PerkPurchaseStatus.MAX_RANK, availablePoints);
         }
-        if (progress.skill(perk.skill()).level() < perk.requiredSkillLevel()) {
+        int requiredSkillLevel = perk.requiredSkillLevelForRank(currentRank + 1);
+        if (progress.skill(perk.skill()).level() < requiredSkillLevel) {
             return new PerkPurchaseDecision(PerkPurchaseStatus.LEVEL_REQUIRED, availablePoints);
         }
         for (PerkRequirement requirement : perk.requirements()) {

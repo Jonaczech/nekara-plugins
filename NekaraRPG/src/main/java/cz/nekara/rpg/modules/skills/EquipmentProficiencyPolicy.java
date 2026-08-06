@@ -43,12 +43,13 @@ final class EquipmentProficiencyPolicy {
     }
 
     static Optional<Requirement> weapon(ItemStack item) {
-        return WeaponCatalog.resolve(item).map(EquipmentProficiencyPolicy::weapon);
+        return WeaponCatalog.resolve(item).flatMap(EquipmentProficiencyPolicy::weapon);
     }
 
-    static Requirement weapon(WeaponDefinition weapon) {
-        return new Requirement(weapon.family().skill(),
-            CraftingTierPolicy.requiredSmithingLevel(weapon.tier()));
+    static Optional<Requirement> weapon(WeaponDefinition weapon) {
+        int level = CraftingTierPolicy.requiredSmithingLevel(weapon.tier());
+        return level < 1 ? Optional.empty()
+            : Optional.of(new Requirement(weapon.family().skill(), level));
     }
 
     static double armorMovementPenalty(int untrainedPieces) {

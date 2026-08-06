@@ -1,5 +1,12 @@
 # Přehled změn
 
+## 2.4.0
+
+- Přepracované stromy Kopání a Těžby, rankové levelové brány a New Game+ bonusy.
+- Kopání používá globální i blokově specifické pokladové tabulky.
+- Echo Vein získává až `+5 p. b.` šance z úrovně Těžby.
+- Živá půda zrychluje přípravu jídla bez ovlivnění rud.
+
 ## 2.3.3
 
 - Hlavní úroveň používá v přehledu dovedností i v milnících ikonu hráčské hlavy.

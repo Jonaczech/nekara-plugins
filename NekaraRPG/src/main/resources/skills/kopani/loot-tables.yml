@@ -1,6 +1,64 @@
-# Weighted entries are rolled only after the rare-drop perk succeeds.
+# The global table is a fallback. A source-specific table replaces it for that block.
 rare-drops:
   IRON_NUGGET: 10
   GOLD_NUGGET: 4
   AMETHYST_SHARD: 2
   PRISMARINE_SHARD: 1
+rare-drops-by-source:
+  SAND:
+    NAUTILUS_SHELL: 8
+    CLAY_BALL: 5
+    GLASS_BOTTLE: 2
+  RED_SAND:
+    NAUTILUS_SHELL: 8
+    CLAY_BALL: 5
+    GLASS_BOTTLE: 2
+  GRAVEL:
+    FLINT: 10
+    IRON_NUGGET: 4
+    EMERALD: 1
+  DIRT:
+    BONE: 5
+    HANGING_ROOTS: 3
+    MOSS_BLOCK: 2
+  GRASS_BLOCK:
+    BONE: 5
+    HANGING_ROOTS: 3
+    MOSS_BLOCK: 2
+  COARSE_DIRT:
+    BONE: 5
+    HANGING_ROOTS: 3
+    MOSS_BLOCK: 2
+  ROOTED_DIRT:
+    BONE: 5
+    HANGING_ROOTS: 3
+    MOSS_BLOCK: 2
+  PODZOL:
+    BONE: 5
+    HANGING_ROOTS: 3
+    MOSS_BLOCK: 2
+  MYCELIUM:
+    BONE: 5
+    HANGING_ROOTS: 3
+    MOSS_BLOCK: 2
+  CLAY:
+    CLAY_BALL: 12
+    PRISMARINE_SHARD: 2
+  MUD:
+    SLIME_BALL: 1
+    MANGROVE_ROOTS: 3
+    CLAY_BALL: 5
+  PACKED_MUD:
+    SLIME_BALL: 1
+    MANGROVE_ROOTS: 3
+    CLAY_BALL: 5
+  SOUL_SAND:
+    QUARTZ: 10
+    GLOWSTONE_DUST: 3
+  SOUL_SOIL:
+    QUARTZ: 10
+    GLOWSTONE_DUST: 3
+  SNOW_BLOCK:
+    SNOWBALL: 10
+    ICE: 3
+    BLUE_ICE: 1

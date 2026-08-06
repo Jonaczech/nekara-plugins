@@ -14,9 +14,16 @@ progression:
 # resets only this skill, and permanently strengthens its perk statistics once.
 new-game-plus:
   enabled: true
-  experience-multiplier: 0.75
-  perk-stat-bonus-per-rank: 0.10
+  experience-multiplier: 0.50
+  perk-stat-bonus-per-rank: 0.25
   innate-gathering-double-drop-multiplier-per-rank: 1.25
+  # Independent extra-roll chance for Farming harvests and player-killed animals.
+  # It never contributes to the capped normal double-drop chance.
+  farming-and-butchery-bonus-drop-chance: 0.30
+  # Independent extra-roll chance for naturally broken logs and stems.
+  woodcutting-bonus-drop-chance: 0.30
+  # Independent extra-roll chance for eligible naturally dug blocks.
+  digging-bonus-drop-chance: 0.30
 
 # Small innate bonuses earned from level. Perks remain the dominant source of power.
 level-rewards:

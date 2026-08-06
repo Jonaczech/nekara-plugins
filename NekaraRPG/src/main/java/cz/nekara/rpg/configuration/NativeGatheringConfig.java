@@ -14,7 +14,8 @@ public record NativeGatheringConfig(
     boolean finalDropMultiplierEnabled,
     boolean rareDropsEnabled,
     Map<Material, Long> experienceByMaterial,
-    Map<Material, Integer> rareDropWeights
+    Map<Material, Integer> rareDropWeights,
+    Map<Material, Map<Material, Integer>> rareDropWeightsBySource
 ) implements GatheringSkillConfig {
     public NativeGatheringConfig {
         if (chunkWindowSeconds < 1) {
@@ -29,6 +30,7 @@ public record NativeGatheringConfig(
         }
         experienceByMaterial = normalizeExperience(experienceByMaterial);
         rareDropWeights = normalizeWeights(rareDropWeights);
+        rareDropWeightsBySource = normalizeSourceWeights(rareDropWeightsBySource);
     }
 
     private static Map<Material, Long> normalizeExperience(Map<Material, Long> source) {
@@ -58,6 +60,24 @@ public record NativeGatheringConfig(
         return Map.copyOf(values);
     }
 
+    private static Map<Material, Map<Material, Integer>> normalizeSourceWeights(
+        Map<Material, Map<Material, Integer>> source
+    ) {
+        Objects.requireNonNull(source, "rareDropWeightsBySource");
+        EnumMap<Material, Map<Material, Integer>> values = new EnumMap<>(Material.class);
+        source.forEach((material, weights) -> {
+            if (material == null || !material.isBlock()) {
+                throw new IllegalArgumentException("Rare-drop source entries must be blocks");
+            }
+            values.put(material, normalizeWeights(weights));
+        });
+        return Map.copyOf(values);
+    }
+
+    public Map<Material, Integer> rareDropWeightsFor(Material source) {
+        return rareDropWeightsBySource.getOrDefault(source, rareDropWeights);
+    }
+
     public static Map<Material, Long> defaultWoodcuttingExperience() {
         EnumMap<Material, Long> values = new EnumMap<>(Material.class);
         for (Material material : Material.values()) {
@@ -78,7 +98,7 @@ public record NativeGatheringConfig(
             Material.ROOTED_DIRT, Material.PODZOL, Material.MYCELIUM,
             Material.SAND, Material.RED_SAND, Material.GRAVEL,
             Material.SOUL_SAND, Material.SOUL_SOIL, Material.SNOW_BLOCK);
-        put(values, 3, Material.MUD, Material.CLAY);
+        put(values, 3, Material.MUD, Material.PACKED_MUD, Material.CLAY);
         return Map.copyOf(values);
     }
 
