@@ -12,15 +12,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PerkEffectPresentationTest {
     @Test
-    void showsTheNextRankAndMaximumForAStackingStat() {
+    void showsOneCompactLineForTheDisplayedRank() {
         PerkDefinition perk = perk(5, new StatPerkEffect(
             StatId.DOUBLE_DROP_CHANCE, ModifierOperation.ADD, 0.025));
 
         assertEquals(
-            "Po hodnosti 1/5: šance na dvojitý výtěžek +2,5 p. b. (při 5/5: šance na dvojitý výtěžek +12,5 p. b.)",
+            "Hodnost 1/5: šance na dvojitý výtěžek +2,5 p. b.",
             PerkEffectPresentation.describe(perk, 0).getFirst());
         assertEquals(
-            "Při hodnosti 5/5: šance na dvojitý výtěžek +12,5 p. b.",
+            "Hodnost 5/5: šance na dvojitý výtěžek +12,5 p. b.",
             PerkEffectPresentation.describe(perk, 5).getFirst());
     }
 
@@ -45,7 +45,7 @@ class PerkEffectPresentationTest {
         for (SkillId skill : SkillId.gameplaySkills()) {
             for (PerkDefinition perk : tree.catalog().forSkill(skill)) {
                 List<String> description = PerkEffectPresentation.describe(perk, 0);
-                assertEquals(perk.effects().size(), description.size(), perk.id().value());
+                assertEquals(1, description.size(), perk.id().value());
                 assertTrue(description.stream().noneMatch(String::isBlank), perk.id().value());
             }
         }

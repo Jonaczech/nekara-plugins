@@ -99,9 +99,9 @@ final class NativeGatheringListener implements Listener {
         this.speedModifierKey = new NamespacedKey(plugin, "skills_gathering_speed");
         this.proficiencyMobilityKey = new NamespacedKey(plugin, "skills_tool_proficiency_mobility");
         this.definitions = List.of(
-            new Definition(SkillId.MINING, config.mining(), GatheringTool.PICKAXE, true,
+            new Definition(SkillId.MINING, config.mining(), GatheringTool.PICKAXE, false,
                 StatId.MINING_SPEED, null),
-            new Definition(SkillId.WOODCUTTING, config.woodcutting(), GatheringTool.AXE, true,
+            new Definition(SkillId.WOODCUTTING, config.woodcutting(), GatheringTool.AXE, false,
                 StatId.WOODCUTTING_SPEED, MechanicId.RARE_LEAF_DROPS),
             new Definition(SkillId.DIGGING, config.digging(), GatheringTool.SHOVEL, false,
                 StatId.DIGGING_SPEED, null)

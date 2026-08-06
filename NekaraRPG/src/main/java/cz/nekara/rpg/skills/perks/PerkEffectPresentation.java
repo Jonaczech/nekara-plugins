@@ -4,7 +4,6 @@ import cz.nekara.rpg.skills.stats.ModifierOperation;
 import cz.nekara.rpg.skills.stats.StatId;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -20,27 +19,16 @@ public final class PerkEffectPresentation {
         Objects.requireNonNull(perk, "perk");
         int rank = Math.max(0, Math.min(currentRank, perk.maxRank()));
         int displayedRank = rank < perk.maxRank() ? rank + 1 : rank;
-        List<String> descriptions = new ArrayList<>();
+        List<String> descriptions = new java.util.ArrayList<>();
         for (PerkEffectDefinition effect : perk.effects()) {
             if (effect instanceof StatPerkEffect stat) {
-                descriptions.add(describeStat(stat, displayedRank, perk.maxRank()));
+                descriptions.add(statDescription(stat.statId(), scaled(stat, displayedRank)));
             } else if (effect instanceof MechanicPerkEffect mechanic) {
-                descriptions.add("Odemkne: " + mechanicDescription(mechanic.mechanicId()));
+                descriptions.add("odemkne " + mechanicDescription(mechanic.mechanicId()));
             }
         }
-        return List.copyOf(descriptions);
-    }
-
-    private static String describeStat(StatPerkEffect effect, int displayedRank, int maximumRank) {
-        double displayed = scaled(effect, displayedRank);
-        String description = statDescription(effect.statId(), displayed);
-        if (maximumRank > 1 && displayedRank < maximumRank) {
-            return "Po hodnosti " + displayedRank + "/" + maximumRank + ": " + description
-                + " (při " + maximumRank + "/" + maximumRank + ": "
-                + statDescription(effect.statId(), scaled(effect, maximumRank)) + ")";
-        }
-        return (maximumRank > 1 ? "Při hodnosti " + displayedRank + "/" + maximumRank + ": " : "")
-            + description;
+        String prefix = perk.maxRank() > 1 ? "Hodnost " + displayedRank + "/" + perk.maxRank() + ": " : "";
+        return List.of(prefix + String.join(" • ", descriptions));
     }
 
     private static double scaled(StatPerkEffect effect, int rank) {

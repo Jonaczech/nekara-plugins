@@ -469,7 +469,7 @@ final class ProductionPerkListener implements Listener {
     public void harvestByHand(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getHand() != EquipmentSlot.HAND
             || event.getClickedBlock() == null || !isMature(event.getClickedBlock())
-            || !event.getPlayer().getInventory().getItemInMainHand().getType().name().endsWith("_HOE")) {
+            || !GatheringMaterialPolicy.isHoe(event.getPlayer().getInventory().getItemInMainHand())) {
             return;
         }
         Player player = event.getPlayer();
@@ -501,7 +501,8 @@ final class ProductionPerkListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void rememberCropCaretaker(BlockBreakEvent event) {
-        if (isMature(event.getBlock()) && supported(event.getPlayer())) {
+        if (isMature(event.getBlock()) && supported(event.getPlayer())
+            && GatheringMaterialPolicy.isHoe(event.getPlayer().getInventory().getItemInMainHand())) {
             cropCaretakers.put(ChunkKey.of(event.getBlock()),
                 new CropCaretaker(event.getPlayer().getUniqueId(), System.currentTimeMillis()));
         }

@@ -1,6 +1,15 @@
 # Předání projektu Nekara Plugins
 
-## Release 2.4.0
+## Release 2.4.1
+
+- Vydaná verze obsahuje kompaktní tooltipy dovedností i perků, knihu s brkem pro
+  Dovednosti ve středu hlavního menu a rozšířené blokově specifické poklady Kopání.
+- Těžba, Lesnictví a Kopání nevyžadují pro běžné XP, pasivní dropy ani poklady
+  správný nástroj. Vein Mining a Tree Feller jej stále vyžadují.
+- Pasivní dropy Statkářství fungují bez motyky; aktivní sklizeň a Field Harvest
+  vyžadují motyku.
+
+## Dřívější release 2.4.0
 
 - Těžba, Kopání, Echo Vein a food-only vaření ve Statkářství jsou součástí 2.4.0.
 - Před FTP nasazením živě ověř TNT/Vein Mining, Echo Vein a společnou pec.
