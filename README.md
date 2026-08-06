@@ -5,8 +5,14 @@ artefaktem `NekaraRPG` – modulární plugin pro Purpur/Paper 26.1.
 
 ## Aktuální release
 
-**NekaraRPG 2.4.1** přináší nativní RPG postup, perk-tree GUI, vlastní zbraně,
-integrované XP zdroje, gathering odměny a přepracované dovednostní rozhraní.
+**NekaraRPG 2.4.2** přináší pět kvalit vlastní výroby, minihru Řemesla,
+globální Štěstí pro kvalitu a přehlednější Dovednosti.
+
+- `Poctivé řemeslo` garantuje Neobyčejnou kvalitu; další perky, New Game+ a
+  Štěstí rozhodují o Vzácné, Epické a Legendární kvalitě.
+- Kovová výbava se dokončuje v peci a kotlíku, zbraně také broušením.
+- Otevřená dovednost v perk stromu ukazuje aktivní perky a skutečné hodnoty bonusů.
+- Zadání budoucích ikon je v `NekaraRPG/docs/SKILL_ICON_BRIEFS.md`.
 
 - 13 aktivních hráčských dovedností a odvozená Hlavní úroveň.
 - `Umění dlaně` a `Obchodování` zůstávají v interní databázové kompatibilitě,

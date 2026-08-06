@@ -7,17 +7,19 @@ Accepted
 ## Context
 
 Nekara needs one player-wide Luck value without allowing it to multiply ordinary gathering,
-crafting, vanilla fishing, chest loot, or unrelated server loot. Combat also needs readable
+vanilla fishing, chest loot, or unrelated server loot. Its one crafting interaction must stay
+limited to Nekara's own quality roll. Combat also needs readable
 physical categories so weapon choice and armor have a small tactical distinction while retaining
 Minecraft's native armor calculation and existing Nekara dodge, critical, cleave, and stun effects.
 
 ## Decision
 
-- `LUCK` is a global statistic. Its current sources are the two fishing-tree perks; it is summed
+- `LUCK` is a global statistic. Its current sources are designated mining and fishing perks; it is summed
   across active skill trees and capped by `skills.luck.maximum-points`.
-- Luck only adds the configured fixed chance bonus when Nekara itself rolls one of its rare-loot
-  tables. It never changes crafting, ordinary block drops, vanilla chest loot, vanilla fishing
-  catch selection, or equipment-fishing rewards.
+- Luck adds a configured fixed chance bonus when Nekara itself rolls one of its rare-loot tables.
+  It also increases only the promotion chance of Nekara's player-crafted equipment quality roll,
+  through `skills.luck.crafting-quality-chance-bonus-per-point`. It never changes ordinary block
+  drops, vanilla chest loot, vanilla fishing catch selection, or equipment-fishing rewards.
 - The existing rare tables are woodcutting, digging, and fishing. Mining and farming gain no
   artificial reward until they have their own rare-loot tables.
 - Weapon categories are `SLASH`, `PIERCE`, and `IMPACT`: swords/axes/greatswords, daggers/spears/arrows,

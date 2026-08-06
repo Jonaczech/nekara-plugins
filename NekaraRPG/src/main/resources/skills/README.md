@@ -11,9 +11,16 @@ folders without overwriting an existing per-skill file.
 
 `skills/config.yml` řídí přirozený double drop sběratelských dovedností.
 Výchozí hodnota `0.002` znamená `0,20 %` za úroveň, maximum `0.20` znamená
-`20 %` na úrovni 100. New Game+ používá `experience-multiplier: 0.75`,
-`perk-stat-bonus-per-rank: 0.10` a
+`20 %` na úrovni 100. New Game+ používá `experience-multiplier: 0.50`,
+`perk-stat-bonus-per-rank: 0.25` a
 `innate-gathering-double-drop-multiplier-per-rank: 1.25`.
+
+## Štěstí a kvalita Řemesla
+
+Sekce `luck` v `skills/config.yml` řídí i povýšení kvality vlastní výroby.
+`crafting-quality-chance-bonus-per-point: 0.05` přidá `5 %` šance za každý bod
+Štěstí; s výchozím limitem dvou bodů je maximum `10 %`. Bonus se uplatní pouze
+na kvalitu výbavy vytvořené hráčem, ne na loot ani vanilla recepty bez Řemesla.
 
 ## Zdroje XP
 

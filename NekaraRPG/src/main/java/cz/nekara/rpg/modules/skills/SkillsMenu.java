@@ -21,6 +21,7 @@ import cz.nekara.rpg.skills.perks.PerkPurchaseDecision;
 import cz.nekara.rpg.skills.perks.PerkPurchasePolicy;
 import cz.nekara.rpg.skills.perks.PerkPurchaseStatus;
 import cz.nekara.rpg.skills.perks.PerkRequirement;
+import cz.nekara.rpg.skills.perks.StatPerkEffect;
 import cz.nekara.rpg.skills.perks.PerkTreeViewport;
 import cz.nekara.rpg.skills.perks.PerkTreeLayout;
 import cz.nekara.rpg.skills.profile.SkillProfile;
@@ -29,6 +30,7 @@ import cz.nekara.rpg.skills.stats.StatId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,6 +52,7 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 final class SkillsMenu implements Listener {
     private static final int POWER_SLOT = 4;
@@ -77,9 +80,8 @@ final class SkillsMenu implements Listener {
     private static final int TREE_VIEWPORT_WIDTH = 9;
     private static final int TREE_VIEWPORT_HEIGHT = 5;
     private static final List<Integer> SKILL_SLOTS = List.of(
-        10, 11, 12, 13, 14, 15, 16,
-        19, 20, 21, 22, 23, 24, 25,
-        31
+        30, 11, 12, 13, 14, 15, 31,
+        32, 20, 21, 22, 23, 24
     );
     private static final Map<Integer, TreeMove> TREE_MOVES = Map.of(
         TREE_NORTH_WEST_SLOT, new TreeMove(-1, -1),
@@ -127,7 +129,7 @@ final class SkillsMenu implements Listener {
 
     void openOverview(Player player, SkillProfile profile, SkillProgressSnapshot snapshot) {
         SkillsHolder holder = new SkillsHolder(player.getUniqueId(), Screen.OVERVIEW, null, null);
-        Inventory inventory = create(holder, 54, "Nekara — dovednosti");
+        Inventory inventory = create(holder, 54, "Dovednosti");
         int availablePoints = availablePoints(profile, snapshot);
         inventory.setItem(POWER_SLOT, GuiItems.item(
             Material.PLAYER_HEAD,
@@ -334,7 +336,7 @@ final class SkillsMenu implements Listener {
         // Navigation is an overlay: it intentionally takes visual and click priority over the graph.
         renderTreeNavigation(inventory, viewport, perks);
         inventory.setItem(BACK_SLOT, treeBackItem());
-        renderSkillSlider(inventory, snapshot, skill);
+        renderSkillSlider(inventory, player, profile, snapshot, skill);
         player.openInventory(inventory);
     }
 
@@ -517,11 +519,29 @@ final class SkillsMenu implements Listener {
         int rank = profile.newGamePlusRank(skill);
         boolean ready = module.canUseNewGamePlus(profile, skill);
         double xp = module.newGamePlusExperienceMultiplier(profile, skill);
-        return GuiItems.item(Material.TRIAL_KEY,
-            Component.text("Nová hra+ " + rank, ready ? NamedTextColor.LIGHT_PURPLE : NamedTextColor.DARK_GRAY),
-            Component.text("Trvalý bonus perk statistik: +" + Math.round(module.newGamePlusStatBonus(profile, skill) * 100) + " %", NamedTextColor.AQUA),
-            Component.text("Další běh: " + Math.round(xp * 100) + " % XP", NamedTextColor.GOLD),
-            Component.text(ready ? "Klikni pro bezpečné potvrzení resetu" : "Vyžaduje úroveň 100 a dosud nepoužitou Novou hru+", ready ? NamedTextColor.YELLOW : NamedTextColor.GRAY));
+        boolean reborn = rank > 0;
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text("◆ Znovuzrození: " + SkillPresentation.czechName(skill), NamedTextColor.DARK_PURPLE));
+        lore.add(Component.empty());
+        lore.add(Component.text("✦ Síla perků: +" + Math.round(module.newGamePlusStatBonus(profile, skill) * 100) + " %", NamedTextColor.AQUA));
+        lore.add(Component.text("✦ Další běh: " + Math.round(xp * 100) + " % XP", NamedTextColor.GOLD));
+        lore.add(Component.empty());
+        if (reborn) {
+            lore.add(Component.text("✦ Trvalý bonus je aktivní", NamedTextColor.GREEN));
+        } else if (ready) {
+            lore.add(Component.text("◆ Připraveno k znovuzrození", NamedTextColor.LIGHT_PURPLE));
+            lore.add(Component.text("Klikni pro potvrzení resetu", NamedTextColor.YELLOW));
+        } else {
+            lore.add(Component.text("◆ Vyžaduje úroveň 100", NamedTextColor.GRAY));
+        }
+        ItemStack item = GuiItems.item(Material.TRIAL_KEY,
+            Component.text("✦ NOVÁ HRA+ ✦", reborn || ready ? NamedTextColor.LIGHT_PURPLE : NamedTextColor.DARK_GRAY)
+                .decoration(TextDecoration.BOLD, true),
+            lore.toArray(Component[]::new));
+        ItemMeta meta = item.getItemMeta();
+        meta.setEnchantmentGlintOverride(reborn || ready);
+        item.setItemMeta(meta);
+        return item;
     }
 
     private void moveTree(Player player, SkillsHolder holder, int horizontal, int vertical) {
@@ -657,7 +677,7 @@ final class SkillsMenu implements Listener {
         return GuiItems.item(
             Material.ANVIL,
             Component.text(SkillPresentation.czechName(skill), NamedTextColor.GOLD),
-            Component.text("Lepší Tier při výrobě: " + AttributePresentation.percentage(
+            Component.text("Šance na kvalitnější výrobek: " + AttributePresentation.percentage(
                 stat(player, skill, StatId.ITEM_QUALITY) - 1.0), NamedTextColor.AQUA),
             Component.text("Úspora surovin: " + AttributePresentation.percentage(
                 stat(player, skill, StatId.RESOURCE_COST_REDUCTION)), NamedTextColor.AQUA),
@@ -701,12 +721,18 @@ final class SkillsMenu implements Listener {
         return speed.getValue() / speed.getBaseValue();
     }
 
-    private void renderSkillSlider(Inventory inventory, SkillProgressSnapshot snapshot, SkillId current) {
+    private void renderSkillSlider(
+        Inventory inventory,
+        Player player,
+        SkillProfile profile,
+        SkillProgressSnapshot snapshot,
+        SkillId current
+    ) {
         SkillId previous = adjacent(current, -1);
         SkillId next = adjacent(current, 1);
         inventory.setItem(SKILL_SCROLL_PREVIOUS_SLOT, skillSliderArrow("button_prevpage", "Posunout nabídku o tři dovednosti vlevo"));
         inventory.setItem(PREVIOUS_SKILL_SLOT, skillSliderItem(previous, snapshot.skill(previous), false));
-        inventory.setItem(CURRENT_SKILL_SLOT, skillSliderItem(current, snapshot.skill(current), true));
+        inventory.setItem(CURRENT_SKILL_SLOT, currentSkillSliderItem(player, profile, current, snapshot.skill(current)));
         inventory.setItem(NEXT_SKILL_SLOT, skillSliderItem(next, snapshot.skill(next), false));
         inventory.setItem(SKILL_SCROLL_NEXT_SLOT, skillSliderArrow("button_nextpage", "Posunout nabídku o tři dovednosti vpravo"));
     }
@@ -727,6 +753,158 @@ final class SkillsMenu implements Listener {
             Component.text(current ? "Aktuálně zobrazená stezka" : "Klikni pro zobrazení perků", NamedTextColor.GRAY),
             Component.text("Úroveň: " + progress.level() + "/100", NamedTextColor.DARK_GRAY)
         );
+    }
+
+    private ItemStack currentSkillSliderItem(
+        Player player,
+        SkillProfile profile,
+        SkillId skill,
+        SkillLevelProgress progress
+    ) {
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text("Úroveň: " + progress.level() + "/100", NamedTextColor.DARK_GRAY));
+        lore.add(Component.text("✦ Aktivní bonusy", NamedTextColor.LIGHT_PURPLE));
+        Set<StatId> activeStats = activeStats(profile, skill);
+        if (isGatheringSkill(skill)) {
+            double doubleDrop = module.innateGatheringDoubleDropChance(profile, skill)
+                + stat(player, skill, StatId.DOUBLE_DROP_CHANCE);
+            lore.add(Component.text("✦ Dvojitý výtěžek: " + AttributePresentation.percentage(doubleDrop),
+                NamedTextColor.AQUA));
+            activeStats.remove(StatId.DOUBLE_DROP_CHANCE);
+        }
+        if (skill == SkillId.SMITHING) {
+            var luck = plugin.configuration().get().skills().luck();
+            double luckPoints = Math.min(module.globalLuck(profile), luck.maximumPoints());
+            if (luckPoints > 0.0) {
+                lore.add(Component.text("☘ Štěstí: " + AttributePresentation.signedPercentage(
+                    luckPoints * luck.craftingQualityChanceBonusPerPoint()) + " kvality", NamedTextColor.AQUA));
+            }
+        }
+        for (StatId activeStat : activeStats) {
+            double value = stat(player, skill, activeStat);
+            if (Math.abs(value - activeStat.defaultValue()) < 0.000_001) {
+                continue;
+            }
+            lore.add(Component.text(compactStatLabel(activeStat) + ": " + compactStatValue(activeStat, value),
+                NamedTextColor.AQUA));
+        }
+        boolean hasPerks = false;
+        for (PerkDefinition perk : perkTree.catalog().forSkill(skill)) {
+            int rank = profile.perkRank(perk.id());
+            if (rank < 1) {
+                continue;
+            }
+            hasPerks = true;
+            String rankText = perk.maxRank() > 1 ? " " + rank + "/" + perk.maxRank() : "";
+            lore.add(Component.text("◆ " + perkTree.presentation(perk.id()).name() + rankText,
+                NamedTextColor.GREEN));
+        }
+        if (!hasPerks && activeStats.isEmpty()) {
+            lore.add(Component.text("◆ Zatím nic", NamedTextColor.DARK_GRAY));
+        }
+        return GuiItems.item(
+            SkillIconResolver.resolve(skill),
+            Component.text(SkillPresentation.czechName(skill), NamedTextColor.GOLD).decoration(TextDecoration.BOLD, true),
+            lore.toArray(Component[]::new)
+        );
+    }
+
+    private static boolean isGatheringSkill(SkillId skill) {
+        return switch (skill) {
+            case MINING, WOODCUTTING, DIGGING, FARMING, FISHING -> true;
+            default -> false;
+        };
+    }
+
+    private Set<StatId> activeStats(SkillProfile profile, SkillId skill) {
+        Set<StatId> stats = new LinkedHashSet<>();
+        for (PerkDefinition perk : perkTree.catalog().forSkill(skill)) {
+            if (profile.perkRank(perk.id()) < 1) {
+                continue;
+            }
+            for (var effect : perk.effects()) {
+                if (effect instanceof StatPerkEffect statEffect) {
+                    stats.add(statEffect.statId());
+                }
+            }
+        }
+        return stats;
+    }
+
+    private static String compactStatLabel(StatId stat) {
+        return switch (stat) {
+            case DAMAGE_MULTIPLIER -> "⚔ Síla";
+            case CRITICAL_CHANCE -> "✦ Kritická šance";
+            case CRITICAL_DAMAGE_MULTIPLIER -> "✦ Kritické poškození";
+            case BLEED_CHANCE -> "☠ Krvácení";
+            case BLEED_DAMAGE_MULTIPLIER -> "☠ Síla krvácení";
+            case STUN_CHANCE -> "✦ Omráčení";
+            case DOUBLE_DROP_CHANCE -> "✦ Dvojitý výtěžek";
+            case TRIPLE_DROP_CHANCE -> "✦ Trojitý výtěžek";
+            case MINING_SPEED, WOODCUTTING_SPEED, DIGGING_SPEED -> "✦ Rychlost práce";
+            case MINING_BLOCK_EXPERIENCE, WOODCUTTING_LOG_EXPERIENCE, WOODCUTTING_LEAF_EXPERIENCE,
+                FARMING_HARVEST_EXPERIENCE, DIGGING_BLOCK_EXPERIENCE -> "✦ XP z bloku";
+            case DRILLING_SPEED_MULTIPLIER -> "✦ Rychlost odstřelu";
+            case DRILLING_COOLDOWN_REDUCTION -> "✦ Odstřel: cooldown";
+            case TNT_BONUS_DROP_CHANCE -> "✦ TNT výtěžek";
+            case GOLDEN_LEAF_APPLE_CHANCE -> "✦ Zlaté jablko";
+            case SAPLING_GROWTH_MULTIPLIER -> "✦ Růst stromů";
+            case FOOD_SATURATION_MULTIPLIER -> "✦ Nasycení";
+            case CROP_GROWTH_MULTIPLIER -> "✦ Růst plodin";
+            case FARMING_BONUS_DROP_CHANCE -> "✦ Sklizeň navíc";
+            case ARMOR_MULTIPLIER -> "✦ Zbroj";
+            case ARMOR_PENETRATION -> "⚔ Průraznost";
+            case DODGE_CHANCE -> "✦ Úhyb";
+            case EXPERIENCE_MULTIPLIER -> "✦ XP dovednosti";
+            case REPUTATION_GAIN -> "✦ Reputace";
+            case TRADE_DISCOUNT -> "✦ Sleva u obchodníků";
+            case TRADE_SELECTION_BONUS -> "✦ Nabídky obchodníků";
+            case VILLAGER_SKILL -> "✦ Služby obchodníků";
+            case ITEM_QUALITY -> "✦ Kvalita výrobků";
+            case ENCHANTMENT_POWER -> "✧ Síla očarování";
+            case EXPERIENCE_COST_REDUCTION -> "✧ Úspora XP";
+            case RESOURCE_COST_REDUCTION -> "♻ Úspora surovin";
+            case POTION_POWER -> "✧ Síla lektvaru";
+            case BREWING_SPEED -> "✧ Rychlost vaření";
+            case THROWING_SPEED -> "✧ Rychlost vrhů";
+            case FURNACE_SPEED -> "✦ Rychlost pece";
+            case FOOD_COOKING_SPEED -> "✦ Rychlost vaření jídla";
+            case TNT_POWER -> "✦ Síla TNT";
+            case RARE_DROP_CHANCE -> "✦ Vzácný nález";
+            case ANIMAL_DAMAGE_MULTIPLIER -> "⚔ Poškození zvířat";
+            case ANIMAL_GROWTH_MULTIPLIER -> "✦ Růst zvířat";
+            case ANIMAL_BONUS_DROP_CHANCE -> "✦ Výtěžek zvířat";
+            case BREEDING_EXPERIENCE_MULTIPLIER -> "✦ XP z chovu";
+            case BEEKEEPING_HONEY_REFILL_CHANCE -> "✦ Obnova medu";
+            case LUCK -> "☘ Štěstí";
+            case FISHING_SPEED -> "✦ Rychlost záběru";
+            case EXPERIENCE_ORB_MULTIPLIER -> "✦ XP z koulí";
+            case ACCURACY -> "✦ Přesnost";
+            case AMMO_CONSUMPTION_REDUCTION -> "✦ Úspora šípů";
+            case POWER_ATTACK_DAMAGE_MULTIPLIER -> "⚔ Silový útok";
+            case HUNGER_CONSUMPTION_REDUCTION -> "✦ Úspora hladu";
+            case MOVEMENT_PENALTY_REDUCTION -> "✦ Pohyb";
+            case DAMAGE_REFLECTION -> "✦ Odraz poškození";
+            case HEALTH_REGENERATION -> "✚ Obnova zdraví";
+            case STATUS_IMMUNITY_REDUCTION -> "✦ Odolnost účinkům";
+        };
+    }
+
+    private static String compactStatValue(StatId stat, double value) {
+        double bonus = value - stat.defaultValue();
+        if (isFlatStat(stat)) {
+            return (bonus > 0.0 ? "+" : "") + AttributePresentation.decimal(bonus);
+        }
+        return AttributePresentation.signedPercentage(bonus);
+    }
+
+    private static boolean isFlatStat(StatId stat) {
+        return switch (stat) {
+            case MINING_BLOCK_EXPERIENCE, WOODCUTTING_LOG_EXPERIENCE, WOODCUTTING_LEAF_EXPERIENCE,
+                FARMING_HARVEST_EXPERIENCE, DIGGING_BLOCK_EXPERIENCE, TRADE_SELECTION_BONUS, LUCK,
+                HEALTH_REGENERATION -> true;
+            default -> false;
+        };
     }
 
     private Set<Integer> renderConnections(

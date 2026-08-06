@@ -3,8 +3,10 @@ package cz.nekara.rpg.modules.skills;
 import cz.nekara.rpg.NekaraRPGPlugin;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
@@ -16,33 +18,34 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /** Original Nekara craft quality. Vanilla enchantments remain entirely separate. */
 enum SmithingTier {
-    I(0, "Tier I — Běžný výrobek", 0.0, 0.0, 0.0),
-    II(20, "Tier II — Pevný výrobek", 0.25, 0.5, 0.10),
-    III(40, "Tier III — Kvalitní výrobek", 0.5, 1.0, 0.20),
-    IV(70, "Tier IV — Mistrovský výrobek", 0.75, 1.5, 0.30),
-    V(100, "Tier V — Legendární výrobek", 1.0, 2.0, 0.40);
+    I("Běžná", "◇", NamedTextColor.WHITE, false, 0.0, 0.0, 0.0),
+    II("Neobyčejná", "✦", NamedTextColor.GREEN, false, 0.25, 0.5, 0.10),
+    III("Vzácná", "◆", NamedTextColor.BLUE, false, 0.5, 1.0, 0.20),
+    IV("Epická", "✹", NamedTextColor.LIGHT_PURPLE, true, 0.75, 1.5, 0.30),
+    V("Legendární", "✪", NamedTextColor.GOLD, true, 1.0, 2.0, 0.40);
 
-    private final int requiredLevel;
+    private static final double LEGENDARY_ROLL_WEIGHT = 0.15;
+    private static final double EPIC_ROLL_WEIGHT = 0.45;
+    private static final double RARE_ROLL_WEIGHT = 0.80;
+
     private final String displayName;
+    private final String icon;
+    private final NamedTextColor displayColor;
+    private final boolean bold;
     private final double weaponDamage;
     private final double armor;
     private final double durabilitySaveChance;
 
-    SmithingTier(int requiredLevel, String displayName, double weaponDamage,
+    SmithingTier(String displayName, String icon, NamedTextColor displayColor, boolean bold,
+                 double weaponDamage,
                  double armor, double durabilitySaveChance) {
-        this.requiredLevel = requiredLevel;
         this.displayName = displayName;
+        this.icon = icon;
+        this.displayColor = displayColor;
+        this.bold = bold;
         this.weaponDamage = weaponDamage;
         this.armor = armor;
         this.durabilitySaveChance = durabilitySaveChance;
-    }
-
-    static SmithingTier forLevel(int smithingLevel) {
-        SmithingTier selected = I;
-        for (SmithingTier tier : values()) {
-            if (smithingLevel >= tier.requiredLevel) selected = tier;
-        }
-        return selected;
     }
 
     static Keys keys(NekaraRPGPlugin plugin) {
@@ -51,46 +54,151 @@ enum SmithingTier {
             new NamespacedKey(plugin, "smithing_weapon_damage"),
             new NamespacedKey(plugin, "smithing_armor"),
             new NamespacedKey(plugin, "smithing_durability_save"),
-            new NamespacedKey(plugin, "smithing_processing_state")
+            new NamespacedKey(plugin, "smithing_processing_state"),
+            new NamespacedKey(plugin, "smithing_quality_pending"),
+            new NamespacedKey(plugin, "smithing_quality_chance"),
+            new NamespacedKey(plugin, "smithing_quality_max_tier")
         );
     }
 
-    static boolean apply(ItemStack item, int smithingLevel, Keys keys) {
-        return apply(item, smithingLevel, 1.0, keys);
-    }
-
-    static boolean apply(ItemStack item, int smithingLevel, double itemQuality, Keys keys) {
+    static boolean prepare(
+        ItemStack item,
+        double qualityChance,
+        int craftsmanshipRank,
+        boolean fineWorkUnlocked,
+        boolean masterworkUnlocked,
+        Keys keys
+    ) {
         if (item == null || item.getType().isAir() || !SkillEquipmentPolicy.isSmithingProduct(item)) return false;
+        if (craftsmanshipRank < 1) return false;
         ItemMeta meta = item.getItemMeta();
         PersistentDataContainer data = meta.getPersistentDataContainer();
-        if (data.has(keys.tier(), PersistentDataType.INTEGER)) return false;
-        SmithingTier tier = forLevel(smithingLevel);
-        if (tier != V && ThreadLocalRandom.current().nextDouble() < qualityPromotionChance(itemQuality)) {
-            tier = values()[tier.ordinal() + 1];
-        }
-        data.set(keys.tier(), PersistentDataType.INTEGER, tier.ordinal() + 1);
-        if (isWeapon(item.getType())) data.set(keys.weaponDamage(), PersistentDataType.DOUBLE, tier.weaponDamage);
-        if (isArmor(item.getType())) data.set(keys.armor(), PersistentDataType.DOUBLE, tier.armor);
-        if (isTool(item.getType())) data.set(keys.durabilitySave(), PersistentDataType.DOUBLE, tier.durabilitySaveChance);
+        if (data.has(keys.tier(), PersistentDataType.INTEGER)
+            || data.has(keys.qualityPending(), PersistentDataType.BYTE)) return false;
+        data.set(keys.qualityPending(), PersistentDataType.BYTE, (byte) 1);
+        data.set(keys.qualityChance(), PersistentDataType.DOUBLE, Math.max(0.0, Math.min(1.0, qualityChance)));
+        data.set(keys.qualityMaximum(), PersistentDataType.BYTE,
+            (byte) (maximumQuality(craftsmanshipRank, fineWorkUnlocked, masterworkUnlocked).ordinal() + 1));
         if (requiresProcessing(item.getType())) {
             data.set(keys.processingState(), PersistentDataType.BYTE, ProcessingState.UNPROCESSED.id());
         }
         List<Component> lore = new ArrayList<>(meta.lore() == null ? List.of() : meta.lore());
         lore.add(Component.empty());
-        lore.add(Component.text(tier.displayName, tier == V ? NamedTextColor.LIGHT_PURPLE : NamedTextColor.AQUA));
-        if (isWeapon(item.getType()) && tier.weaponDamage > 0) lore.add(Component.text("Nekara damage: +" + tier.weaponDamage, NamedTextColor.RED));
-        if (isArmor(item.getType()) && tier.armor > 0) lore.add(Component.text("Nekara armor: +" + tier.armor, NamedTextColor.BLUE));
-        if (isTool(item.getType()) && tier.durabilitySaveChance > 0) lore.add(Component.text("Úspora odolnosti: " + (int) (tier.durabilitySaveChance * 100) + "%", NamedTextColor.GREEN));
+        lore.add(Component.text("Kvalita: bude určena po dokončení výkovu.", NamedTextColor.GRAY));
         if (requiresProcessing(item.getType())) {
             lore.addAll(processingLore(item.getType(), ProcessingState.UNPROCESSED));
         }
         meta.lore(lore);
         item.setItemMeta(meta);
+        if (!requiresProcessing(item.getType())) {
+            revealQuality(item, keys);
+        }
         return true;
+    }
+
+    static Optional<SmithingTier> revealQuality(ItemStack item, Keys keys) {
+        if (item == null || item.getType().isAir()) return Optional.empty();
+        ItemMeta meta = item.getItemMeta();
+        PersistentDataContainer data = meta.getPersistentDataContainer();
+        if (!data.has(keys.qualityPending(), PersistentDataType.BYTE)
+            || data.has(keys.tier(), PersistentDataType.INTEGER)) return Optional.empty();
+        Double chance = data.get(keys.qualityChance(), PersistentDataType.DOUBLE);
+        Byte maximumRaw = data.get(keys.qualityMaximum(), PersistentDataType.BYTE);
+        SmithingTier maximum = fromStoredTier(maximumRaw);
+        if (chance == null || maximum == null) return Optional.empty();
+        SmithingTier tier = qualityFor(maximum, chance, ThreadLocalRandom.current().nextDouble());
+        data.remove(keys.qualityPending());
+        data.remove(keys.qualityChance());
+        data.remove(keys.qualityMaximum());
+        data.set(keys.tier(), PersistentDataType.INTEGER, tier.ordinal() + 1);
+        if (isWeapon(item.getType())) data.set(keys.weaponDamage(), PersistentDataType.DOUBLE, tier.weaponDamage);
+        if (isArmor(item.getType())) data.set(keys.armor(), PersistentDataType.DOUBLE, tier.armor);
+        if (isTool(item.getType())) data.set(keys.durabilitySave(), PersistentDataType.DOUBLE, tier.durabilitySaveChance);
+        List<Component> lore = new ArrayList<>(meta.lore() == null ? List.of() : meta.lore());
+        lore.removeIf(component -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
+            .serialize(component).startsWith("Kvalita: bude určena po dokončení výkovu."));
+        lore.add(tier.qualityBadge());
+        if (isWeapon(item.getType()) && tier.weaponDamage > 0) lore.add(Component.text("Nekara damage: +" + tier.weaponDamage, NamedTextColor.RED));
+        if (isArmor(item.getType()) && tier.armor > 0) lore.add(Component.text("Nekara armor: +" + tier.armor, NamedTextColor.BLUE));
+        if (isTool(item.getType()) && tier.durabilitySaveChance > 0) lore.add(Component.text("Úspora odolnosti: " + (int) (tier.durabilitySaveChance * 100) + "%", NamedTextColor.GREEN));
+        meta.lore(lore);
+        item.setItemMeta(meta);
+        return Optional.of(tier);
     }
 
     static double qualityPromotionChance(double itemQuality) {
         return Math.max(0.0, Math.min(1.0, itemQuality - 1.0));
+    }
+
+    static double qualityPromotionChance(
+        double itemQuality,
+        double luckPoints,
+        int maximumLuckPoints,
+        double luckBonusPerPoint
+    ) {
+        double cappedLuck = Math.max(0.0, Math.min(luckPoints, Math.max(0, maximumLuckPoints)));
+        return Math.max(0.0, Math.min(1.0,
+            qualityPromotionChance(itemQuality) + cappedLuck * Math.max(0.0, luckBonusPerPoint)));
+    }
+
+    /**
+     * Material access belongs to the Smithing level. Quality belongs only to
+     * the dedicated craftsmanship perks. Once craftsmanship is unlocked,
+     * crafted equipment is at least uncommon; higher tiers remain a roll.
+     */
+    static SmithingTier qualityFor(
+        int craftsmanshipRank,
+        boolean fineWorkUnlocked,
+        boolean masterworkUnlocked,
+        double itemQuality,
+        double roll
+    ) {
+        if (craftsmanshipRank < 1) return I;
+        SmithingTier maximum = maximumQuality(craftsmanshipRank, fineWorkUnlocked, masterworkUnlocked);
+        return qualityFor(maximum, qualityPromotionChance(itemQuality), roll);
+    }
+
+    private static SmithingTier qualityFor(SmithingTier maximum, double chance, double roll) {
+        if (maximum == V && roll < chance * LEGENDARY_ROLL_WEIGHT) return V;
+        if (maximum.ordinal() >= IV.ordinal() && roll < chance * EPIC_ROLL_WEIGHT) return IV;
+        if (maximum.ordinal() >= III.ordinal() && roll < chance * RARE_ROLL_WEIGHT) return III;
+        return II;
+    }
+
+    private static SmithingTier maximumQuality(
+        int craftsmanshipRank,
+        boolean fineWorkUnlocked,
+        boolean masterworkUnlocked
+    ) {
+        if (masterworkUnlocked) return V;
+        if (fineWorkUnlocked) return IV;
+        return craftsmanshipRank >= 3 ? III : II;
+    }
+
+    private static SmithingTier fromStoredTier(Byte raw) {
+        if (raw == null || raw < 1 || raw > values().length) return null;
+        return values()[raw - 1];
+    }
+
+    String displayName() {
+        return displayName;
+    }
+
+    String icon() {
+        return icon;
+    }
+
+    NamedTextColor displayColor() {
+        return displayColor;
+    }
+
+    boolean bold() {
+        return bold;
+    }
+
+    private Component qualityBadge() {
+        return Component.text(icon + " " + displayName, displayColor)
+            .decoration(TextDecoration.BOLD, bold);
     }
 
     static boolean advanceProcessing(ItemStack item, Keys keys, ProcessingState expected, ProcessingState next) {
@@ -129,12 +237,21 @@ enum SmithingTier {
 
     static int efficientOutput(int normalOutput, int smithingLevel) {
         if (normalOutput < 1) return normalOutput;
-        int tierStep = forLevel(smithingLevel).ordinal();
+        int tierStep = productionStepForLevel(smithingLevel);
         return Math.min(64, normalOutput + Math.max(0, (normalOutput * tierStep) / 4));
     }
 
+    private static int productionStepForLevel(int smithingLevel) {
+        if (smithingLevel >= 100) return 4;
+        if (smithingLevel >= 70) return 3;
+        if (smithingLevel >= 40) return 2;
+        if (smithingLevel >= 20) return 1;
+        return 0;
+    }
+
     record Keys(NamespacedKey tier, NamespacedKey weaponDamage, NamespacedKey armor,
-                NamespacedKey durabilitySave, NamespacedKey processingState) { }
+                NamespacedKey durabilitySave, NamespacedKey processingState, NamespacedKey qualityPending,
+                NamespacedKey qualityChance, NamespacedKey qualityMaximum) { }
 
     enum ProcessingState {
         NONE((byte) -1),
@@ -182,7 +299,7 @@ enum SmithingTier {
         String nextStep = switch (state) {
             case UNPROCESSED -> "Další krok: Blast Furnace + uhlí";
             case HEATED -> "Další krok: vodní cauldron";
-            case TEMPERED -> weapon ? "Další krok: plížení u grindstone" : "Ochrana Tieru je aktivní";
+            case TEMPERED -> weapon ? "Další krok: plížení u grindstone" : "Ochrana výbavy je aktivní";
             case SHARPENED -> "Nekara damage je aktivní";
             case NONE -> "";
         };

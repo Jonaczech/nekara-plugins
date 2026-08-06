@@ -6,6 +6,8 @@ import cz.nekara.rpg.skills.SkillId;
 import cz.nekara.rpg.skills.combat.RandomChanceRoller;
 import cz.nekara.rpg.skills.luck.LuckChanceResolver;
 import cz.nekara.rpg.skills.perks.MechanicId;
+import cz.nekara.rpg.skills.perks.PerkId;
+import cz.nekara.rpg.skills.profile.SkillProfile;
 import cz.nekara.rpg.skills.rewards.DropMultiplierResolver;
 import cz.nekara.rpg.skills.stats.StatId;
 import io.papermc.paper.event.player.PlayerTradeEvent;
@@ -13,6 +15,7 @@ import com.destroystokyo.paper.entity.villager.Reputation;
 import com.destroystokyo.paper.entity.villager.ReputationType;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -81,6 +84,9 @@ import java.util.concurrent.ThreadLocalRandom;
 
 final class ProductionPerkListener implements Listener {
     private static final long BREWING_ATTRIBUTION_MILLIS = 120_000L;
+    private static final PerkId SMITHING_CRAFT = new PerkId("smithing.craft");
+    private static final PerkId SMITHING_FINE_WORK = new PerkId("smithing.fine_work");
+    private static final PerkId SMITHING_MASTERWORK = new PerkId("smithing.masterwork");
     private static final int FIELD_RADIUS = 2;
     private static final int MAX_FIELD_BLOCKS = 25;
     private static final long FIELD_HARVEST_DURATION_MILLIS = 8_000L;
@@ -192,9 +198,12 @@ final class ProductionPerkListener implements Listener {
             return;
         }
         module.runtimeState(player.getUniqueId(), SkillId.SMITHING).ifPresent(state -> {
-            module.cachedProfile(player.getUniqueId()).ifPresent(profile -> SmithingTier.apply(
-                event.getCurrentItem(), module.skillLevel(profile, SkillId.SMITHING),
-                state.stats().value(StatId.ITEM_QUALITY), smithingTierKeys));
+            module.cachedProfile(player.getUniqueId()).ifPresent(profile -> SmithingTier.prepare(
+                event.getCurrentItem(), smithingQualityChance(profile, state.stats().value(StatId.ITEM_QUALITY)),
+                profile.perkRank(SMITHING_CRAFT),
+                profile.perkRank(SMITHING_FINE_WORK) > 0,
+                profile.perkRank(SMITHING_MASTERWORK) > 0,
+                smithingTierKeys));
             refundCraftingIngredient(player, event.getInventory().getMatrix(),
                 state.stats().value(StatId.RESOURCE_COST_REDUCTION));
         });
@@ -211,12 +220,21 @@ final class ProductionPerkListener implements Listener {
             return;
         }
         module.runtimeState(player.getUniqueId(), SkillId.SMITHING).ifPresent(state -> {
-            module.cachedProfile(player.getUniqueId()).ifPresent(profile -> SmithingTier.apply(
-                event.getCurrentItem(), module.skillLevel(profile, SkillId.SMITHING),
-                state.stats().value(StatId.ITEM_QUALITY), smithingTierKeys));
+            module.cachedProfile(player.getUniqueId()).ifPresent(profile -> SmithingTier.prepare(
+                event.getCurrentItem(), smithingQualityChance(profile, state.stats().value(StatId.ITEM_QUALITY)),
+                profile.perkRank(SMITHING_CRAFT),
+                profile.perkRank(SMITHING_FINE_WORK) > 0,
+                profile.perkRank(SMITHING_MASTERWORK) > 0,
+                smithingTierKeys));
             refundCraftingIngredient(player, event.getInventory().getContents(),
                 state.stats().value(StatId.RESOURCE_COST_REDUCTION));
         });
+    }
+
+    private double smithingQualityChance(SkillProfile profile, double itemQuality) {
+        var luck = plugin.configuration().get().skills().luck();
+        return SmithingTier.qualityPromotionChance(itemQuality, module.globalLuck(profile),
+            luck.maximumPoints(), luck.craftingQualityChanceBonusPerPoint());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -284,15 +302,20 @@ final class ProductionPerkListener implements Listener {
                 SmithingTier.ProcessingState.HEATED, SmithingTier.ProcessingState.TEMPERED)) {
                 return;
             }
+            Optional<SmithingTier> quality = SmithingTier.isWeapon(item.getType())
+                ? Optional.empty() : SmithingTier.revealQuality(item, smithingTierKeys);
             consumeCauldronWater(event.getClickedBlock());
             player.getWorld().spawnParticle(Particle.SPLASH, event.getClickedBlock().getLocation().add(0.5, 0.8, 0.5), 12,
                 0.25, 0.1, 0.25, 0.08);
             player.playSound(player.getLocation(), Sound.BLOCK_FIRE_EXTINGUISH, 0.8F, 1.1F);
             String message = SmithingTier.isWeapon(item.getType())
                 ? "Výkov je opracovaný. Naostři jej na brusu."
-                : "Výkov je opracovaný a jeho ochrana je aktivní.";
-            player.sendActionBar(net.kyori.adventure.text.Component.text(message,
-                net.kyori.adventure.text.format.NamedTextColor.GREEN));
+                : quality.map(tier -> "Výkov dokončen: " + tier.displayName() + ". Ochrana je aktivní.")
+                    .orElse("Výkov je opracovaný a jeho ochrana je aktivní.");
+            quality.ifPresent(tier -> celebrateQuality(player, event.getClickedBlock().getLocation().add(0.5, 0.8, 0.5), tier));
+            player.sendActionBar(quality.map(tier -> net.kyori.adventure.text.Component.text(message, tier.displayColor()))
+                .orElseGet(() -> net.kyori.adventure.text.Component.text(message,
+                    net.kyori.adventure.text.format.NamedTextColor.GREEN)));
             event.setCancelled(true);
             return;
         }
@@ -356,14 +379,43 @@ final class ProductionPerkListener implements Listener {
             }
             if (SmithingTier.advanceProcessing(current, smithingTierKeys,
                 SmithingTier.ProcessingState.TEMPERED, SmithingTier.ProcessingState.SHARPENED)) {
+                Optional<SmithingTier> quality = SmithingTier.revealQuality(current, smithingTierKeys);
                 player.getWorld().spawnParticle(Particle.CRIT, station, 20, 0.25, 0.25, 0.25, 0.12);
                 player.playSound(player.getLocation(), Sound.BLOCK_GRINDSTONE_USE, 0.9F, 1.1F);
-                player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Zbraň je naostřená. Její Nekara damage je aktivní.",
-                    net.kyori.adventure.text.format.NamedTextColor.GREEN));
+                quality.ifPresent(tier -> celebrateQuality(player, station, tier));
+                String message = quality.map(tier -> "Zbraň dokončena: " + tier.displayName() + ". Nekara damage je aktivní.")
+                    .orElse("Zbraň je naostřená. Její Nekara damage je aktivní.");
+                player.sendActionBar(quality.map(tier -> net.kyori.adventure.text.Component.text(message, tier.displayColor()))
+                    .orElseGet(() -> net.kyori.adventure.text.Component.text(message,
+                        net.kyori.adventure.text.format.NamedTextColor.GREEN)));
             }
         }, 40L);
         sharpeningTasks.put(player.getUniqueId(), task);
+    }
+
+    private void celebrateQuality(Player player, Location location, SmithingTier quality) {
+        switch (quality) {
+            case I -> {
+                player.getWorld().spawnParticle(Particle.CRIT, location, 6, 0.2, 0.2, 0.2, 0.03);
+                player.playSound(location, Sound.BLOCK_ANVIL_USE, 0.55F, 0.9F);
+            }
+            case II -> {
+                player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, location, 10, 0.25, 0.25, 0.25, 0.05);
+                player.playSound(location, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.7F, 1.1F);
+            }
+            case III -> {
+                player.getWorld().spawnParticle(Particle.ENCHANT, location, 16, 0.3, 0.3, 0.3, 0.4);
+                player.playSound(location, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.85F, 1.2F);
+            }
+            case IV -> {
+                player.getWorld().spawnParticle(Particle.END_ROD, location, 22, 0.35, 0.35, 0.35, 0.08);
+                player.playSound(location, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0F, 1.45F);
+            }
+            case V -> {
+                player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, location, 30, 0.4, 0.4, 0.4, 0.08);
+                player.playSound(location, Sound.ITEM_TOTEM_USE, 0.8F, 1.15F);
+            }
+        }
     }
 
     private static boolean consumeFuel(Player player) {

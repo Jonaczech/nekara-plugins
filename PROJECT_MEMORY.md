@@ -1,5 +1,20 @@
 # Projektová paměť Nekara Plugins
 
+## Release 2.4.2
+
+- `SmithingTier` drží pět kvalit: Běžná, Neobyčejná, Vzácná, Epická a Legendární.
+  Po perku `smithing.craft` je minimum Neobyčejná; kvalita je nezávislá na levelové
+  bráně materiálu.
+- Kovová výbava používá stav dokončení výkovu: pec, kotlík a u zbraní broušení.
+  Neobcházej ho pouze GUI; dokončení a výsledná kvalita jsou server-authoritative.
+- Globální `LuckConfig` má `craftingQualityChanceBonusPerPoint`. Výchozí `0.05`
+  přidává šanci na povýšení kvality Řemesla, nikoliv další loot nebo XP.
+- `SkillsMenu` u vybrané dovednosti zobrazuje kompaktní skutečné bonusy z runtime
+  stavu a aktivní ranky. Hlavní přehled používá titul `Dovednosti`; spodní řada
+  obsahuje Řemeslo, Statkářství a Rybaření.
+- `docs/SKILL_ICON_BRIEFS.md` je hráčsky stručný podklad pro budoucí generování
+  originálních ikon; žádné nové bitmapové ikony zatím nepřidávej.
+
 ## Release 2.4.1
 
 - V hlavním menu je vstup do Dovedností `WRITABLE_BOOK` ve středovém slotu. Tooltip

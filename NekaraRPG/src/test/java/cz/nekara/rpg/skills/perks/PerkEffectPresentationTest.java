@@ -17,10 +17,10 @@ class PerkEffectPresentationTest {
             StatId.DOUBLE_DROP_CHANCE, ModifierOperation.ADD, 0.025));
 
         assertEquals(
-            "Hodnost 1/5: šance na dvojitý výtěžek +2,5 p. b.",
+            "Hodnost 1/5: šance na dvojitý výtěžek +2,5 %",
             PerkEffectPresentation.describe(perk, 0).getFirst());
         assertEquals(
-            "Hodnost 5/5: šance na dvojitý výtěžek +12,5 p. b.",
+            "Hodnost 5/5: šance na dvojitý výtěžek +12,5 %",
             PerkEffectPresentation.describe(perk, 5).getFirst());
     }
 

@@ -64,7 +64,7 @@ public final class PerkEffectPresentation {
             case TRADE_DISCOUNT -> "vrácené smaragdy z ceny obchodu " + signedPercent(value);
             case TRADE_SELECTION_BONUS -> "bonus k rozsahu obchodních nabídek " + signedPercent(value);
             case VILLAGER_SKILL -> "účinnost vesničanských služeb " + signedPercent(value);
-            case ITEM_QUALITY -> "šance posunout nově vyrobenou výbavu o jeden Tier výš "
+            case ITEM_QUALITY -> "šance posunout nově vyrobenou výbavu o jednu úroveň kvality výš "
                 + signedPercentagePoints(value);
             case ENCHANTMENT_POWER -> "síla očarování " + signedPercent(value);
             case EXPERIENCE_COST_REDUCTION -> "úspora úrovní XP při očarování " + signedPercent(value);
@@ -162,7 +162,7 @@ public final class PerkEffectPresentation {
     }
 
     private static String signedPercentagePoints(double value) {
-        return signed(value) + " p. b.";
+        return signed(value) + " %";
     }
 
     private static String signed(double value) {

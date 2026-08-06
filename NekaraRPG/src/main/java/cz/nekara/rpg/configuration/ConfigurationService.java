@@ -878,7 +878,11 @@ public final class ConfigurationService {
             validateDouble(config.getDouble("skills.luck.rare-loot-chance-bonus-per-point",
                     defaults.rareLootChanceBonusPerPoint()),
                 0.0, 1.0, defaults.rareLootChanceBonusPerPoint(),
-                "skills.luck.rare-loot-chance-bonus-per-point", warning)
+                "skills.luck.rare-loot-chance-bonus-per-point", warning),
+            validateDouble(config.getDouble("skills.luck.crafting-quality-chance-bonus-per-point",
+                    defaults.craftingQualityChanceBonusPerPoint()),
+                0.0, 1.0, defaults.craftingQualityChanceBonusPerPoint(),
+                "skills.luck.crafting-quality-chance-bonus-per-point", warning)
         );
     }
 

@@ -1,5 +1,37 @@
 # Přehled změn
 
+## 2.4.2
+
+- Kvalita vlastnoručně vyrobené výbavy používá pět jasně odlišených pečetí:
+  `◇ Běžná`, `✦ Neobyčejná`, `◆ Vzácná`, `✹ Epická` a `✪ Legendární`.
+  Epická a Legendární kvalita je navíc tučná; změna nemění hodnoty bonusů,
+  hranice úrovní ani uložená data předmětů.
+- Odemknutí materiálu výbavy a její kvalita jsou oddělené: úroveň Řemesla
+  zpřístupňuje materiály, zatímco lepší kvality odemykají výhradně perky.
+  Poctivé řemeslo navíc odemyká dokončení výkovu; kvalita se odhalí až po
+  peci, kotlíku a u zbraně také po brusném kameni. Tooltipy pravděpodobností
+  nyní používají znak `%`.
+- Dokončený výkov má barvu, zvuk a částice podle získané kvality. Ikona právě
+  otevřené dovednosti v perk stromu stručně ukazuje její aktivní perky i jejich
+  skutečné souhrnné hodnoty. U sběratelských dovedností ukazuje celkový pasivní
+  dvojitý výtěžek; ostatní procentní i číselné bonusy přebírá z aktuálního stavu
+  postavy, tedy včetně všech odemčených hodností.
+- Po odemčení `Poctivého řemesla` je vyrobená výbava vždy alespoň Neobyčejná.
+  Vzácná, Epická a Legendární kvalita zůstávají náhodným vylepšením podle
+  odemčených perků a hodnoty kvality výrobků.
+- Váhy vyšších kvalit jsou výrazně štědřejší pro plně rozvinuté Řemeslo:
+  bez Nové hry+ má kompletní strom přibližně `8 %` na Legendární kvalitu,
+  s Novou hrou+ téměř `10 %`. Bonus Nové hry+ používá stávající násobení
+  statistik perků a ovlivňuje proto přímo každý roll kvality.
+- Perk Nová hra+ má ve všech stromech výrazný tooltip s ikonou Trial Key,
+  názvem, stavem znovuzrození a krátkým přehledem trvalé síly perků i XP
+  následujícího běhu.
+- Globální Štěstí nyní zvyšuje také šanci na povýšení kvality vlastnoručně
+  vyrobené výbavy. Každý bod přidá výchozích `5 %`, nejvýše `10 %` při
+  současném limitu dvou bodů; hodnota je upravitelná v `skills/config.yml`.
+- Hlavní okno má titul `Dovednosti`. Řemeslo, Statkářství a Rybaření jsou
+  přesunuty do spodní řady, aby přehled dovedností měl čistší rozložení.
+
 ## 2.4.1
 
 - Hlavní menu používá pro Dovednosti knihu s brkem ve středovém slotu.
