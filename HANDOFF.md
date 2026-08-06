@@ -1,5 +1,20 @@
 # Předání projektu Nekara Plugins
 
+## Release 2.4.2
+
+- Řemeslo rozlišuje materiál a kvalitu. `Poctivé řemeslo` dává vlastní výbavě
+  garantovanou Neobyčejnou kvalitu; vyšší perky, New Game+ a Štěstí mohou kvalitu
+  povýšit až na Legendární.
+- Kovová zbroj se dokončuje v peci a kotlíku. Zbraně po ochlazení vyžadují krátké
+  broušení na brusném kameni. Dokončený předmět dostane barvu, zvuk a částice kvality.
+- `luck.crafting-quality-chance-bonus-per-point` je výchozích `0.05`; při maximu
+  dvou bodů přidá Štěstí až `10 %` šance na povýšení kvality.
+- Okno se jmenuje `Dovednosti`. Řemeslo, Statkářství a Rybaření jsou ve spodní řadě;
+  tooltip otevřené dovednosti ukazuje aktivní perky a aktuální souhrnné bonusy.
+- Budoucí vlastní ikony nejsou součástí releasu. Připravené stručné zadání je
+  `NekaraRPG/docs/SKILL_ICON_BRIEFS.md`.
+- GitHub release neznamená nasazení: produkční server tento artefakt ještě nemá.
+
 ## Release 2.4.1
 
 - Vydaná verze obsahuje kompaktní tooltipy dovedností i perků, knihu s brkem pro

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.bukkit.Material;
 import org.junit.jupiter.api.Test;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 class SmithingTierTest {
     @Test
@@ -42,10 +43,42 @@ class SmithingTierTest {
     }
 
     @Test
-    void craftsmanshipQualityCanPromoteOneTierButNeverMoreThanCertain() {
+    void craftsmanshipQualityIsExclusiveToPerksAndGuaranteesAnUncommonMinimum() {
         assertEquals(0.0, SmithingTier.qualityPromotionChance(1.0));
         assertEquals(0.25, SmithingTier.qualityPromotionChance(1.25));
         assertEquals(1.0, SmithingTier.qualityPromotionChance(5.0));
+        assertEquals(0.63, SmithingTier.qualityPromotionChance(1.53, 2.0, 2, 0.05));
+        assertEquals(0.63, SmithingTier.qualityPromotionChance(1.53, 10.0, 2, 0.05));
+        assertEquals(SmithingTier.I, SmithingTier.qualityFor(0, false, false, 1.53, 0.0));
+        assertEquals(SmithingTier.II, SmithingTier.qualityFor(1, false, false, 1.05, 0.01));
+        assertEquals(SmithingTier.II, SmithingTier.qualityFor(1, false, false, 1.05, 0.50));
+        assertEquals(SmithingTier.II, SmithingTier.qualityFor(5, true, true, 1.53, 0.99));
+        assertEquals(SmithingTier.III, SmithingTier.qualityFor(3, false, false, 1.15, 0.02));
+        assertEquals(SmithingTier.IV, SmithingTier.qualityFor(3, true, false, 1.33, 0.01));
+        assertEquals(SmithingTier.V, SmithingTier.qualityFor(3, true, true, 1.53, 0.001));
+        assertEquals(SmithingTier.V, SmithingTier.qualityFor(5, true, true, 1.53, 0.07));
+        assertEquals(SmithingTier.IV, SmithingTier.qualityFor(5, true, true, 1.53, 0.10));
+        assertEquals(SmithingTier.III, SmithingTier.qualityFor(5, true, true, 1.53, 0.30));
+        assertEquals(SmithingTier.V, SmithingTier.qualityFor(5, true, true, 1.6625, 0.09));
+    }
+
+    @Test
+    void craftsmanshipQualitiesUseTheDefinedNamesAndDistinctSeals() {
+        assertEquals("Běžná", SmithingTier.I.displayName());
+        assertEquals("Neobyčejná", SmithingTier.II.displayName());
+        assertEquals("Vzácná", SmithingTier.III.displayName());
+        assertEquals("Epická", SmithingTier.IV.displayName());
+        assertEquals("Legendární", SmithingTier.V.displayName());
+        assertEquals(NamedTextColor.WHITE, SmithingTier.I.displayColor());
+        assertEquals(NamedTextColor.GREEN, SmithingTier.II.displayColor());
+        assertEquals(NamedTextColor.BLUE, SmithingTier.III.displayColor());
+        assertEquals(NamedTextColor.LIGHT_PURPLE, SmithingTier.IV.displayColor());
+        assertEquals(NamedTextColor.GOLD, SmithingTier.V.displayColor());
+        assertEquals(5, java.util.Arrays.stream(SmithingTier.values()).map(SmithingTier::icon).distinct().count());
+        assertFalse(SmithingTier.I.bold());
+        assertFalse(SmithingTier.III.bold());
+        assertTrue(SmithingTier.IV.bold());
+        assertTrue(SmithingTier.V.bold());
     }
 
     @Test

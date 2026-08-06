@@ -3,6 +3,17 @@
 Modulární RPG plugin pro Purpur/Paper 26.1 a Java 25. Obsahuje autentizaci,
 rybářskou minihru, táboření/Rested, Echo Vein, mounty a nativní Nekara Skills.
 
+## 2.4.2
+
+Řemeslo nyní odděluje odemčení materiálu od kvality vyrobené výbavy. Po perku
+`Poctivé řemeslo` je kvalita alespoň Neobyčejná; další perky a globální Štěstí
+zvyšují šanci na Vzácnou, Epickou a Legendární kvalitu. Kovová výbava prochází
+krátkým dokončením v peci a kotlíku, zbraně navíc broušením.
+
+Přehled se jmenuje `Dovednosti`. Ikona otevřené dovednosti v perk stromu ukazuje
+aktuální bonusy a aktivní perky včetně přesných hodnot. Zadání pro budoucí vlastní
+ikony dovedností je v [docs/SKILL_ICON_BRIEFS.md](docs/SKILL_ICON_BRIEFS.md).
+
 ## 2.4.1
 
 Dovednosti jsou v hlavním menu uprostřed jako kniha s brkem. Přehledy dovedností i

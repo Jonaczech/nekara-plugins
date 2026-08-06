@@ -44,11 +44,12 @@ activities:
   enabled: true
   deduplication-milliseconds: 750
 
-# Global Luck applies only when Nekara rolls an entry from its own rare-loot table.
-# It never changes crafting, normal drops, vanilla chest loot or vanilla fishing loot.
+# Global Luck improves Nekara rare-loot rolls and the quality roll of player-crafted equipment.
+# It never changes normal drops, vanilla chest loot or vanilla fishing loot.
 luck:
   maximum-points: 2
   rare-loot-chance-bonus-per-point: 0.02
+  crafting-quality-chance-bonus-per-point: 0.05
 
 # Weapon-family combat effects are always resolved server-side. Values are
 # added to the selected weapon skill's perk statistics, never stored in items.

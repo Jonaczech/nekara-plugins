@@ -39,12 +39,12 @@ public final class DefaultPerkTree {
             node("services", "Mistrovské služby", "Odemkne opravy, vylepšení a výcvik.", mechanic(MechanicId.VILLAGER_UPGRADING), mechanic(MechanicId.VILLAGER_TRAINING)),
             node("black_market", "Šeptaný trh", "Odemkne vzácné nabídky na hlavní úrovni stezky.", mechanic(MechanicId.BLACK_MARKET)));
         builder.tree(SkillId.SMITHING,
-            node("craft", "Poctivé řemeslo", "Vlastnoručně vyrobená výbava získává vyšší kvalitu.", stat(StatId.ITEM_QUALITY, 0.05)),
+            node("craft", "Poctivé řemeslo", "Výbava má nejméně Neobyčejnou kvalitu; od III. hodnosti může být i Vzácná.", stat(StatId.ITEM_QUALITY, 0.05)),
             node("economy", "Úsporný výkovek", "Při výrobě a úpravách se šetří materiál.", stat(StatId.RESOURCE_COST_REDUCTION, 0.012)),
             node("recipes", "Zapomenuté nákresy", "Odemkne řemeslnickou soupravu a efektivní výrobu stavebních surovin.", mechanic(MechanicId.SMITHING_RECIPES), mechanic(MechanicId.BULK_CRAFTING)),
-            node("fine_work", "Jemná práce", "Další zlepšení vlastností vyrobených předmětů.", stat(StatId.ITEM_QUALITY, 0.08)),
+            node("fine_work", "Jemná práce", "Odemyká Epickou kvalitu vyrobené výbavy.", stat(StatId.ITEM_QUALITY, 0.08)),
             node("tinkering", "Dílenské úpravy", "Odemkne bezpečnou opravu výbavy řemeslnickou soupravou.", mechanic(MechanicId.TINKERING)),
-            node("masterwork", "Mistrovský kus", "Vrcholné výrobky dosahují nejlepší možné jakosti.", stat(StatId.ITEM_QUALITY, 0.20)));
+            node("masterwork", "Mistrovský kus", "Odemyká Legendární kvalitu vyrobené výbavy.", stat(StatId.ITEM_QUALITY, 0.20)));
         builder.tree(SkillId.ENCHANTING,
             node("runes", "Čitelné runy", "Zvyšuje sílu vložených očarování.", stat(StatId.ENCHANTMENT_POWER, 0.05)),
             node("experience", "Šetrný zápis", "Runotepectví spotřebuje méně zkušeností.", stat(StatId.EXPERIENCE_COST_REDUCTION, 0.012)),
