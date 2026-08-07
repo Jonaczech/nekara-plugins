@@ -22,7 +22,7 @@ class PerkStatResolverTest {
         StatSnapshot stats = resolver.resolve(profile, SkillId.MINING);
 
         assertEquals(1.06, stats.value(StatId.MINING_SPEED), 0.000_001);
-        assertEquals(1.2, stats.value(StatId.MINING_BLOCK_EXPERIENCE), 0.000_001);
+        assertEquals(0.12, stats.value(StatId.MINING_BLOCK_EXPERIENCE), 0.000_001);
     }
 
     @Test
@@ -72,7 +72,7 @@ class PerkStatResolverTest {
         StatSnapshot stats = resolver.resolve(profile, SkillId.WOODCUTTING, 1.25);
 
         assertEquals(1.375, stats.value(StatId.WOODCUTTING_SPEED), 0.000_001);
-        assertEquals(2.5, stats.value(StatId.WOODCUTTING_LOG_EXPERIENCE), 0.000_001);
+        assertEquals(0.3125, stats.value(StatId.WOODCUTTING_LOG_EXPERIENCE), 0.000_001);
         assertEquals(2.25, stats.value(StatId.SAPLING_GROWTH_MULTIPLIER), 0.000_001);
         assertEquals(0.00625, stats.value(StatId.GOLDEN_LEAF_APPLE_CHANCE), 0.000_001);
     }

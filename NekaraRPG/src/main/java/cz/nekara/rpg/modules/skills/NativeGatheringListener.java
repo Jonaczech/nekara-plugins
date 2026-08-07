@@ -162,6 +162,7 @@ final class NativeGatheringListener implements Listener {
         String playerKey = event.getPlayer().getUniqueId().toString();
         physicalInputs.forget(playerKey);
         validatedBreaks.forget(playerKey);
+        module.forgetSupplementalVanillaExperience(event.getPlayer().getUniqueId());
         removeSpeedModifier(event.getPlayer());
         removeProficiencyMobility(event.getPlayer());
         proficiencyWarnings.remove(event.getPlayer().getUniqueId());
@@ -553,7 +554,7 @@ final class NativeGatheringListener implements Listener {
     }
 
     private void awardVanillaExperience(Player player, double amount) {
-        int experience = (int) Math.round(amount);
+        int experience = module.claimSupplementalVanillaExperience(player.getUniqueId(), amount);
         if (experience < 1) {
             return;
         }

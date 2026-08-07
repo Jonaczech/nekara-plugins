@@ -26,4 +26,5 @@ abilities:
     enabled: true
     maximum-blocks: 64
     blocks-per-tick: 8
+    duration-seconds: 10
     cooldown-seconds: 12

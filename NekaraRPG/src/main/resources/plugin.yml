@@ -11,7 +11,7 @@ softdepend:
 commands:
   nekararpg:
     description: Manage NekaraRPG.
-    usage: /nekararpg [menu|prehled|help|reload|status|update|skills admin|sit|stand|lay|rise|crawl|mount|test [fishing|vein]|cancel [player]]
+    usage: /nekararpg [menu|prehled|help|reload|status|update|skills admin|sit|stand|mount|test [fishing|vein]|cancel [player]]
     aliases: [nrpg, nekarafishing, nfishing]
   nekaraauth:
     description: Opens and administers NekaraAuth.
@@ -65,7 +65,7 @@ permissions:
     description: Allows the player to sit and stand through NekaraRPG.
     default: true
   nekararpg.campfire.use:
-    description: Allows sitting, lying, and campfire rest effects.
+    description: Allows sitting and campfire rest effects.
     default: true
   nekararpg.echo-vein.use:
     description: Allows native mining actions to trigger Echo Vein.

@@ -12,7 +12,6 @@ public record CampfireConfig(
         double restedHungerLossMultiplier,
         RestedExperienceConfig restedExperience,
         RestedEffectConfig restedEffect,
-        LyingConfig lying,
         CampingConfig camping,
         double groupMultiplierPerExtraPlayer,
         double maximumGroupMultiplier,

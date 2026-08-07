@@ -544,7 +544,9 @@ final class ProductionPerkListener implements Listener {
         }
         List<Block> harvest = new ArrayList<>();
         harvest.add(event.getClickedBlock());
-        if (state.get().has(MechanicId.FIELD_HARVEST) && activateOrContinueFieldHarvest(player)) {
+        boolean fieldHarvest = state.get().has(MechanicId.FIELD_HARVEST)
+            && activateOrContinueFieldHarvest(player);
+        if (fieldHarvest) {
             Material crop = event.getClickedBlock().getType();
             for (int x = -FIELD_RADIUS; x <= FIELD_RADIUS && harvest.size() < MAX_FIELD_BLOCKS; x++) {
                 for (int z = -FIELD_RADIUS; z <= FIELD_RADIUS && harvest.size() < MAX_FIELD_BLOCKS; z++) {
@@ -556,8 +558,10 @@ final class ProductionPerkListener implements Listener {
             }
         }
         event.setCancelled(true);
+        player.swingMainHand();
+        playHarvestSound(player, fieldHarvest);
         for (Block block : harvest) {
-            replantAfterBreak(player, block);
+            replantAfterBreak(player, block, fieldHarvest);
         }
     }
 
@@ -656,7 +660,8 @@ final class ProductionPerkListener implements Listener {
             if (roll(module.farmingNewGamePlusBonusDropChance(profile))) {
                 addItemCopies(event.getItems(), 1, bonuses);
             }
-            int harvestExperience = (int) Math.round(state.stats().value(StatId.FARMING_HARVEST_EXPERIENCE));
+            int harvestExperience = module.claimSupplementalVanillaExperience(event.getPlayer().getUniqueId(),
+                state.stats().value(StatId.FARMING_HARVEST_EXPERIENCE));
             if (harvestExperience > 0) {
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     if (enabled && event.getPlayer().isOnline()) {
@@ -833,7 +838,7 @@ final class ProductionPerkListener implements Listener {
                 module.cachedProfile(player.getUniqueId()).ifPresent(profile -> rewardFishingChest(player, profile,
                     state.has(MechanicId.FISHING_MASTER_CHEST) ? 0.03 : 0.01));
             }
-            int extraExperience = (int) Math.floor(vanillaExperience
+            int extraExperience = module.claimSupplementalVanillaExperience(player.getUniqueId(), vanillaExperience
                 * Math.max(0.0, state.stats().value(StatId.EXPERIENCE_ORB_MULTIPLIER) - 1.0));
             if (extraExperience > 0) {
                 player.giveExp(extraExperience);
@@ -1244,13 +1249,14 @@ final class ProductionPerkListener implements Listener {
         return Optional.empty();
     }
 
-    private void replantAfterBreak(Player player, Block block) {
+    private void replantAfterBreak(Player player, Block block, boolean fieldHarvest) {
         if (!(block.getBlockData() instanceof Ageable original)) {
             return;
         }
         org.bukkit.block.data.BlockData replanted = original.clone();
         ((Ageable) replanted).setAge(0);
         BlockKey key = BlockKey.of(block);
+        showHarvestVisual(block, original, fieldHarvest);
         if (!player.breakBlock(block)) {
             return;
         }
@@ -1260,6 +1266,43 @@ final class ProductionPerkListener implements Listener {
                 current.setBlockData(replanted, true);
             }
         });
+    }
+
+    private static void playHarvestSound(Player player, boolean fieldHarvest) {
+        player.playSound(
+            player.getLocation(),
+            Sound.BLOCK_CROP_BREAK,
+            fieldHarvest ? 0.85f : 0.65f,
+            fieldHarvest ? 0.82f : 1.08f
+        );
+    }
+
+    private static void showHarvestVisual(
+        Block block,
+        org.bukkit.block.data.BlockData cropData,
+        boolean fieldHarvest
+    ) {
+        Location center = block.getLocation().add(0.5, 0.55, 0.5);
+        int fragments = fieldHarvest ? 5 : 8;
+        block.getWorld().spawnParticle(
+            Particle.BLOCK,
+            center,
+            fragments,
+            0.18,
+            0.22,
+            0.18,
+            0.03,
+            cropData
+        );
+        block.getWorld().spawnParticle(
+            Particle.HAPPY_VILLAGER,
+            center,
+            fieldHarvest ? 1 : 2,
+            0.12,
+            0.18,
+            0.12,
+            0.01
+        );
     }
 
     private static boolean isCookableFood(Material material) {
@@ -1453,18 +1496,7 @@ final class ProductionPerkListener implements Listener {
     }
 
     private static boolean isFarmingDoubleDropSource(Block block) {
-        if (isMature(block)) {
-            return true;
-        }
-        String name = block.getType().name();
-        return name.equals("MELON") || name.equals("PUMPKIN")
-            || name.equals("BROWN_MUSHROOM") || name.equals("RED_MUSHROOM")
-            || name.endsWith("_FLOWER") || name.endsWith("_TULIP")
-            || name.equals("DANDELION") || name.equals("POPPY") || name.equals("ALLIUM")
-            || name.equals("AZURE_BLUET") || name.equals("OXEYE_DAISY")
-            || name.equals("CORNFLOWER") || name.equals("LILY_OF_THE_VALLEY")
-            || name.equals("WITHER_ROSE") || name.equals("SUNFLOWER")
-            || name.equals("LILAC") || name.equals("ROSE_BUSH") || name.equals("PEONY");
+        return FarmingDropPolicy.isEligible(block.getType().name(), isMature(block));
     }
 
     private static boolean isMature(org.bukkit.block.data.BlockData data) {

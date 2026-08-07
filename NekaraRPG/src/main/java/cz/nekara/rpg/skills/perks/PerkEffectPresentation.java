@@ -113,7 +113,7 @@ public final class PerkEffectPresentation {
             case DRILLING -> "řízený odstřel vlastním TNT; limity určuje serverová konfigurace";
             case TNT_MASTERY -> "trojnásobný výstup při výrobě TNT";
             case VEIN_CLUSTER_EXTRACTION -> "Vein Mining pro andesite, diorite, granite, tuff a deepslate";
-            case TREE_FELLER -> "při plížení poražení propojeného přírodního stromu";
+            case TREE_FELLER -> "po Shift + pravém kliknutí dočasné kácení propojených přírodních stromů";
             case INSTANT_HARVEST -> "sklizeň a opětovné zasazení jedním dotykem";
             case FIELD_HARVEST -> "při plížení aktivaci sklizně a opětovného sázení plodin v oblasti 5×5";
             case BEEKEEPER -> "klid včel vůči hráči";

@@ -228,7 +228,6 @@ final class ModuleConfigurationStore {
         YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
         configuration.setDefaults(defaults);
         migrateSittingIntoCampfire(definition, configuration, file);
-        migrateLyingVisualDefault(definition, configuration, file);
         migrateMountsPreReleaseDefaults(definition, configuration, file);
         return new LoadedModule(file, defaults, configuration, existedBeforeLoad);
     }
@@ -270,29 +269,6 @@ final class ModuleConfigurationStore {
             copied = true;
         }
         return copied;
-    }
-
-    private void migrateLyingVisualDefault(
-            ModuleFile definition,
-            YamlConfiguration configuration,
-            File file
-    ) {
-        if (!"campfire/config.yml".equals(definition.resourcePath())
-                || !migrateLyingVisualDefault(configuration)) {
-            return;
-        }
-        save(configuration, file);
-        plugin.getLogger().info("Corrected the former lying mannequin yaw default from -90.0 to 0.0.");
-    }
-
-    static boolean migrateLyingVisualDefault(YamlConfiguration configuration) {
-        String path = "lying.mannequin.yaw-offset-degrees";
-        if (!configuration.contains(path, true)
-                || Double.compare(configuration.getDouble(path), -90.0) != 0) {
-            return false;
-        }
-        configuration.set(path, 0.0);
-        return true;
     }
 
     private void migrateMountsPreReleaseDefaults(

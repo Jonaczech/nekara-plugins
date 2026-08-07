@@ -11,16 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ModuleConfigurationStoreTest {
 
     @Test
-    void migratesTheFormerLyingVisualDefaultToTheForwardFacingOrientation() {
-        YamlConfiguration configuration = new YamlConfiguration();
-        configuration.set("lying.mannequin.yaw-offset-degrees", -90.0);
-
-        assertTrue(ModuleConfigurationStore.migrateLyingVisualDefault(configuration));
-        assertEquals(0.0, configuration.getDouble("lying.mannequin.yaw-offset-degrees"));
-        assertFalse(ModuleConfigurationStore.migrateLyingVisualDefault(configuration));
-    }
-
-    @Test
     void missingExplicitLayoutStillMigratesWhenBundledDefaultsAlreadyContainVersionTwo() {
         assertTrue(ConfigurationLayout.requiresMigration(
                 false, ConfigurationLayout.CURRENT));

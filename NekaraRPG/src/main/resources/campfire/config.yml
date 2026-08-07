@@ -10,22 +10,6 @@ sitting:
   detect-external-seats: true
   external-seat-entity-types:
     - ARMOR_STAND
-lying:
-  enabled: true
-  # Uses the native 26.1 mannequin entity; no hand-crafted metadata packets.
-  mannequin-visual-enabled: true
-  mannequin:
-    # A zero offset keeps the mannequin's feet in the direction the player was
-    # facing; its head is therefore behind the player. It can be tuned live.
-    yaw-offset-degrees: 0.0
-    forward-offset: -0.9
-    side-offset: 0.0
-    y-offset: 0.0
-  wake-on-damage: true
-  # Lying is available anywhere. Rested and night skipping still require a lit
-  # campfire nearby; the night skip also requires the player to be alone.
-  skip-night-when-alone: true
-  fall-asleep-seconds: 5
 healing:
   amount: 1.0
   period-seconds: 5

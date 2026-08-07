@@ -19,7 +19,7 @@ updater:
   maximum-jar-size-megabytes: 16
 
 modules:
-  # Modules share one JAR but can be enabled independently. Sitting and lying
+  # Modules share one JAR but can be enabled independently. Sitting
   # are part of Campfire; detailed settings live in each module folder.
   auth:
     enabled: true

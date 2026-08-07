@@ -42,7 +42,10 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ExplosionPrimeEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.event.block.Action;
 import org.bukkit.scheduler.BukkitTask;
 
 final class GatheringAbilityListener implements Listener {
@@ -57,6 +60,7 @@ final class GatheringAbilityListener implements Listener {
     private final PerkMechanicResolver mechanics;
     private final PerkStatResolver stats;
     private final Map<CooldownKey, Long> cooldowns = new ConcurrentHashMap<>();
+    private final Map<UUID, TimedAbilityWindow> treeFellerWindows = new ConcurrentHashMap<>();
     private final Map<UUID, BukkitTask> activeTasks = new HashMap<>();
     private final Set<UUID> activePlayers = ConcurrentHashMap.newKeySet();
     private final Map<UUID, EnhancedTnt> enhancedTnt = new HashMap<>();
@@ -98,36 +102,98 @@ final class GatheringAbilityListener implements Listener {
         activePlayers.clear();
         enhancedTnt.clear();
         cooldowns.clear();
+        treeFellerWindows.clear();
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void activateConnectedBreak(BlockBreakEvent event) {
-        if (!enabled || !event.getPlayer().isSneaking()
-            || activePlayers.contains(event.getPlayer().getUniqueId())) {
+        if (!enabled || activePlayers.contains(event.getPlayer().getUniqueId())) {
             return;
         }
         Player player = event.getPlayer();
         Block source = event.getBlock();
         Material material = source.getType();
         if (GatheringMaterialPolicy.isOre(material)) {
+            if (!player.isSneaking()) {
+                return;
+            }
             tryConnectedAbility(
                 player, source, material, SkillId.MINING, MechanicId.VEIN_MINING,
                 GatheringTool.PICKAXE, config.veinMining(),
                 candidate -> GatheringMaterialPolicy.sameOreFamily(material, candidate.getType()),
                 false);
         } else if (GatheringMaterialPolicy.isVeinCluster(material)) {
+            if (!player.isSneaking()) {
+                return;
+            }
             tryConnectedAbility(
                 player, source, material, SkillId.MINING, MechanicId.VEIN_CLUSTER_EXTRACTION,
                 GatheringTool.PICKAXE, config.veinMining(),
                 candidate -> candidate.getType() == material,
                 false);
         } else if (GatheringMaterialPolicy.isLog(material)) {
+            if (!isTreeFellerActive(player.getUniqueId(), System.currentTimeMillis())) {
+                return;
+            }
             tryConnectedAbility(
                 player, source, material, SkillId.WOODCUTTING, MechanicId.TREE_FELLER,
                 GatheringTool.AXE, config.treeFeller(),
                 candidate -> GatheringMaterialPolicy.sameWoodFamily(material, candidate.getType()),
                 true);
         }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void activateTreeFeller(PlayerInteractEvent event) {
+        if (!enabled || event.getHand() != EquipmentSlot.HAND || !event.getPlayer().isSneaking()
+            || (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK)) {
+            return;
+        }
+        Block clickedBlock = event.getClickedBlock();
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK
+            && (clickedBlock == null || !GatheringMaterialPolicy.isLog(clickedBlock.getType()))) {
+            return;
+        }
+        Player player = event.getPlayer();
+        GatheringAbilityConfig ability = config.treeFeller();
+        if (!ability.enabled() || ability.durationSeconds() <= 0 || unsupportedMode(player)
+            || !plugin.configuration().get().worlds().isEnabled(player.getWorld().getName())
+            || !GatheringMaterialPolicy.suitableTool(
+                GatheringTool.AXE, player.getInventory().getItemInMainHand())) {
+            return;
+        }
+        var profile = module.cachedProfile(player.getUniqueId());
+        if (profile.isEmpty()) {
+            return;
+        }
+        try {
+            if (!mechanics.has(profile.get(), SkillId.WOODCUTTING, MechanicId.TREE_FELLER)) {
+                return;
+            }
+        } catch (RuntimeException exception) {
+            module.invalidateProfile(player.getUniqueId(), exception);
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        TimedAbilityWindow existing = treeFellerWindows.get(player.getUniqueId());
+        if (existing != null && existing.isActiveAt(now)) {
+            event.setCancelled(true);
+            messages.sendActionBar(player, "skills-tree-feller-active", Map.of(
+                "seconds", Math.max(1L, (existing.activeUntil() - now + 999L) / 1_000L)));
+            return;
+        }
+        long remaining = existing == null ? 0L : existing.cooldownRemainingAt(now);
+        if (remaining > 0) {
+            event.setCancelled(true);
+            sendCooldown(player, remaining);
+            return;
+        }
+        treeFellerWindows.put(player.getUniqueId(),
+            TimedAbilityWindow.start(now, ability.durationSeconds(), ability.cooldownSeconds()));
+        event.setCancelled(true);
+        player.swingMainHand();
+        messages.sendActionBar(player, "skills-tree-feller-active", Map.of("seconds", ability.durationSeconds()));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -196,6 +262,7 @@ final class GatheringAbilityListener implements Listener {
     public void cleanupPlayer(PlayerQuitEvent event) {
         cancelActive(event.getPlayer().getUniqueId());
         cooldowns.keySet().removeIf(key -> key.playerId().equals(event.getPlayer().getUniqueId()));
+        treeFellerWindows.remove(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
@@ -262,7 +329,9 @@ final class GatheringAbilityListener implements Listener {
         if (targets.isEmpty()) {
             return;
         }
-        setCooldown(player.getUniqueId(), mechanic, ability);
+        if (mechanic != MechanicId.TREE_FELLER) {
+            setCooldown(player.getUniqueId(), mechanic, ability);
+        }
         int blocksPerTick = ability.blocksPerTick();
         if (mechanic == MechanicId.VEIN_CLUSTER_EXTRACTION) blocksPerTick *= 2;
         runBatchedBreak(player, targets, tool, accepted, blocksPerTick,
@@ -368,6 +437,11 @@ final class GatheringAbilityListener implements Listener {
 
     private void setCooldown(UUID playerId, MechanicId mechanic, GatheringAbilityConfig ability) {
         setCooldown(playerId, mechanic, ability, 0.0);
+    }
+
+    private boolean isTreeFellerActive(UUID playerId, long now) {
+        TimedAbilityWindow window = treeFellerWindows.get(playerId);
+        return window != null && window.isActiveAt(now);
     }
 
     private void setCooldown(UUID playerId, MechanicId mechanic, GatheringAbilityConfig ability, double reduction) {

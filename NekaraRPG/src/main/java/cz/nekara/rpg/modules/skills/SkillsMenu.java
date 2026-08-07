@@ -174,17 +174,24 @@ final class SkillsMenu implements Listener {
             Component.text("Bez ceny a bez vlastních XP", NamedTextColor.DARK_GRAY)));
         boolean campfire = power.level() >= PowerMilestoneId.CAMPFIRE_RESTED.requiredPowerLevel();
         boolean mount = power.level() >= PowerMilestoneId.MOUNT.requiredPowerLevel();
-        inventory.setItem(11, milestoneItem(Material.CAMPFIRE, "Tábořiště",
+        boolean hero = power.level() >= PowerMilestoneId.HERO_AURA.requiredPowerLevel();
+        inventory.setItem(10, milestoneItem(Material.CAMPFIRE, "Tábořiště",
             PowerMilestoneId.CAMPFIRE_RESTED, campfire,
             "Odemyká Rested bonus u zapáleného táboráku."));
         ItemStack path = GuiItems.item(campfire ? Material.LIME_STAINED_GLASS_PANE : Material.WHITE_STAINED_GLASS_PANE,
             Component.text("Cesta hlavní úrovně", campfire ? NamedTextColor.GREEN : NamedTextColor.GRAY));
+        inventory.setItem(11, path);
         inventory.setItem(12, path);
-        inventory.setItem(13, path);
-        inventory.setItem(14, path);
-        inventory.setItem(15, milestoneItem(Material.SADDLE, "Věrný společník",
+        inventory.setItem(13, milestoneItem(Material.SADDLE, "Věrný společník",
             PowerMilestoneId.MOUNT, mount,
             "Odemyká NekaraMounts a vlastního mounta."));
+        ItemStack heroPath = GuiItems.item(hero ? Material.LIME_STAINED_GLASS_PANE : Material.WHITE_STAINED_GLASS_PANE,
+            Component.text("Cesta hlavní úrovně", hero ? NamedTextColor.GREEN : NamedTextColor.GRAY));
+        inventory.setItem(14, heroPath);
+        inventory.setItem(15, heroPath);
+        inventory.setItem(16, milestoneItem(Material.NETHER_STAR, "Hrdina Nekary",
+            PowerMilestoneId.HERO_AURA, hero,
+            "Odemyká trvalou zlatobílou hrdinskou auru."));
         inventory.setItem(18, GuiItems.back("Zpět do dovedností"));
         player.openInventory(inventory);
     }
@@ -600,25 +607,37 @@ final class SkillsMenu implements Listener {
     }
 
     private ItemStack gatheringItem(Player player, SkillId skill, String speedLabel, StatId speed) {
+        GatheringDropBreakdown drops = gatheringDrops(player, skill);
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text(speedLabel + ": " + AttributePresentation.bonusPercentage(stat(player, skill, speed)),
+            NamedTextColor.AQUA));
+        lore.add(Component.text("Dvojitý drop: " + AttributePresentation.percentage(drops.doubleDrop()),
+            NamedTextColor.AQUA));
+        if (drops.ngPlusDrop() > 0.0) {
+            lore.add(Component.text("NG+ drop navíc: " + AttributePresentation.percentage(drops.ngPlusDrop()),
+                NamedTextColor.AQUA));
+            lore.add(Component.text("Drop navíc celkem: " + AttributePresentation.percentage(
+                drops.generalTotal()), NamedTextColor.GREEN));
+        }
         return GuiItems.item(
             SkillIconResolver.resolve(skill),
             Component.text(SkillPresentation.czechName(skill), NamedTextColor.GREEN),
-            Component.text(speedLabel + ": " + AttributePresentation.bonusPercentage(stat(player, skill, speed)),
-                NamedTextColor.AQUA),
-            Component.text("Dvojitý výtěžek: " + AttributePresentation.percentage(
-                stat(player, skill, StatId.DOUBLE_DROP_CHANCE)), NamedTextColor.AQUA),
-            Component.text("Trojitý výtěžek: " + AttributePresentation.percentage(
-                stat(player, skill, StatId.TRIPLE_DROP_CHANCE)), NamedTextColor.AQUA)
+            lore.toArray(Component[]::new)
         );
     }
 
     private ItemStack farmingItem(Player player) {
         SkillId skill = SkillId.FARMING;
+        GatheringDropBreakdown drops = gatheringDrops(player, skill);
         return GuiItems.item(
             SkillIconResolver.resolve(skill),
             Component.text(SkillPresentation.czechName(skill), NamedTextColor.GREEN),
-            Component.text("Dodatečná sklizeň: " + AttributePresentation.percentage(
-                stat(player, skill, StatId.FARMING_BONUS_DROP_CHANCE)), NamedTextColor.AQUA),
+            Component.text("Dvojitý drop: " + AttributePresentation.percentage(drops.doubleDrop()),
+                NamedTextColor.AQUA),
+            Component.text("Sklizeň — drop navíc celkem: " + AttributePresentation.percentage(
+                drops.farmingTotal()), NamedTextColor.GREEN),
+            Component.text("Zvířata — drop navíc celkem: " + AttributePresentation.percentage(
+                drops.animalTotal()), NamedTextColor.GREEN),
             Component.text("Růst plodin: " + AttributePresentation.bonusPercentage(
                 stat(player, skill, StatId.CROP_GROWTH_MULTIPLIER)), NamedTextColor.AQUA),
             Component.text("Obnovení medu: " + AttributePresentation.percentage(
@@ -628,9 +647,12 @@ final class SkillsMenu implements Listener {
 
     private ItemStack fishingItem(Player player) {
         SkillId skill = SkillId.FISHING;
+        GatheringDropBreakdown drops = gatheringDrops(player, skill);
         return GuiItems.item(
             SkillIconResolver.resolve(skill),
             Component.text(SkillPresentation.czechName(skill), NamedTextColor.BLUE),
+            Component.text("Dvojitý drop: " + AttributePresentation.percentage(drops.doubleDrop()),
+                NamedTextColor.AQUA),
             Component.text("Rychlost záběru: " + AttributePresentation.bonusPercentage(
                 stat(player, skill, StatId.FISHING_SPEED)), NamedTextColor.AQUA),
             Component.text("Globální štěstí: " + AttributePresentation.decimal(
@@ -763,14 +785,15 @@ final class SkillsMenu implements Listener {
     ) {
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("Úroveň: " + progress.level() + "/100", NamedTextColor.DARK_GRAY));
-        lore.add(Component.text("✦ Aktivní bonusy", NamedTextColor.LIGHT_PURPLE));
         Set<StatId> activeStats = activeStats(profile, skill);
         if (isGatheringSkill(skill)) {
-            double doubleDrop = module.innateGatheringDoubleDropChance(profile, skill)
-                + stat(player, skill, StatId.DOUBLE_DROP_CHANCE);
-            lore.add(Component.text("✦ Dvojitý výtěžek: " + AttributePresentation.percentage(doubleDrop),
-                NamedTextColor.AQUA));
+            appendGatheringDropLore(lore, player, profile, skill);
             activeStats.remove(StatId.DOUBLE_DROP_CHANCE);
+            activeStats.remove(StatId.TRIPLE_DROP_CHANCE);
+            if (skill == SkillId.FARMING) {
+                activeStats.remove(StatId.FARMING_BONUS_DROP_CHANCE);
+                activeStats.remove(StatId.ANIMAL_BONUS_DROP_CHANCE);
+            }
         }
         if (skill == SkillId.SMITHING) {
             var luck = plugin.configuration().get().skills().luck();
@@ -816,6 +839,87 @@ final class SkillsMenu implements Listener {
         };
     }
 
+    private void appendGatheringDropLore(
+        List<Component> lore,
+        Player player,
+        SkillProfile profile,
+        SkillId skill
+    ) {
+        GatheringDropBreakdown drops = gatheringDrops(player, profile, skill);
+        lore.add(Component.text("✦ Dvojitý drop: " + AttributePresentation.percentage(drops.doubleDrop()),
+            NamedTextColor.AQUA));
+        if (drops.tripleDrop() > 0.0) {
+            lore.add(Component.text("✦ Trojitý drop: " + AttributePresentation.percentage(drops.tripleDrop()),
+                NamedTextColor.AQUA));
+        }
+        if (skill == SkillId.FARMING) {
+            lore.add(Component.text("✦ Sklizeň z perku: " + AttributePresentation.percentage(
+                drops.farmingPerkDrop()), NamedTextColor.AQUA));
+            if (drops.ngPlusDrop() > 0.0) {
+                lore.add(Component.text("✦ NG+ drop navíc: " + AttributePresentation.percentage(
+                    drops.ngPlusDrop()), NamedTextColor.AQUA));
+            }
+            lore.add(Component.text("✦ Sklizeň — drop navíc celkem: " + AttributePresentation.percentage(
+                drops.farmingTotal()), NamedTextColor.GREEN));
+            lore.add(Component.text("✦ Zvířata — drop navíc celkem: " + AttributePresentation.percentage(
+                drops.animalTotal()), NamedTextColor.GREEN));
+        } else if (drops.ngPlusDrop() > 0.0) {
+            lore.add(Component.text("✦ NG+ drop navíc: " + AttributePresentation.percentage(
+                drops.ngPlusDrop()), NamedTextColor.AQUA));
+            lore.add(Component.text("✦ Drop navíc celkem: " + AttributePresentation.percentage(
+                drops.generalTotal()), NamedTextColor.GREEN));
+        }
+    }
+
+    private GatheringDropBreakdown gatheringDrops(Player player, SkillId skill) {
+        return module.cachedProfile(player.getUniqueId())
+            .map(profile -> gatheringDrops(player, profile, skill))
+            .orElseGet(() -> new GatheringDropBreakdown(
+                stat(player, skill, StatId.DOUBLE_DROP_CHANCE),
+                stat(player, skill, StatId.TRIPLE_DROP_CHANCE), 0.0,
+                stat(player, skill, StatId.FARMING_BONUS_DROP_CHANCE),
+                stat(player, skill, StatId.ANIMAL_BONUS_DROP_CHANCE)));
+    }
+
+    private GatheringDropBreakdown gatheringDrops(Player player, SkillProfile profile, SkillId skill) {
+        double doubleDrop = Math.min(1.0, module.innateGatheringDoubleDropChance(profile, skill)
+            + stat(player, skill, StatId.DOUBLE_DROP_CHANCE));
+        double ngPlusDrop = switch (skill) {
+            case WOODCUTTING -> module.woodcuttingNewGamePlusBonusDropChance(profile);
+            case DIGGING -> module.diggingNewGamePlusBonusDropChance(profile);
+            case FARMING -> module.farmingNewGamePlusBonusDropChance(profile);
+            default -> 0.0;
+        };
+        return new GatheringDropBreakdown(
+            doubleDrop,
+            stat(player, skill, StatId.TRIPLE_DROP_CHANCE),
+            ngPlusDrop,
+            stat(player, skill, StatId.FARMING_BONUS_DROP_CHANCE),
+            stat(player, skill, StatId.ANIMAL_BONUS_DROP_CHANCE)
+        );
+    }
+
+    private record GatheringDropBreakdown(
+        double doubleDrop,
+        double tripleDrop,
+        double ngPlusDrop,
+        double farmingPerkDrop,
+        double animalPerkDrop
+    ) {
+        double generalTotal() {
+            return GatheringDropChanceMath.atLeastOneBonusDrop(doubleDrop, tripleDrop, ngPlusDrop);
+        }
+
+        double farmingTotal() {
+            return GatheringDropChanceMath.atLeastOneBonusDrop(
+                doubleDrop, tripleDrop, farmingPerkDrop, ngPlusDrop);
+        }
+
+        double animalTotal() {
+            return GatheringDropChanceMath.atLeastOneBonusDrop(0.0, 0.0, animalPerkDrop, ngPlusDrop);
+        }
+    }
+
     private Set<StatId> activeStats(SkillProfile profile, SkillId skill) {
         Set<StatId> stats = new LinkedHashSet<>();
         for (PerkDefinition perk : perkTree.catalog().forSkill(skill)) {
@@ -842,8 +946,8 @@ final class SkillsMenu implements Listener {
             case CRITICAL_BLEED_CHANCE -> "☠ Kritické krvácení";
             case BLEED_FLAT_DAMAGE -> "☠ Bodné krvácení";
             case STUN_CHANCE -> "✦ Omráčení";
-            case DOUBLE_DROP_CHANCE -> "✦ Dvojitý výtěžek";
-            case TRIPLE_DROP_CHANCE -> "✦ Trojitý výtěžek";
+            case DOUBLE_DROP_CHANCE -> "✦ Dvojitý drop";
+            case TRIPLE_DROP_CHANCE -> "✦ Trojitý drop";
             case MINING_SPEED, WOODCUTTING_SPEED, DIGGING_SPEED -> "✦ Rychlost práce";
             case MINING_BLOCK_EXPERIENCE, WOODCUTTING_LOG_EXPERIENCE, WOODCUTTING_LEAF_EXPERIENCE,
                 FARMING_HARVEST_EXPERIENCE, DIGGING_BLOCK_EXPERIENCE -> "✦ XP z bloku";

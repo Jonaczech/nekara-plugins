@@ -11,8 +11,8 @@ public record PowerMilestone(String id, int requiredPowerLevel) {
         if (!VALID_ID.matcher(id).matches()) {
             throw new IllegalArgumentException("Milestone ID must use lowercase snake_case");
         }
-        if (requiredPowerLevel < 1 || requiredPowerLevel > 100) {
-            throw new IllegalArgumentException("Milestone power level must be between 1 and 100");
+        if (requiredPowerLevel < 1 || requiredPowerLevel > 200) {
+            throw new IllegalArgumentException("Milestone power level must be between 1 and 200");
         }
     }
 }

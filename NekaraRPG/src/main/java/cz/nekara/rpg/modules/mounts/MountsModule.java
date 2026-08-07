@@ -375,6 +375,10 @@ public final class MountsModule implements NekaraModule, Listener {
                 messages.send(player, "mount-being-ridden");
                 return;
             }
+            if (isRemote(active, player) && !teleportNearCaller(active, player)) {
+                messages.send(player, "mount-no-space");
+                return;
+            }
             MountRecord updated = capture(record, active, active.getUniqueId(), now);
             try {
                 repository.update(updated);
@@ -1582,6 +1586,22 @@ public final class MountsModule implements NekaraModule, Listener {
             }
         }
         return Optional.empty();
+    }
+
+    private boolean isRemote(Horse horse, Player player) {
+        return MountRecallPolicy.shouldTeleport(
+            horse.getLocation().getChunk().getX(), horse.getLocation().getChunk().getZ(),
+            player.getLocation().getChunk().getX(), player.getLocation().getChunk().getZ(),
+            config().activeTeleportDistanceChunks());
+    }
+
+    private boolean teleportNearCaller(Horse horse, Player player) {
+        Optional<Location> spawnLocation = findSafeSpawn(player);
+        if (spawnLocation.isEmpty()) {
+            return false;
+        }
+        horse.getPathfinder().stopPathfinding();
+        return horse.teleport(spawnLocation.get());
     }
 
     private boolean isSafe(Location location) {

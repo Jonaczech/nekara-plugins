@@ -11,6 +11,7 @@ public record MountConfig(
         long combatTagSeconds,
         long summonCooldownSeconds,
         long activeRecallCooldownSeconds,
+        int activeTeleportDistanceChunks,
         int minimumSpawnDistance,
         int maximumSpawnDistance,
         double waitingRadius,

@@ -106,27 +106,6 @@ public final class ConfigurationService {
                         Set.of(EntityType.ARMOR_STAND), warning)
         );
 
-        LyingConfig lying = new LyingConfig(
-                config.getBoolean("campfire.lying.enabled", true),
-                config.getBoolean("campfire.lying.mannequin-visual-enabled", true),
-                validateDouble(config.getDouble("campfire.lying.mannequin.yaw-offset-degrees", 0.0),
-                        -180.0, 180.0, 0.0,
-                        "campfire.lying.mannequin.yaw-offset-degrees", warning),
-                validateDouble(config.getDouble("campfire.lying.mannequin.forward-offset", -0.9),
-                        -2.0, 2.0, -0.9,
-                        "campfire.lying.mannequin.forward-offset", warning),
-                validateDouble(config.getDouble("campfire.lying.mannequin.side-offset", 0.0),
-                        -2.0, 2.0, 0.0,
-                        "campfire.lying.mannequin.side-offset", warning),
-                validateDouble(config.getDouble("campfire.lying.mannequin.y-offset", 0.0),
-                        -1.0, 1.0, 0.0,
-                        "campfire.lying.mannequin.y-offset", warning),
-                config.getBoolean("campfire.lying.wake-on-damage", true),
-                config.getBoolean("campfire.lying.skip-night-when-alone", true),
-                validateInt(config.getInt("campfire.lying.fall-asleep-seconds", 5),
-                        1, 60, 5, "campfire.lying.fall-asleep-seconds", warning)
-        );
-
         int configuredRestedDuration = config.getInt("campfire.rested.duration-seconds", 300);
         boolean migratePreReleaseRestedDefaults = configuredRestedDuration == 15
                 && config.getBoolean("campfire.visuals.rested.boss-bar", true)
@@ -214,7 +193,6 @@ public final class ConfigurationService {
                         0.0, 1.0, 0.5, "campfire.rested.hunger-loss-multiplier", warning),
                 restedExperience,
                 restedEffect,
-                lying,
                 camping,
                 validateDouble(config.getDouble("campfire.group.multiplier-per-extra-player", 0.15),
                         0.0, 2.0, 0.15, "campfire.group.multiplier-per-extra-player", warning),
@@ -345,6 +323,8 @@ public final class ConfigurationService {
                         1, 3_600, 30, "mounts.summoning.cooldown-seconds", warning),
                 validateInt(config.getInt("mounts.summoning.active-recall-cooldown-seconds", 3),
                         1, 60, 3, "mounts.summoning.active-recall-cooldown-seconds", warning),
+                validateInt(config.getInt("mounts.summoning.active-teleport-distance-chunks", 3),
+                        1, 64, 3, "mounts.summoning.active-teleport-distance-chunks", warning),
                 validateInt(config.getInt("mounts.summoning.minimum-spawn-distance", 7),
                         2, 32, 7, "mounts.summoning.minimum-spawn-distance", warning),
                 validateInt(config.getInt("mounts.summoning.maximum-spawn-distance", 12),
@@ -449,9 +429,9 @@ public final class ConfigurationService {
                 nativeDigging,
                 levelRewards,
                 fishingRewards,
-                parseGatheringAbility(config, "tezba", "vein-mining", 24, 6, 8, warning),
-                parseGatheringAbility(config, "tezba", "drilling", 64, 8, 20, warning),
-                parseGatheringAbility(config, "lesnictvi", "tree-feller", 64, 8, 12, warning),
+                parseGatheringAbility(config, "tezba", "vein-mining", 24, 6, 0, 8, warning),
+                parseGatheringAbility(config, "tezba", "drilling", 64, 8, 0, 20, warning),
+                parseGatheringAbility(config, "lesnictvi", "tree-feller", 64, 8, 10, 12, warning),
                 parseNativeActivities(config, warning),
                 parseLuck(config, warning),
                 parseWeaponCombat(config, warning)
@@ -852,6 +832,7 @@ public final class ConfigurationService {
             String ability,
             int defaultMaximumBlocks,
             int defaultBlocksPerTick,
+            int defaultDurationSeconds,
             int defaultCooldownSeconds,
             Consumer<String> warning
     ) {
@@ -865,6 +846,8 @@ public final class ConfigurationService {
                 config.getBoolean(root + ".enabled", true),
                 maximumBlocks,
                 blocksPerTick,
+                validateInt(config.getInt(root + ".duration-seconds", defaultDurationSeconds),
+                        0, 3_600, defaultDurationSeconds, root + ".duration-seconds", warning),
                 validateInt(config.getInt(root + ".cooldown-seconds", defaultCooldownSeconds),
                         0, 86_400, defaultCooldownSeconds, root + ".cooldown-seconds", warning)
         );

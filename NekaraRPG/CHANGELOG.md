@@ -1,5 +1,30 @@
 # Přehled změn
 
+## 2.6.0
+
+- Dobrovolné plazení i ležení na zemi, jejich příkazy a ovládání v `/nrpg` byly
+  odstraněny. Nativní Minecraft plazení pod nízkou překážkou i spaní v posteli
+  zůstávají beze změny.
+- Rested u ohně nyní vyžaduje pouze sezení u zapáleného ohně a již nemění čas světa.
+- Tooltip dovednosti v perk-tree zobrazuje skutečnou kombinovanou šanci na drop
+  navíc včetně samostatných New Game+ hodů. Používá název `Dvojitý drop` a už
+  neobsahuje nadbytečný řádek `Aktivní bonusy`.
+- Autoharvest i Záběr pole nyní při sklizni přehrají vazbu motykou, zvuk sklizně
+  a částice plodiny; Záběr pole používá úspornější variantu pro celou plochu.
+- Pád velikána se aktivuje jen vědomě: hráč se sekerou použije Shift + pravé tlačítko
+  ve vzduchu nebo na log. Následuje 10 sekund kácení více přirozených stromů; teprve
+  po skončení okna se spustí 12sekundový cooldown. Limity stromu a ochrana hráčem
+  položených bloků zůstávají zachované.
+- Pasivní drop Statkářství nově platí také pro kelp, sugar cane, cactus, eyeblossomy,
+  wildflowers, pink petals, pitcher plant, sea pickle, nether wart, lily pad, spore
+  blossom, resin clump a uvedené rostliny získatelné nůžkami včetně trávy, kapradin,
+  mossu, lián, lichenů, kořenů a seagrassu.
+- Vanilla XP z perků Těžby, Lesnictví, Kopání, Statkářství, Rybaření, chovu a
+  Runotepectví bylo výrazně sníženo. Dílčí hodnoty se férově sčítají a hráč obdrží
+  bez časového stropu; přirozené vanilla XP zůstává beze změny.
+- Aktivní kůň vzdálený alespoň tři chunky se při zavolání příkazem nebo píšťalkou
+  bezpečně přenese vedle hráče a poté pokračuje k místu zavolání.
+
 ## 2.5.1
 
 - Každý perk má vlastní tematickou vanilla ikonu; strom už nepoužívá stejné

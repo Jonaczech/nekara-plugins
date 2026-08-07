@@ -3,6 +3,26 @@
 Modulární RPG plugin pro Purpur/Paper 26.1 a Java 25. Obsahuje autentizaci,
 rybářskou minihru, táboření/Rested, Echo Vein, mounty a nativní Nekara Skills.
 
+## 2.6.0 – Hrdina Nekary, gathering a vzdálené volání koně
+
+- Dobrovolné plazení i ležení na zemi byly odstraněny, protože je nelze spolehlivě
+  udržet pouze na straně serverového pluginu. Zůstává nativní Minecraft plazení
+  pod nízkou překážkou, spaní v posteli a NekaraRPG sezení u ohně.
+- Hlavní úroveň 200 automaticky odemyká prestižní milník `Hrdina Nekary`. Hráče
+  obklopí lehká bílooranžová spirálová aura; jde pouze o vizuální odměnu bez statů.
+- Souhrny gathering dovedností v perk-tree rozlišují dvojitý drop, samostatný NG+
+  drop a skutečnou kombinovanou šanci získat alespoň jeden drop navíc. Statkářství
+  uvádí odděleně sklizeň a zvířata.
+- Autoharvest a aktivní Záběr pole dávají hráči zpětnou vazbu vazbou motykou,
+  zvukem sklizně a částicemi příslušné plodiny.
+- Pád velikána se aktivuje vědomě pouze kombinací Shift + pravé tlačítko se sekerou.
+  Po dobu 10 sekund kácí více přirozených stromů; potom následuje 12sekundový cooldown.
+- Pasivní drop Statkářství zahrnuje rozšířený seznam sklízených rostlin včetně kelpu,
+  sugar cane, cactusu, nether wartu, resin clump a rostlin získatelných nůžkami.
+  Vanilla XP z perků je pouze doplňkové, ale dílčí hodnoty se bez časového stropu sčítají.
+- Aktivní kůň vzdálený alespoň tři chunky se při zavolání příkazem nebo píšťalkou
+  bezpečně přenese vedle hráče.
+
 ## 2.5.1 – plazení, ležení a ikony perků
 
 - `/nekararpg crawl` přepíná serverem řízené plazení se skutečným nízkým hitboxem.
@@ -91,8 +111,18 @@ a napojení Echo Vein na úroveň Těžby. Statkářství urychluje pouze příp
   Pád velikána, Zlaté listí a Křišťálové listí. Zlaté jablko z listí používá
   samostatný nízký roll bez globálního Lucku; Nová hra+ přidává nezávislý `30 %`
   roll dodatečného logu nebo stemu z přirozeně pokáceného stromu.
-- Kopání nyní používá Kopáče (`+6 %` rychlosti a `+0,4` vanilla XP za rank),
-  Bagr (`+10 %` rychlosti za rank), Síto (`+2,5 %` vzácného nálezu a `+2` XP),
+- Pád velikána se spouští se sekerou pomocí `Shift + pravé tlačítko` ve vzduchu nebo
+  na log. Po dobu `10 s` pokácí libovolný počet propojených přirozených stromů;
+  potom následuje `12 s` cooldown. Obě hodnoty jsou v konfiguraci Lesnictví.
+- Pasivní bonus dropu Statkářství se kromě zralé sklizně vztahuje i na kelp, sugar
+  cane, cactus, eyeblossomy, wildflowers, pink petals, pitcher plant, sea pickle,
+  nether wart, lily pad, spore blossom, resin clump a podporované rostliny pro nůžky.
+- Vanilla XP z perků je pouze doplněk: malé zlomkové hodnoty se sčítají na celé body
+  bez časového stropu. Neomezuje to běžné vanilla XP.
+- Pokud je aktivní kůň ve stejném světě alespoň tři chunky daleko, `/nekararpg mount call`
+  i píšťalka jej bezpečně přenesou poblíž hráče; hranici určuje `active-teleport-distance-chunks`.
+- Kopání nyní používá Kopáče (`+6 %` rychlosti a `+0,04` vanilla XP za rank),
+  Bagr (`+10 %` rychlosti za rank), Síto (`+2,5 %` vzácného nálezu a `+0,06` XP),
   Archeologa, Replikaci zeminy a Skrytý poklad (`+5 %` vzácného nálezu).
   Archeolog obnoví po dokončeném čištění suspicious sand/gravel s `20 %` šancí;
   Replikace zeminy zpřístupní výrobu 4 grass blocků nebo rooted dirtů ze 4 hlíny,

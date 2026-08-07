@@ -36,7 +36,8 @@ Power nepřijímá přímé XP. První dosažený level aktivní dovednosti odem
 další úrovně jsou celočíselný průměr třinácti aktivních dovedností. Poskytuje společné
 perk pointy a automatické obecné milníky: Tábořiště s Rested bonusem při Power 1 a
 možnost odemknout mounta při Power 25; samotné příběhové udělení může
-nadále vlastnit BetonQuest.
+nadále vlastnit BetonQuest. Power 200 automaticky odemyká čistě vizuální milník
+Hrdina Nekary s bílooranžovou spirálovou aurou bez bojového nebo ekonomického bonusu.
 
 ## Perk stromy
 

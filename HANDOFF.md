@@ -1,5 +1,20 @@
 # Předání projektu Nekara Plugins
 
+## Release 2.6.0
+
+- Dobrovolné plazení a ležení na zemi byly odstraněny včetně GUI a příkazů. Nativní
+  Minecraft plazení pod překážkou, spaní v posteli a sezení u ohně zůstávají.
+- Hlavní úroveň 200 odemyká vizuální milník `Hrdina Nekary` s jemnou bílooranžovou aurou.
+  Perk-tree zobrazuje skutečné kombinované šance `Dvojitý drop` bez nadpisu
+  `Aktivní bonusy`.
+- Autoharvest a Záběr pole přidávají vazbu motykou, zvuk a částice. Pád velikána se
+  vědomě zapíná Shift + pravým tlačítkem se sekerou na 10 sekund a má poté 12sekundový
+  cooldown.
+- Statkářství má rozšířený pasivní drop pro rostliny, plodiny a střihatelné porosty;
+  bonusová vanilla XP z perků jsou výrazně nižší, jejich dílčí hodnoty se ale dále sčítají.
+- Aktivní kůň vzdálený alespoň tři chunky se při zavolání příkazem nebo píšťalkou
+  bezpečně teleportuje vedle hráče. GitHub release a živé nasazení zůstávají oddělené.
+
 ## Release 2.5.1
 
 - Každý perk má vlastní tematickou vanilla ikonu, aby se rozdílné uzly ve stromech

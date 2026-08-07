@@ -17,6 +17,8 @@ summoning:
   cooldown-seconds: 30
   # An active horse can be redirected quickly without allowing click spam.
   active-recall-cooldown-seconds: 3
+  # An active horse this many chunks away returns by a safe teleport instead of pathfinding.
+  active-teleport-distance-chunks: 3
   # The horse appears out of arm's reach, then pathfinds to the exact call location.
   minimum-spawn-distance: 7
   maximum-spawn-distance: 12

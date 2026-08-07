@@ -3,7 +3,8 @@ package cz.nekara.rpg.skills.milestones;
 /** Server-authoritative gates derived from the player's Hlavní úroveň. */
 public enum PowerMilestoneId {
     CAMPFIRE_RESTED("campfire_rested", 1),
-    MOUNT("mount", 25);
+    MOUNT("mount", 25),
+    HERO_AURA("hero_aura", 200);
 
     private final String id;
     private final int requiredPowerLevel;

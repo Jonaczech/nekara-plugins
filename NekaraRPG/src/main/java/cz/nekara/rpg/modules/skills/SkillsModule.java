@@ -75,6 +75,7 @@ public final class SkillsModule implements NekaraModule {
     private final DefaultPerkTree perkTree;
     private final SkillsMenu menu;
     private final SkillExperienceFeedback experienceFeedback;
+    private final SupplementalVanillaExperience supplementalVanillaExperience = new SupplementalVanillaExperience();
     private final Set<UUID> pendingPurchases = ConcurrentHashMap.newKeySet();
     private final Set<UUID> pendingAdminMutations = ConcurrentHashMap.newKeySet();
     private final Map<UUID, SkillProfile> profileCache = new ConcurrentHashMap<>();
@@ -108,6 +109,7 @@ public final class SkillsModule implements NekaraModule {
     private volatile CombatPerkListener combatPerkListener;
     private volatile ProductionPerkListener productionPerkListener;
     private volatile WeaponRecipeRegistry weaponRecipeRegistry;
+    private volatile HeroAuraService heroAuraService;
     private volatile String storageFailure;
     private volatile long generation;
     private boolean enabled;
@@ -216,6 +218,8 @@ public final class SkillsModule implements NekaraModule {
         weaponRecipeRegistry.register();
         productionPerkListener = new ProductionPerkListener(plugin, this);
         productionPerkListener.enable();
+        heroAuraService = new HeroAuraService(plugin, this);
+        heroAuraService.enable();
     }
 
     @Override
@@ -225,6 +229,11 @@ public final class SkillsModule implements NekaraModule {
         }
         enabled = false;
         generation++;
+        HeroAuraService closingHeroAura = heroAuraService;
+        heroAuraService = null;
+        if (closingHeroAura != null) {
+            closingHeroAura.disable();
+        }
         WeaponRecipeRegistry closingWeapons = weaponRecipeRegistry;
         weaponRecipeRegistry = null;
         if (closingWeapons != null) {
@@ -271,6 +280,7 @@ public final class SkillsModule implements NekaraModule {
         pendingPurchases.clear();
         pendingAdminMutations.clear();
         experienceFeedback.clear();
+        supplementalVanillaExperience.clear();
         allExperienceBoosts.clear();
         skillExperienceBoosts.clear();
         profileCache.clear();
@@ -677,6 +687,14 @@ public final class SkillsModule implements NekaraModule {
         SkillsConfig config = activeConfig;
         if (config == null) return 1.0;
         return 1.0 + newGamePlusStatBonus(profile, skill);
+    }
+
+    int claimSupplementalVanillaExperience(UUID playerId, double amount) {
+        return supplementalVanillaExperience.claim(playerId, amount);
+    }
+
+    void forgetSupplementalVanillaExperience(UUID playerId) {
+        supplementalVanillaExperience.forget(playerId);
     }
 
     double farmingNewGamePlusBonusDropChance(SkillProfile profile) {

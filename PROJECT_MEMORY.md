@@ -1,5 +1,21 @@
 # Projektová paměť Nekara Plugins
 
+## Release 2.6.0
+
+- Dobrovolné plazení, ležení na zemi, jejich příkazy i položky `/nrpg` byly odstraněny:
+  čistě serverový plugin nemůže stabilně vynutit klientskou plazivou nebo ležící pózu.
+  Nezasahuj do nativního Minecraft plazení pod překážkou ani do spaní v posteli.
+- `HeroAuraService` je čistě vizuální odměna za Power 200. Používá decentní bílooranžové
+  částice; nesmí přidávat statistiky ani další XP.
+- `GatheringDropChanceMath` dává tooltipům stejnou kombinovanou šanci na `Dvojitý drop`,
+  jakou používá runtime včetně samostatného New Game+ hodu. `SupplementalVanillaExperience`
+  sčítá malé zlomkové odměny bez časového stropu; přirozené vanilla XP nemění.
+- `FarmingDropPolicy` drží explicitní seznam plodin, rostlin a střihatelného porostu pro
+  pasivní drop Statkářství. Aktivní sklizeň i Záběr pole nadále vyžadují motyku.
+- `TimedAbilityWindow` řídí ruční Pád velikána: Shift + pravé tlačítko se sekerou otevře
+  desetisekundové okno, po němž následuje 12sekundový cooldown. `MountRecallPolicy`
+  rozhoduje, zda se aktivní kůň vzdálený alespoň tři chunky při zavolání teleportuje.
+
 ## Release 2.5.1
 
 - Plazení je serverově autoritativní, nemá permission gate a může se zapnout příkazem,

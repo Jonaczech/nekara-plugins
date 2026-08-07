@@ -52,7 +52,6 @@ class ResourceYamlTest {
         Map<String, Object> auth = loadYaml("auth/config.yml");
         Map<String, Object> campfire = loadYaml("campfire/config.yml");
         Map<String, Object> sitting = (Map<String, Object>) campfire.get("sitting");
-        Map<String, Object> lying = (Map<String, Object>) campfire.get("lying");
         Map<String, Object> mining = loadYaml("mining/config.yml");
         Map<String, Object> fishing = loadYaml("fishing/config.yml");
         Map<String, Object> mountsConfig = loadYaml("mounts/config.yml");
@@ -104,15 +103,6 @@ class ResourceYamlTest {
                     (Map<String, Object>) woodcuttingSkillConfig.get("abilities");
 
             assertEquals(0.20, ((Number) sitting.get("seat-y-offset")).doubleValue(), 0.0001);
-            assertTrue((Boolean) lying.get("enabled"));
-            assertTrue((Boolean) lying.get("mannequin-visual-enabled"));
-            Map<String, Object> mannequin = (Map<String, Object>) lying.get("mannequin");
-            assertEquals(0.0, ((Number) mannequin.get("yaw-offset-degrees")).doubleValue(), 0.0001);
-            assertEquals(-0.9, ((Number) mannequin.get("forward-offset")).doubleValue(), 0.0001);
-            assertEquals(0.0, ((Number) mannequin.get("side-offset")).doubleValue(), 0.0001);
-            assertEquals(0.0, ((Number) mannequin.get("y-offset")).doubleValue(), 0.0001);
-            assertTrue((Boolean) lying.get("skip-night-when-alone"));
-            assertEquals(5, ((Number) lying.get("fall-asleep-seconds")).intValue());
             assertTrue((Boolean) updater.get("enabled"));
             assertEquals(2, ((Number) root.get("configuration-layout")).intValue());
             assertNotNull(modules.get("mining"));
@@ -185,6 +175,7 @@ class ResourceYamlTest {
             assertEquals(List.of(), mountSummoning.get("allowed-worlds"));
             assertEquals(30, ((Number) mountSummoning.get("cooldown-seconds")).intValue());
             assertEquals(3, ((Number) mountSummoning.get("active-recall-cooldown-seconds")).intValue());
+            assertEquals(3, ((Number) mountSummoning.get("active-teleport-distance-chunks")).intValue());
             assertEquals(7, ((Number) mountSummoning.get("minimum-spawn-distance")).intValue());
             assertEquals(12, ((Number) mountSummoning.get("maximum-spawn-distance")).intValue());
             assertEquals(3.0, ((Number) mountSummoning.get("waiting-radius")).doubleValue(), 0.0001);
@@ -207,6 +198,8 @@ class ResourceYamlTest {
                     miningAbilities.get("vein-mining")).get("maximum-blocks")).intValue());
             assertEquals(64, ((Number) ((Map<String, Object>)
                     woodcuttingAbilities.get("tree-feller")).get("maximum-blocks")).intValue());
+            assertEquals(10, ((Number) ((Map<String, Object>)
+                    woodcuttingAbilities.get("tree-feller")).get("duration-seconds")).intValue());
     }
 
     @Test
@@ -254,6 +247,7 @@ class ResourceYamlTest {
             assertNotNull(messages.get("skills-admin-export-complete"));
             assertNotNull(messages.get("skills-vein-mining-complete"));
             assertNotNull(messages.get("skills-tree-feller-complete"));
+            assertNotNull(messages.get("skills-tree-feller-active"));
             assertNotNull(messages.get("skills-drilling-ready"));
             assertNotNull(messages.get("skills-ability-cooldown"));
             assertNotNull(messages.get("skills-experience-awarded"));
