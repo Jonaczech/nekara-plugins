@@ -1,5 +1,25 @@
 # Předání projektu Nekara Plugins
 
+## Release 2.7.0
+
+- `Dračí pouto` je nový automatický milník na Power 100. Samostatný modul `dragons`
+  používá neviditelného Happy Ghasta jako fyzický nosič a synchronizovaný vanilla
+  Ender Dragon jako vizuál; nevyžaduje Fabric ani jiný klientský mod.
+- `ActiveMountCoordinator` zajišťuje, že hráč má aktivního právě jednoho mounta:
+  koně nebo draka. Píšťalka po odemčení nabídne výběr. Drak blízko hráče přiletí
+  serverově k bezpečnému bodu, od tří chunků se teleportuje.
+- Let používá `WASD`, mezerník pro stoupání a Shift pro klesání. Shift nesesazuje;
+  pro sesednutí je při jízdě na drakovi vyhrazeno `F`. Happy Ghast je tichý a
+  dračí zvukový doprovod slyší pouze jezdec.
+- `HeroAuraService` zůstává prestižní kosmetikou Power 200. Má bílooranžový základ,
+  vzácné zlaté jiskry, omezenou stopu pohybu a krátkou zlatou stopu jen při letu
+  na vlastním drakovi. Nesmí přidávat statistiky, XP ani bojové efekty.
+- Vlastní zbraně mají stabilní legacy fallback, centralizované atributy a
+  netheritový upgrade diamantových variant přes smithing table. Typová ochrana
+  zbroje je dodatková vrstva po vanilla ochraně; průraznost ji pouze částečně obchází.
+- GitHub release a živé nasazení zůstávají samostatné kroky. Před FTP výměnou musí
+  být server vypnutý a JAR i resource pack ověřené příslušnými hashi.
+
 ## Release 2.6.0
 
 - Dobrovolné plazení a ležení na zemi byly odstraněny včetně GUI a příkazů. Nativní

@@ -214,7 +214,7 @@ public final class SkillsModule implements NekaraModule {
         nativeActivityListener.enable();
         combatPerkListener = new CombatPerkListener(plugin, this);
         combatPerkListener.enable();
-        weaponRecipeRegistry = new WeaponRecipeRegistry(plugin.getServer());
+        weaponRecipeRegistry = new WeaponRecipeRegistry(plugin);
         weaponRecipeRegistry.register();
         productionPerkListener = new ProductionPerkListener(plugin, this);
         productionPerkListener.enable();

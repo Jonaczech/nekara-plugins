@@ -1,5 +1,6 @@
 package cz.nekara.rpg.modules.skills;
 
+import cz.nekara.rpg.items.weapons.WeaponCatalog;
 import java.util.Locale;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -9,7 +10,7 @@ final class GatheringMaterialPolicy {
     }
 
     static boolean suitableTool(GatheringTool tool, ItemStack item) {
-        return item != null && suitableTool(tool, item.getType());
+        return item != null && !WeaponCatalog.isCustomWeapon(item) && suitableTool(tool, item.getType());
     }
 
     static boolean suitableTool(GatheringTool tool, Material material) {

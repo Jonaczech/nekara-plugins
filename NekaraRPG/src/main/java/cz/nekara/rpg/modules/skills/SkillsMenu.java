@@ -174,6 +174,7 @@ final class SkillsMenu implements Listener {
             Component.text("Bez ceny a bez vlastních XP", NamedTextColor.DARK_GRAY)));
         boolean campfire = power.level() >= PowerMilestoneId.CAMPFIRE_RESTED.requiredPowerLevel();
         boolean mount = power.level() >= PowerMilestoneId.MOUNT.requiredPowerLevel();
+        boolean dragon = power.level() >= PowerMilestoneId.DRAGON_BOND.requiredPowerLevel();
         boolean hero = power.level() >= PowerMilestoneId.HERO_AURA.requiredPowerLevel();
         inventory.setItem(10, milestoneItem(Material.CAMPFIRE, "Tábořiště",
             PowerMilestoneId.CAMPFIRE_RESTED, campfire,
@@ -181,13 +182,17 @@ final class SkillsMenu implements Listener {
         ItemStack path = GuiItems.item(campfire ? Material.LIME_STAINED_GLASS_PANE : Material.WHITE_STAINED_GLASS_PANE,
             Component.text("Cesta hlavní úrovně", campfire ? NamedTextColor.GREEN : NamedTextColor.GRAY));
         inventory.setItem(11, path);
-        inventory.setItem(12, path);
-        inventory.setItem(13, milestoneItem(Material.SADDLE, "Věrný společník",
+        inventory.setItem(12, milestoneItem(Material.SADDLE, "Věrný společník",
             PowerMilestoneId.MOUNT, mount,
             "Odemyká NekaraMounts a vlastního mounta."));
+        ItemStack dragonPath = GuiItems.item(dragon ? Material.LIME_STAINED_GLASS_PANE : Material.WHITE_STAINED_GLASS_PANE,
+            Component.text("Cesta hlavní úrovně", dragon ? NamedTextColor.GREEN : NamedTextColor.GRAY));
+        inventory.setItem(13, dragonPath);
+        inventory.setItem(14, milestoneItem(Material.DRAGON_HEAD, "Dračí pouto",
+            PowerMilestoneId.DRAGON_BOND, dragon,
+            "Odemyká rychlého létajícího mounta."));
         ItemStack heroPath = GuiItems.item(hero ? Material.LIME_STAINED_GLASS_PANE : Material.WHITE_STAINED_GLASS_PANE,
             Component.text("Cesta hlavní úrovně", hero ? NamedTextColor.GREEN : NamedTextColor.GRAY));
-        inventory.setItem(14, heroPath);
         inventory.setItem(15, heroPath);
         inventory.setItem(16, milestoneItem(Material.NETHER_STAR, "Hrdina Nekary",
             PowerMilestoneId.HERO_AURA, hero,

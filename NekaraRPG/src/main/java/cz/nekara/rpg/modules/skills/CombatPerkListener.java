@@ -23,6 +23,7 @@ import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.damage.DamageType;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Animals;
 import org.bukkit.entity.Enemy;
@@ -144,6 +145,9 @@ final class CombatPerkListener implements Listener {
             return;
         }
         Player attacker = attackingPlayer(event.getDamager());
+        if (attacker != null && !(event.getDamager() instanceof Projectile) && supported(attacker)) {
+            removeHammerFallDamage(event, attacker);
+        }
         if (attacker != null && !(event.getDamager() instanceof Projectile) && supported(attacker)) {
             applyWeaponProficiency(event, attacker);
         }
@@ -457,10 +461,6 @@ final class CombatPerkListener implements Listener {
         boolean powerAttack = skill == SkillId.HEAVY_WEAPONS && attacker.getAttackCooldown() >= 0.9F;
         if (powerAttack) {
             multiplier *= runtime.stats().value(StatId.POWER_ATTACK_DAMAGE_MULTIPLIER);
-            multiplier *= 1.0 + runtime.stats().value(StatId.ARMOR_PENETRATION) * 0.5;
-        }
-        if (family != null && weaponConfig.armorPenetration(family) > 0.0) {
-            multiplier *= 1.0 + weaponConfig.armorPenetration(family) * 0.5;
         }
         if (family == WeaponFamily.DAGGER && isRearAttack(attacker, target)) {
             multiplier *= 1.0 + weaponConfig.rearAttackBonus(family);
@@ -659,8 +659,6 @@ final class CombatPerkListener implements Listener {
             event.setCancelled(true);
             return;
         }
-        double baseArmorEffectiveness = SkillEquipmentPolicy.wearsLeatherArmor(defender.getInventory())
-            ? 1.0 : 0.90;
         int unfinishedPieces = 0;
         double craftedArmor = 0.0;
         for (ItemStack item : defender.getInventory().getArmorContents()) {
@@ -670,15 +668,16 @@ final class CombatPerkListener implements Listener {
                 unfinishedPieces++;
             }
         }
-        baseArmorEffectiveness *= Math.max(0.65, 1.0 - unfinishedPieces * 0.12);
-        double armorMultiplier = baseArmorEffectiveness * runtime.stats().value(StatId.ARMOR_MULTIPLIER)
+        double armorEffectiveness = runtime.stats().value(StatId.ARMOR_MULTIPLIER)
+            * Math.max(0.65, 1.0 - unfinishedPieces * 0.12)
             * (1.0 + craftedArmor * 0.04);
-        event.setDamage(event.getDamage() / armorMultiplier);
+        double armorPenetration = attackerArmorPenetration(event);
         DamageTypeResolver.resolve(
             event.getDamager() instanceof Player attacker ? attacker.getInventory().getItemInMainHand() : null,
             event.getDamager() instanceof Projectile
         ).ifPresent(type -> event.setDamage(event.getDamage()
-            * ArmorProtectionResolver.damageMultiplier(defender.getInventory().getArmorContents(), type)));
+            * ArmorProtectionResolver.damageMultiplier(
+                defender.getInventory().getArmorContents(), type, armorEffectiveness, armorPenetration)));
         boolean juggernaut = armorSkill.get() == SkillId.HEAVY_ARMOR
             && SkillEquipmentPolicy.armorSkill(defender.getInventory()).orElse(null) == SkillId.HEAVY_ARMOR
             && runtime.has(MechanicId.HEAVY_ARMOR_JUGGERNAUT);
@@ -805,6 +804,35 @@ final class CombatPerkListener implements Listener {
         return weapon.family() == WeaponFamily.AXE
             ? EquipmentProficiencyPolicy.heldTool(item).or(() -> EquipmentProficiencyPolicy.weapon(weapon))
             : EquipmentProficiencyPolicy.weapon(weapon);
+    }
+
+    private double attackerArmorPenetration(EntityDamageByEntityEvent event) {
+        Player attacker = attackingPlayer(event.getDamager());
+        if (attacker == null) {
+            return 0.0;
+        }
+        WeaponDefinition weapon = WeaponCatalog.resolve(attacker.getInventory().getItemInMainHand()).orElse(null);
+        if (weapon == null) {
+            return 0.0;
+        }
+        double penetration = module.weaponCombatConfig().armorPenetration(weapon.family());
+        if (weapon.family().skill() == SkillId.HEAVY_WEAPONS && attacker.getAttackCooldown() >= 0.9F) {
+            penetration += module.runtimeState(attacker.getUniqueId(), SkillId.HEAVY_WEAPONS)
+                .map(state -> state.stats().value(StatId.ARMOR_PENETRATION)).orElse(0.0);
+        }
+        return Math.min(0.35, Math.max(0.0, penetration));
+    }
+
+    private static void removeHammerFallDamage(EntityDamageByEntityEvent event, Player attacker) {
+        if (event.getDamageSource().getDamageType() != DamageType.MACE_SMASH
+            || WeaponCatalog.resolve(attacker.getInventory().getItemInMainHand())
+                .map(WeaponDefinition::family).orElse(null) != WeaponFamily.HAMMER) {
+            return;
+        }
+        AttributeInstance attackDamage = attacker.getAttribute(Attribute.ATTACK_DAMAGE);
+        if (attackDamage != null) {
+            event.setDamage(Math.max(0.0, attackDamage.getValue()));
+        }
     }
 
     private void warn(Player player, EquipmentProficiencyPolicy.Requirement requirement, String message) {

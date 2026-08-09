@@ -5,6 +5,7 @@ import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.modules.ModuleRegistry;
 import cz.nekara.rpg.modules.auth.AuthModule;
 import cz.nekara.rpg.modules.campfire.CampfireModule;
+import cz.nekara.rpg.modules.dragons.DragonsModule;
 import cz.nekara.rpg.modules.fishing.FishingModule;
 import cz.nekara.rpg.modules.mining.MiningModule;
 import cz.nekara.rpg.modules.mounts.MountsModule;
@@ -37,6 +38,7 @@ public final class NekaraRPGMenu implements Listener {
     private static final int CAMPFIRE_SLOT = 14;
     private static final int MINING_SLOT = 15;
     private static final int MOUNTS_SLOT = 16;
+    private static final int DRAGONS_SLOT = 17;
     private static final int SKILLS_SLOT = 13;
     private static final int OVERVIEW_SLOT = 4;
     private static final int DIAGNOSTICS_SLOT = 26;
@@ -50,6 +52,7 @@ public final class NekaraRPGMenu implements Listener {
     private final SittingModule sitting;
     private final CampfireModule campfire;
     private final MountsModule mounts;
+    private final DragonsModule dragons;
     private final SkillsModule skills;
 
     public NekaraRPGMenu(
@@ -61,6 +64,7 @@ public final class NekaraRPGMenu implements Listener {
             SittingModule sitting,
             CampfireModule campfire,
             MountsModule mounts,
+            DragonsModule dragons,
             SkillsModule skills
     ) {
         this.plugin = plugin;
@@ -71,6 +75,7 @@ public final class NekaraRPGMenu implements Listener {
         this.sitting = sitting;
         this.campfire = campfire;
         this.mounts = mounts;
+        this.dragons = dragons;
         this.skills = skills;
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
@@ -112,6 +117,14 @@ public final class NekaraRPGMenu implements Listener {
                     Component.text("Můj kůň", NamedTextColor.GOLD),
                     Component.text("Pouto, výbava, brašny a píšťalka", NamedTextColor.GRAY),
                     Component.text("Postarej se o svého společníka", NamedTextColor.DARK_GRAY)));
+            visibleModules++;
+        }
+        if (canShow(player, DragonsModule.ID, "nekararpg.mount.use")
+                && skills.hasPowerMilestone(player.getUniqueId(), PowerMilestoneId.DRAGON_BOND)) {
+            inventory.setItem(DRAGONS_SLOT, item(Material.DRAGON_HEAD,
+                    Component.text("Můj drak", NamedTextColor.LIGHT_PURPLE),
+                    Component.text("Dračí pouto a rychlý let", NamedTextColor.GRAY),
+                    Component.text("Vznes se nad krajinou Nekary", NamedTextColor.DARK_GRAY)));
             visibleModules++;
         }
         if (canShow(player, SkillsModule.ID, "nekararpg.skills.use")) {
@@ -218,6 +231,12 @@ public final class NekaraRPGMenu implements Listener {
                 if (canShow(player, MountsModule.ID, "nekararpg.mount.use")
                         && skills.hasPowerMilestone(player.getUniqueId(), PowerMilestoneId.MOUNT)) {
                     mounts.openMenu(player);
+                }
+            }
+            case DRAGONS_SLOT -> {
+                if (canShow(player, DragonsModule.ID, "nekararpg.mount.use")
+                        && skills.hasPowerMilestone(player.getUniqueId(), PowerMilestoneId.DRAGON_BOND)) {
+                    dragons.openMenu(player);
                 }
             }
             case SKILLS_SLOT -> {

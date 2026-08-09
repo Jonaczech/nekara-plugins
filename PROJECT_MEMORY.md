@@ -1,5 +1,25 @@
 # Projektová paměť Nekara Plugins
 
+## Release 2.7.0
+
+- `DragonsModule` je server-only létající mount pro Power milník `dragon_bond` na
+  úrovni 100. Neviditelný `HappyGhast` drží jezdce a synchronizovaný `EnderDragon`
+  je pouze neškodný vizuál: bez kolize, damage, explozí, blokových změn a bossbaru.
+- `ActiveMountCoordinator` je společná autorita koně a draka. Volání jednoho vždy
+  bezpečně odvolá druhý; nesmí vzniknout dva aktivní mounti téhož hráče. Sdílená
+  píšťalka podle milníku otevírá volbu, jinak dál volá koně přímo.
+- Draka pohání vstup jezdce na serveru. `WASD` pohybuje, mezerník stoupá, Shift
+  klesá a `F` sesedá. Nezobrazuj nosičův harness klientovi ani neobnovuj ghastí
+  zvuky; jezdec dostává pouze střídmé ender-dračí zvuky.
+- `HeroAuraService` je stále čistě vizuální odměna Power 200. Zlatá je pouze
+  akcent: občasná jiskra, úsporný puls a stopa při skutečném pohybu/letu. Nezaváděj
+  světelný sloup, permanentní zvuk, statistiky, XP ani combat bonus.
+- Vlastní zbraně zachovávají PDC identitu i po úpravě katalogu díky legacy dřevěným
+  definicím. Diamantové custom zbraně se mohou povýšit na netheritové ve smithing
+  table. `ArmorProtectionResolver` aplikuje dodatkovou typovou ochranu až po
+  vanilla ochraně; penetrace ji maximálně částečně snižuje a nikdy nezvýší škodu
+  neobrněného cíle.
+
 ## Release 2.6.0
 
 - Dobrovolné plazení, ležení na zemi, jejich příkazy i položky `/nrpg` byly odstraněny:

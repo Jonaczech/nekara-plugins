@@ -1,0 +1,18 @@
+# Server-only flying-mount prototype: invisible Happy Ghast carrier plus Ender Dragon visual.
+summoning:
+  # Empty means every world.
+  allowed-worlds: []
+  cooldown-seconds: 10
+  active-recall-cooldown-seconds: 3
+  # An active dragon at or beyond this Chebyshev chunk distance returns by a safe teleport.
+  active-teleport-distance-chunks: 3
+  minimum-spawn-distance: 5
+  maximum-spawn-distance: 9
+  minimum-spawn-height: 3
+  maximum-spawn-height: 7
+flight:
+  # Base speed used by the server-authoritative rider controls.
+  speed: 0.12
+  maximum-altitude: 256
+defaults:
+  max-health: 40.0

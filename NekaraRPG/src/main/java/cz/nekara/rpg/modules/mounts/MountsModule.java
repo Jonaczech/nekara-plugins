@@ -6,6 +6,9 @@ import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.menu.GuiItems;
 import cz.nekara.rpg.modules.NekaraModule;
 import cz.nekara.rpg.skills.milestones.PowerMilestoneId;
+import cz.nekara.rpg.mount.ActiveMountCoordinator;
+import cz.nekara.rpg.mount.ActiveMountCoordinator.ActivationResult;
+import cz.nekara.rpg.mount.ActiveMountCoordinator.MountKind;
 import cz.nekara.rpg.mount.MountCooldown;
 import cz.nekara.rpg.mount.MountOwnerId;
 import cz.nekara.rpg.mount.MountRecord;
@@ -112,6 +115,7 @@ public final class MountsModule implements NekaraModule, Listener {
 
     private final NekaraRPGPlugin plugin;
     private final MessageService messages;
+    private final ActiveMountCoordinator activeMountCoordinator;
     private final NamespacedKey mountIdKey;
     private final NamespacedKey ownerIdKey;
     private final NamespacedKey whistleKey;
@@ -135,9 +139,14 @@ public final class MountsModule implements NekaraModule, Listener {
     private String storageFailure;
     private boolean enabled;
 
-    public MountsModule(NekaraRPGPlugin plugin, MessageService messages) {
+    public MountsModule(
+            NekaraRPGPlugin plugin,
+            MessageService messages,
+            ActiveMountCoordinator activeMountCoordinator
+    ) {
         this.plugin = plugin;
         this.messages = messages;
+        this.activeMountCoordinator = activeMountCoordinator;
         mountIdKey = new NamespacedKey(plugin, "mount-id");
         ownerIdKey = new NamespacedKey(plugin, "mount-owner-id");
         whistleKey = new NamespacedKey(plugin, "mount-whistle");
@@ -371,6 +380,10 @@ public final class MountsModule implements NekaraModule, Listener {
                 messages.send(player, "mount-other-world");
                 return;
             }
+            if (!registerActiveHorse(record, active)) {
+                messages.send(player, "mount-switch-failed");
+                return;
+            }
             if (!active.getPassengers().isEmpty()) {
                 messages.send(player, "mount-being-ridden");
                 return;
@@ -411,6 +424,9 @@ public final class MountsModule implements NekaraModule, Listener {
             messages.send(player, "mount-no-space");
             return;
         }
+        if (!prepareHorseActivation(player)) {
+            return;
+        }
         MountRecord restored = record;
         Horse horse = player.getWorld().spawn(spawnLocation.get(), Horse.class,
                 spawned -> apply(restored, player, spawned));
@@ -419,6 +435,13 @@ public final class MountsModule implements NekaraModule, Listener {
         try {
             repository.update(activeRecord);
             activeMounts.put(record.mountId(), horse);
+            if (!registerActiveHorse(activeRecord, horse)) {
+                activeMounts.remove(record.mountId(), horse);
+                repository.update(activeRecord.dormant(Instant.now()));
+                horse.remove();
+                messages.send(player, "mount-switch-failed");
+                return;
+            }
             directToCall(record.mountId(), horse, callLocation);
             actionBar(player, "mount-called", Map.of("name", activeRecord.customName()));
         } catch (IOException exception) {
@@ -541,7 +564,11 @@ public final class MountsModule implements NekaraModule, Listener {
             actionBar(player, "mount-whistle-foreign", Map.of());
             return;
         }
-        call(player);
+        if (plugin.dragonsModule().isUnlocked(player)) {
+            plugin.dragonsModule().openWhistleSelection(player);
+        } else {
+            call(player);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -859,6 +886,7 @@ public final class MountsModule implements NekaraModule, Listener {
         try {
             repository.update(current);
             activeMounts.remove(current.mountId());
+            activeMountCoordinator.release(current.lastKnownOwnerUuid(), horse);
             clearGuidance(current.mountId());
         } catch (IOException exception) {
             failStorage(exception);
@@ -1374,11 +1402,11 @@ public final class MountsModule implements NekaraModule, Listener {
     private ItemStack createWhistle(MountRecord record) {
         ItemStack whistle = new ItemStack(config().whistleMaterial());
         ItemMeta meta = whistle.getItemMeta();
-        meta.displayName(Component.text("Píšťalka — " + record.customName(), NamedTextColor.GOLD)
+        meta.displayName(Component.text("Píšťalka mountů", NamedTextColor.GOLD)
                 .decorate(TextDecoration.BOLD));
         meta.lore(List.of(
-                Component.text("Pravým kliknutím zavoláš svého koně.", NamedTextColor.GRAY),
-                Component.text("Je-li nablízku, vyrazí k tvému novému místu.", NamedTextColor.DARK_GRAY)));
+                Component.text("Pravým kliknutím zavoláš svého mounta.", NamedTextColor.GRAY),
+                Component.text("Dračí pouto odemkne výběr koně nebo draka.", NamedTextColor.DARK_GRAY)));
         meta.setCustomModelData(config().whistleCustomModelData());
         meta.getPersistentDataContainer().set(whistleKey, PersistentDataType.BYTE, (byte) 1);
         meta.getPersistentDataContainer().set(whistleMountIdKey, PersistentDataType.STRING,
@@ -1399,10 +1427,8 @@ public final class MountsModule implements NekaraModule, Listener {
     private boolean isOwnedWhistle(Player player, ItemStack whistle) {
         ItemMeta meta = whistle.getItemMeta();
         String ownerId = meta.getPersistentDataContainer().get(whistleOwnerIdKey, PersistentDataType.STRING);
-        String mountId = meta.getPersistentDataContainer().get(whistleMountIdKey, PersistentDataType.STRING);
         Optional<MountRecord> owned = findOwned(player);
-        return owned.isPresent() && owned.get().ownerId().equals(ownerId)
-                && owned.get().mountId().toString().equals(mountId);
+        return owned.isPresent() && owned.get().ownerId().equals(ownerId);
     }
 
     private boolean isBoundWhistle(ItemStack item, MountRecord record) {
@@ -1411,8 +1437,7 @@ public final class MountsModule implements NekaraModule, Listener {
         }
         ItemMeta meta = item.getItemMeta();
         String ownerId = meta.getPersistentDataContainer().get(whistleOwnerIdKey, PersistentDataType.STRING);
-        String mountId = meta.getPersistentDataContainer().get(whistleMountIdKey, PersistentDataType.STRING);
-        return record.ownerId().equals(ownerId) && record.mountId().toString().equals(mountId);
+        return record.ownerId().equals(ownerId);
     }
 
     private boolean hasBoundWhistle(Player player, MountRecord record) {
@@ -1559,6 +1584,26 @@ public final class MountsModule implements NekaraModule, Listener {
             failStorage(exception);
             return Optional.empty();
         }
+    }
+
+    private boolean prepareHorseActivation(Player player) {
+        ActivationResult result = activeMountCoordinator.prepareActivation(
+                player.getUniqueId(), MountKind.HORSE);
+        if (result == ActivationResult.HAS_PASSENGERS) {
+            messages.send(player, "mount-being-ridden");
+            return false;
+        }
+        if (result == ActivationResult.DEACTIVATION_FAILED) {
+            messages.send(player, "mount-switch-failed");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean registerActiveHorse(MountRecord record, Horse horse) {
+        return activeMountCoordinator.claim(
+                record.lastKnownOwnerUuid(), MountKind.HORSE, horse,
+                () -> storeAndRemove(horse, "switch to dragon"));
     }
 
     private MountConfig config() {
@@ -1748,6 +1793,10 @@ public final class MountsModule implements NekaraModule, Listener {
         if (existing != null && !existing.isValid()) {
             activeMounts.put(mountId, horse);
         }
+        if (!registerActiveHorse(record, horse)) {
+            storeAndRemove(horse, "active mount conflict");
+            return;
+        }
         applyBoldName(horse, record.customName());
         if (horse.getInventory().getSaddle() == null) {
             horse.getInventory().setSaddle(new ItemStack(Material.SADDLE));
@@ -1774,6 +1823,7 @@ public final class MountsModule implements NekaraModule, Listener {
         try {
             repository.update(dormant);
             activeMounts.remove(dormant.mountId());
+            activeMountCoordinator.release(dormant.lastKnownOwnerUuid(), horse);
             clearGuidance(dormant.mountId());
             horse.eject();
             horse.remove();
