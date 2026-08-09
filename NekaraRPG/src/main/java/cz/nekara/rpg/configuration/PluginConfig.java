@@ -17,6 +17,7 @@ public record PluginConfig(
         AuthConfig auth,
         EchoVeinConfig echoVein,
         MountConfig mounts,
+        DragonConfig dragons,
         SkillsConfig skills,
         UpdaterConfig updater,
         WorldConfig worlds,

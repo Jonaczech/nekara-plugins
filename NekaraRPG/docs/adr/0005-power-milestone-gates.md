@@ -17,7 +17,7 @@ are never purchased or persisted separately. `campfire_rested` at Power 1 gates
 only Rested campfire processing; sitting stays available. `mount` at
 Power 25 gates player-facing NekaraMounts actions. Administrative mount grants
 may preregister a mount, but player-facing use remains gated by the milestone.
-`hero_aura` at Power 200 grants an original white-and-orange particle aura. It is
+`hero_aura` at Power 200 grants an original white, orange and restrained gold particle aura. It is
 prestige-only and adds no combat, economy, movement, or progression modifier.
 
 ## Consequences

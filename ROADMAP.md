@@ -2,17 +2,17 @@
 
 ## Aktuální release
 
-**NekaraRPG 2.5.1**: nativní RPG postup, jedinečné perk ikony, dobrovolné plazení
-s klávesou `C` a stabilní mannequin ležení, vedle 13 aktivních dovedností.
+**NekaraRPG 2.7.0**: Dračí pouto na Power 100, koordinované přepínání koně a draka,
+rozšířená čistě kosmetická Hero aura a aktualizovaná výzbroj i ochrana zbroje.
 
 ## Bezprostřední priorita
 
-1. Živě ověřit plazení: klávesu `C`, ikonu `/nrpg`, zrušení Shiftem, nízký hitbox a
-   plynulý krok přes jednoblokovou překážku.
-2. Živě ověřit ležení ve třetí osobě i při pohybu kamerou; potvrdit natočení mannequinu.
-3. Ověřit `Dovednosti`, skutečné hodnoty v tooltipech a všech 13 perk-tree map
-   s aktuálním resource packem.
-4. Teprve po ověření nasadit přesný release JAR na produkční server.
+1. Živě ověřit Dračí pouto: přivolání, blízký přílet, vzdálený teleport, omezení
+   jednoho aktivního mounta, ovládání, klesání Shiftem a sesednutí klávesou `F`.
+2. Ověřit Hero auru v pohybu a při letu na drakovi s aktuálním resource packem.
+3. Ověřit smithing upgrade vlastních diamantových zbraní, typovou ochranu zbroje
+   a veškeré recepty/požadavky výzbroje.
+4. Teprve po ověření nasadit přesný release JAR a resource pack na produkční server.
 
 ## Následné směry
 

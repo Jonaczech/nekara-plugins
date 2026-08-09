@@ -3,13 +3,31 @@
 Modulární RPG plugin pro Purpur/Paper 26.1 a Java 25. Obsahuje autentizaci,
 rybářskou minihru, táboření/Rested, Echo Vein, mounty a nativní Nekara Skills.
 
+## 2.7.0 – Dračí pouto, Hero aura a výzbroj
+
+- `Dračí pouto` se automaticky odemkne na Hlavní úrovni 100. Přidává jednoho
+  osobního draka pro rychlé létání bez boje a inventáře; celý vizuál i ovládání
+  zajišťuje serverový NekaraRPG, bez Fabric modu.
+- Píšťalka mountů po odemčení nabídne koně nebo draka. Ve světě je aktivní vždy
+  jen jeden companion. Blízký drak přiletí k bezpečnému bodu poblíž hráče, vzdálený
+  se bezpečně přivolá teleportem.
+- Draka řídí `WASD`, mezerník stoupá, Shift klesá a `F` sesedá. Hráč slyší dračí
+  křídla a ambient, ne zvuky neviditelného Happy Ghasta.
+- Hero aura používá střídmou bílou, oranžovou a zlatou paletu: vzácné jiskry,
+  jeden pozemní puls a krátkou zlatou stopu při letu na vlastním drakovi.
+- Custom zbraně mají sjednocené atributy, kompatibilní legacy identitu a podporu
+  netheritového smithing upgradu. Typová ochrana zbroje a průraznost jsou vyvážené
+  jako dodatečná Nekara vrstva nad vanilla ochranou.
+
 ## 2.6.0 – Hrdina Nekary, gathering a vzdálené volání koně
 
 - Dobrovolné plazení i ležení na zemi byly odstraněny, protože je nelze spolehlivě
   udržet pouze na straně serverového pluginu. Zůstává nativní Minecraft plazení
   pod nízkou překážkou, spaní v posteli a NekaraRPG sezení u ohně.
 - Hlavní úroveň 200 automaticky odemyká prestižní milník `Hrdina Nekary`. Hráče
-  obklopí lehká bílooranžová spirálová aura; jde pouze o vizuální odměnu bez statů.
+  obklopí jemná teple oranžová spirálová aura s řídkými bílými a zlatými záblesky.
+  Při pohybu zanechá jedinou jiskru a při letu na vlastním drakovi krátkou zlatou stopu;
+  jde pouze o vizuální odměnu bez statů.
 - Souhrny gathering dovedností v perk-tree rozlišují dvojitý drop, samostatný NG+
   drop a skutečnou kombinovanou šanci získat alespoň jeden drop navíc. Statkářství
   uvádí odděleně sklizeň a zvířata.
@@ -155,6 +173,20 @@ a napojení Echo Vein na úroveň Těžby. Statkářství urychluje pouze příp
 Finální modely perk-tree, cest a vlastních zbraní poskytuje
 [`Jonaczech/nekara-resourcepack`](https://github.com/Jonaczech/nekara-resourcepack).
 Bez packu plugin použije vanilla fallbacky.
+
+Kamenná, měděná, železná, zlatá, diamantová a netheritová dýka, obouruční meč i
+kladivo používají modely ve tvaru `nekararpg:weapons/<family>/<tier>`. Server je
+nastavuje přes komponentu `item_model`. Dřevěné varianty těchto tří vlastních zbraní
+nejsou dostupné ani nemají recept. Identita zbraně nadále zůstává ověřená serverovým PDC tagem.
+Netheritové varianty se nevyrábějí u craftingu: v smithing table se z diamantové vlastní
+zbraně, `Netherite Upgrade` a netheritového ingotu vytvoří odpovídající netheritová zbraň.
+Obouruční meč se také vyrábí ve smithing table: příslušný vanilla meč a materiál tieru
+(např. `Iron Sword` + železný ingot) vytvoří odpovídající obouruční meč.
+
+Vlastní dýky jsou vytvořené z příslušného vanilla meče, takže používají běžný mečový útok.
+Kladiva jsou vytvořená z `MACE`, takže se nechovají jako sekery pro těžbu ani pro Tree Feller. U vlastního
+kladiva se serverem ruší pouze bonus poškození z pádu; běžný útok mace zůstává zachovaný.
+Již vyrobená kladiva se starým základem sekery je nutné vyrobit znovu.
 
 ## Build
 

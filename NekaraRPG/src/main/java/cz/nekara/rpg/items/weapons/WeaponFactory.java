@@ -19,6 +19,9 @@ public final class WeaponFactory {
         if (!definition.custom()) {
             throw new IllegalArgumentException("Only custom weapons are created by the Nekara factory");
         }
+        if (definition.tier() == WeaponTier.WOODEN) {
+            throw new IllegalArgumentException("Wooden custom weapons are no longer available");
+        }
         ItemStack item = new ItemStack(definition.material());
         ItemMeta meta = item.getItemMeta();
         meta.getPersistentDataContainer().set(WeaponCatalog.WEAPON_ID_KEY, PersistentDataType.STRING, definition.id());
@@ -26,6 +29,7 @@ public final class WeaponFactory {
             PersistentDataType.INTEGER, WeaponCatalog.ITEM_SCHEMA_VERSION);
         meta.getPersistentDataContainer().set(WeaponCatalog.WEAPON_MODEL_KEY,
             PersistentDataType.STRING, definition.modelKey());
+        meta.setItemModel(new NamespacedKey("nekararpg", definition.modelKey()));
         meta.displayName(Component.text(definition.tier().displayPrefix() + " " + definition.family().displayName(),
             definition.family().skill().name().equals("LIGHT_WEAPONS") ? NamedTextColor.AQUA : NamedTextColor.RED));
         meta.lore(List.of(
@@ -36,31 +40,40 @@ public final class WeaponFactory {
             Component.text("Typ po\u0161kozen\u00ed: " + definition.family().damageType().czechName(), NamedTextColor.GOLD),
             Component.text("Model: " + definition.modelKey(), NamedTextColor.DARK_GRAY)
         ));
-        applyAttributes(meta, definition.family());
+        applyAttributes(meta, WeaponAttributes.forWeapon(definition));
         item.setItemMeta(meta);
         return item;
     }
 
-    private static void applyAttributes(ItemMeta meta, WeaponFamily family) {
-        double damage = switch (family) {
-            case DAGGER -> -1.0;
-            case GREATSWORD -> 2.0;
-            case HAMMER -> 1.0;
-            default -> 0.0;
-        };
-        double speed = switch (family) {
-            case DAGGER -> 0.9;
-            case GREATSWORD -> -1.0;
-            case HAMMER -> -0.6;
-            default -> 0.0;
-        };
-        if (damage != 0.0) {
-            meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(
-                DAMAGE_MODIFIER, damage, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+    /** Applies Nekara's final combat attributes to a supported vanilla or custom weapon. */
+    public boolean normalizeAttributes(ItemStack item) {
+        WeaponDefinition definition = WeaponCatalog.resolve(item).orElse(null);
+        if (definition == null) {
+            return false;
         }
-        if (speed != 0.0) {
-            meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(
-                SPEED_MODIFIER, speed, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+        ItemMeta meta = item.getItemMeta();
+        removeModifier(meta, Attribute.ATTACK_DAMAGE, DAMAGE_MODIFIER);
+        removeModifier(meta, Attribute.ATTACK_SPEED, SPEED_MODIFIER);
+        applyAttributes(meta, WeaponAttributes.forWeapon(definition));
+        item.setItemMeta(meta);
+        return true;
+    }
+
+    private static void applyAttributes(ItemMeta meta, WeaponAttributes attributes) {
+        meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(
+            DAMAGE_MODIFIER, attributes.attackDamage(), AttributeModifier.Operation.ADD_NUMBER,
+            EquipmentSlotGroup.MAINHAND));
+        meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(
+            SPEED_MODIFIER, attributes.attackSpeed(), AttributeModifier.Operation.ADD_NUMBER,
+            EquipmentSlotGroup.MAINHAND));
+    }
+
+    private static void removeModifier(ItemMeta meta, Attribute attribute, NamespacedKey key) {
+        var modifiers = meta.getAttributeModifiers(attribute);
+        if (modifiers == null) {
+            return;
         }
+        modifiers.stream().filter(modifier -> modifier.getKey().equals(key))
+            .toList().forEach(modifier -> meta.removeAttributeModifier(attribute, modifier));
     }
 }

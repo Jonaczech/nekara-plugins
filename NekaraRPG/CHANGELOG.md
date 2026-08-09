@@ -1,5 +1,26 @@
 # Přehled změn
 
+## 2.7.0
+
+- Hlavní úroveň 100 odemyká `Dračí pouto`: osobního létajícího draka bez inventáře
+  a boje. Vizuál tvoří vanilla Ender Dragon nad neviditelným Happy Ghast nosičem,
+  výhradně serverově a bez Fabric modu.
+- Píšťalka mountů po odemčení Dračího pouta nabídne koně nebo draka. Koordinátor
+  zaručuje, že ve světě může být aktivní pouze jeden z nich. Blízký drak k hráči
+  přiletí, od tří chunků se bezpečně teleportuje.
+- Drak se ovládá `WASD`, mezerníkem pro stoupání a Shiftem pro klesání; `F` je
+  vyhrazené pro sesednutí. Happy Ghast je tichý a jezdec slyší jen střídmé dračí
+  zvuky křídel, ambientu a přivolání.
+- `Hrdina Nekary` na Power 200 dostal jemné zlaté akcenty: vzácnou jiskru,
+  krátkou stopu při pohybu a při letu na vlastním drakovi. Aura zůstává čistě
+  kosmetická a bez herních statistik.
+- Vlastní dýky, obouruční meče a kladiva používají centralizované atributy a
+  zachovávají kompatibilitu se staršími dřevěnými předměty. Diamantové vlastní
+  zbraně lze povýšit na netheritové přes smithing table.
+- Dodatečná typová ochrana zbroje byla vyvážena a průraznost nyní obchází pouze
+  tuto Nekara vrstvu, nikdy nepřidává poškození neobrněnému cíli. Kladivo zároveň
+  nepřenáší vanilla pádové poškození palcátu.
+
 ## 2.6.0
 
 - Dobrovolné plazení i ležení na zemi, jejich příkazy a ovládání v `/nrpg` byly

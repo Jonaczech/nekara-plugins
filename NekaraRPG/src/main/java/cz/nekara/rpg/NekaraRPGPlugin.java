@@ -9,11 +9,13 @@ import cz.nekara.rpg.menu.NekaraRPGMenu;
 import cz.nekara.rpg.modules.ModuleRegistry;
 import cz.nekara.rpg.modules.auth.AuthModule;
 import cz.nekara.rpg.modules.campfire.CampfireModule;
+import cz.nekara.rpg.modules.dragons.DragonsModule;
 import cz.nekara.rpg.modules.fishing.FishingModule;
 import cz.nekara.rpg.modules.mining.MiningModule;
 import cz.nekara.rpg.modules.mounts.MountsModule;
 import cz.nekara.rpg.modules.skills.SkillsModule;
 import cz.nekara.rpg.modules.sitting.SittingModule;
+import cz.nekara.rpg.mount.ActiveMountCoordinator;
 import cz.nekara.rpg.sounds.SoundService;
 import cz.nekara.rpg.updater.UpdaterService;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -32,7 +34,9 @@ public final class NekaraRPGPlugin extends JavaPlugin {
     private CampfireModule campfireModule;
     private MiningModule miningModule;
     private MountsModule mountsModule;
+    private DragonsModule dragonsModule;
     private SkillsModule skillsModule;
+    private ActiveMountCoordinator activeMountCoordinator;
     private NekaraRPGMenu mainMenu;
 
     @Override
@@ -51,16 +55,19 @@ public final class NekaraRPGPlugin extends JavaPlugin {
         sittingModule = new SittingModule(this, messages);
         campfireModule = new CampfireModule(this, messages, sounds, sittingModule);
         miningModule = new MiningModule(this, messages, sounds, fishingModule);
-        mountsModule = new MountsModule(this, messages);
+        activeMountCoordinator = new ActiveMountCoordinator();
+        mountsModule = new MountsModule(this, messages, activeMountCoordinator);
         skillsModule = new SkillsModule(this, messages);
+        dragonsModule = new DragonsModule(this, messages, activeMountCoordinator);
         modules.register(authModule);
         modules.register(fishingModule);
         modules.register(campfireModule);
         modules.register(miningModule);
         modules.register(mountsModule);
         modules.register(skillsModule);
+        modules.register(dragonsModule);
         mainMenu = new NekaraRPGMenu(this, messages, modules, authModule, fishingModule,
-                sittingModule, campfireModule, mountsModule, skillsModule);
+                sittingModule, campfireModule, mountsModule, dragonsModule, skillsModule);
         fishingModule.registerCommand(new NekaraRPGCommand(
                 this, fishingModule, sittingModule, campfireModule, miningModule, mountsModule, skillsModule,
                 modules, messages, updater, mainMenu));
@@ -128,6 +135,10 @@ public final class NekaraRPGPlugin extends JavaPlugin {
 
     public MountsModule mountsModule() {
         return mountsModule;
+    }
+
+    public DragonsModule dragonsModule() {
+        return dragonsModule;
     }
 
     public SkillsModule skillsModule() {

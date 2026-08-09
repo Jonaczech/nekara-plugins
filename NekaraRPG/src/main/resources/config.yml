@@ -32,6 +32,9 @@ modules:
     enabled: false
   mounts:
     enabled: true
+  dragons:
+    # Dračí pouto is an optional Power 100 flying-mount prototype.
+    enabled: true
   # Nekara Skills is the native progression authority. XP, perks and active
   # abilities are guarded by real events, player-placed block tracking and
   # bounded async persistence.

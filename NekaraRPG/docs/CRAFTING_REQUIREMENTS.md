@@ -25,15 +25,15 @@ tieru (luk, kuše, trojzubec a palcát) nemají další levelový požadavek.
 - Vlastní dýky, obouruční meče a kladiva používají stejnou tabulku ve všech
   sedmi materiálových variantách.
 - Krumpáče, lopaty a motyky používají stejnou tabulku materiálů.
-- Vlastní zbraně se vyrábějí z příslušného materiálu a klacků:
+- Dýky a kladiva se vyrábějí z příslušného materiálu a klacků:
 
 | Vlastní zbraň | Schéma |
 | --- | --- |
 | Dýka | ` A ` / ` S ` |
-| Obouruční meč | `AAA` / ` B ` / ` S ` |
 | Kladivo | ` A ` / `ASA` / ` S ` |
 
-`A` a `B` jsou příslušný materiál tieru; `S` je klacek.
+`A` je příslušný materiál tieru; `S` je klacek. Obouruční meč vzniká ve smithing table
+z příslušného vanilla meče a jednoho materiálu tieru (např. `Iron Sword` + železný ingot).
 
 ## Zbroje a kvalita
 

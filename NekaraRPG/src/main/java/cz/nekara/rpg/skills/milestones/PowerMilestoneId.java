@@ -4,6 +4,7 @@ package cz.nekara.rpg.skills.milestones;
 public enum PowerMilestoneId {
     CAMPFIRE_RESTED("campfire_rested", 1),
     MOUNT("mount", 25),
+    DRAGON_BOND("dragon_bond", 100),
     HERO_AURA("hero_aura", 200);
 
     private final String id;

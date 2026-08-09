@@ -51,8 +51,9 @@ luck:
   rare-loot-chance-bonus-per-point: 0.02
   crafting-quality-chance-bonus-per-point: 0.05
 
-# Weapon-family combat effects are always resolved server-side. Values are
-# added to the selected weapon skill's perk statistics, never stored in items.
+# Weapon-family combat effects are always resolved server-side. Armor penetration
+# bypasses only Nekara's type-specific armor layer; it never grants free damage
+# against an unarmored target and is never stored in items.
 weapons:
   dagger:
     critical-chance: 0.06

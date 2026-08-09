@@ -38,6 +38,7 @@ final class ModuleConfigurationStore {
                     List.of("echo-vein-pulse", "echo-vein-ore-reveal",
                             "echo-vein-success", "echo-vein-failure")),
             new ModuleFile("mounts/config.yml", "mounts", List.of("mounts"), List.of()),
+            new ModuleFile("dragons/config.yml", "dragons", List.of("dragons"), List.of()),
             new ModuleFile("skills/config.yml", "skills", List.of("skills"), List.of())
         ));
         for (SkillId skill : SkillId.gameplaySkills()) {

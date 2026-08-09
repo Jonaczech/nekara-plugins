@@ -353,6 +353,36 @@ public final class ConfigurationService {
                         0, 16_777_215, 260102, "mounts.whistle.custom-model-data", warning)
         );
 
+        Set<String> dragonWorlds = new HashSet<>();
+        for (String world : config.getStringList("dragons.summoning.allowed-worlds")) {
+            if (world != null && !world.isBlank()) {
+                dragonWorlds.add(world.trim().toLowerCase(Locale.ROOT));
+            }
+        }
+        DragonConfig dragons = new DragonConfig(
+                Set.copyOf(dragonWorlds),
+                validateInt(config.getInt("dragons.summoning.cooldown-seconds", 10),
+                        1, 3_600, 10, "dragons.summoning.cooldown-seconds", warning),
+                validateInt(config.getInt("dragons.summoning.active-recall-cooldown-seconds", 3),
+                        1, 60, 3, "dragons.summoning.active-recall-cooldown-seconds", warning),
+                validateInt(config.getInt("dragons.summoning.active-teleport-distance-chunks", 3),
+                        1, 32, 3, "dragons.summoning.active-teleport-distance-chunks", warning),
+                validateInt(config.getInt("dragons.summoning.minimum-spawn-distance", 5),
+                        2, 24, 5, "dragons.summoning.minimum-spawn-distance", warning),
+                validateInt(config.getInt("dragons.summoning.maximum-spawn-distance", 9),
+                        3, 32, 9, "dragons.summoning.maximum-spawn-distance", warning),
+                validateInt(config.getInt("dragons.summoning.minimum-spawn-height", 3),
+                        2, 16, 3, "dragons.summoning.minimum-spawn-height", warning),
+                validateInt(config.getInt("dragons.summoning.maximum-spawn-height", 7),
+                        3, 24, 7, "dragons.summoning.maximum-spawn-height", warning),
+                validateDouble(config.getDouble("dragons.flight.speed", 0.12),
+                        0.02, 1.0, 0.12, "dragons.flight.speed", warning),
+                validateDouble(config.getDouble("dragons.defaults.max-health", 40.0),
+                        1.0, 2_048.0, 40.0, "dragons.defaults.max-health", warning),
+                validateInt(config.getInt("dragons.flight.maximum-altitude", 256),
+                        64, 2_048, 256, "dragons.flight.maximum-altitude", warning)
+        );
+
         int miningChunkSoftLimit = validateInt(
                 config.getInt("skills.tezba.experience.chunk-soft-limit", 32),
                 0, 100_000, 32, "skills.tezba.experience.chunk-soft-limit", warning);
@@ -478,6 +508,7 @@ public final class ConfigurationService {
                         "auth", config.getBoolean("modules.auth.enabled", true),
                         "mining", miningModuleEnabled,
                         "mounts", config.getBoolean("modules.mounts.enabled", true),
+                        "dragons", config.getBoolean("modules.dragons.enabled", true),
                         "skills", config.getBoolean("modules.skills.enabled", false)
                 ),
                 minigame,
@@ -491,6 +522,7 @@ public final class ConfigurationService {
                 auth,
                 echoVein,
                 mounts,
+                dragons,
                 skills,
                 updater,
                 worldConfig,

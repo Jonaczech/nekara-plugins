@@ -15,6 +15,7 @@ public final class WeaponCatalog {
     public static final NamespacedKey WEAPON_MODEL_KEY = new NamespacedKey("nekararpg", "weapon_model");
 
     private static final Map<String, WeaponDefinition> CUSTOM = definitions(true);
+    private static final Map<String, WeaponDefinition> LEGACY_CUSTOM = legacyWoodenDefinitions();
 
     private WeaponCatalog() {
     }
@@ -27,7 +28,7 @@ public final class WeaponCatalog {
         String id = item.getPersistentDataContainer().get(WEAPON_ID_KEY, PersistentDataType.STRING);
         if (schema != null || id != null) {
             return schema != null && schema == ITEM_SCHEMA_VERSION && id != null
-                ? Optional.ofNullable(CUSTOM.get(id)) : Optional.empty();
+                ? Optional.ofNullable(CUSTOM.getOrDefault(id, LEGACY_CUSTOM.get(id))) : Optional.empty();
         }
         return resolveVanilla(item.getType());
     }
@@ -41,6 +42,13 @@ public final class WeaponCatalog {
 
     public static boolean isCustomWeapon(ItemStack item) {
         return resolve(item).map(WeaponDefinition::custom).orElse(false);
+    }
+
+    public static Optional<WeaponDefinition> netheriteUpgrade(WeaponDefinition source) {
+        if (!source.custom() || source.tier() != WeaponTier.DIAMOND) {
+            return Optional.empty();
+        }
+        return custom(source.family(), WeaponTier.NETHERITE);
     }
 
     public static Optional<WeaponDefinition> resolveVanilla(Material material) {
@@ -57,6 +65,7 @@ public final class WeaponCatalog {
         for (WeaponFamily family : WeaponFamily.values()) {
             if (customOnly && !family.custom()) continue;
             for (WeaponTier tier : WeaponTier.values()) {
+                if (customOnly && tier == WeaponTier.WOODEN) continue;
                 WeaponDefinition definition = new WeaponDefinition(family, tier, customBaseMaterial(family, tier));
                 definitions.put(definition.id(), definition);
             }
@@ -64,10 +73,22 @@ public final class WeaponCatalog {
         return Map.copyOf(definitions);
     }
 
+    private static Map<String, WeaponDefinition> legacyWoodenDefinitions() {
+        Map<String, WeaponDefinition> definitions = new HashMap<>();
+        for (WeaponFamily family : WeaponFamily.values()) {
+            if (!family.custom()) continue;
+            WeaponDefinition definition = new WeaponDefinition(family, WeaponTier.WOODEN,
+                customBaseMaterial(family, WeaponTier.WOODEN));
+            definitions.put(definition.id(), definition);
+        }
+        return Map.copyOf(definitions);
+    }
+
     private static Material customBaseMaterial(WeaponFamily family, WeaponTier tier) {
         return switch (family) {
-            case DAGGER, GREATSWORD -> tier.vanillaMaterial("SWORD");
-            case HAMMER -> tier.vanillaMaterial("AXE");
+            case DAGGER -> tier.vanillaMaterial("SWORD");
+            case GREATSWORD -> tier.vanillaMaterial("SWORD");
+            case HAMMER -> Material.MACE;
             default -> throw new IllegalArgumentException("Only custom weapon families have a custom base material: " + family);
         };
     }

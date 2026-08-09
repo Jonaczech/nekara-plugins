@@ -19,7 +19,7 @@ class ResourceYamlTest {
     void bundledYamlResourcesAreValid() throws Exception {
         for (String resource : new String[]{"config.yml", "messages.yml", "plugin.yml",
                 "auth/config.yml", "fishing/config.yml", "campfire/config.yml",
-                "mining/config.yml", "mounts/config.yml", "skills/config.yml",
+                "mining/config.yml", "mounts/config.yml", "dragons/config.yml", "skills/config.yml",
                 "skills/martial_arts/config.yml", "skills/martial_arts/messages.yml",
                 "skills/trading/config.yml", "skills/trading/messages.yml",
                 "skills/smithing/config.yml", "skills/smithing/messages.yml",
@@ -55,6 +55,7 @@ class ResourceYamlTest {
         Map<String, Object> mining = loadYaml("mining/config.yml");
         Map<String, Object> fishing = loadYaml("fishing/config.yml");
         Map<String, Object> mountsConfig = loadYaml("mounts/config.yml");
+        Map<String, Object> dragonsConfig = loadYaml("dragons/config.yml");
             Map<String, Object> skillsConfig = loadYaml("skills/config.yml");
             Map<String, Object> fishingLoot = loadYaml("skills/rybareni/loot-tables.yml");
         Map<String, Object> miningSkillConfig = loadYaml("skills/tezba/config.yml");
@@ -93,6 +94,8 @@ class ResourceYamlTest {
             Map<String, Object> mountPersistence = (Map<String, Object>) mountsConfig.get("persistence");
             Map<String, Object> mountNaming = (Map<String, Object>) mountsConfig.get("naming");
             Map<String, Object> mountWhistle = (Map<String, Object>) mountsConfig.get("whistle");
+            Map<String, Object> dragonSummoning = (Map<String, Object>) dragonsConfig.get("summoning");
+            Map<String, Object> dragonFlight = (Map<String, Object>) dragonsConfig.get("flight");
             Map<String, Object> skillStorage = (Map<String, Object>) skillsConfig.get("storage");
             Map<String, Object> skillProgression = (Map<String, Object>) skillsConfig.get("progression");
             Map<String, Object> skillWoodcutting = woodcuttingSkillConfig;
@@ -108,6 +111,7 @@ class ResourceYamlTest {
             assertNotNull(modules.get("mining"));
             assertNotNull(modules.get("auth"));
             assertNotNull(modules.get("mounts"));
+            assertNotNull(modules.get("dragons"));
             assertNotNull(modules.get("skills"));
             assertFalse((Boolean) ((Map<String, Object>) modules.get("mining")).get("enabled"));
             assertTrue((Boolean) ((Map<String, Object>) modules.get("skills")).get("enabled"));
@@ -186,6 +190,9 @@ class ResourceYamlTest {
             assertEquals(24, ((Number) mountNaming.get("maximum-length")).intValue());
             assertEquals("GOAT_HORN", mountWhistle.get("material"));
             assertEquals(260102, ((Number) mountWhistle.get("custom-model-data")).intValue());
+            assertEquals(10, ((Number) dragonSummoning.get("cooldown-seconds")).intValue());
+            assertEquals(0.12, ((Number) dragonFlight.get("speed")).doubleValue(), 0.0001);
+            assertEquals(256, ((Number) dragonFlight.get("maximum-altitude")).intValue());
             assertEquals("skills/data.db", skillStorage.get("database-file"));
             assertEquals(100, ((Number) skillProgression.get("base-experience")).intValue());
             assertEquals(35, ((Number) skillProgression.get("linear-growth")).intValue());
@@ -237,6 +244,10 @@ class ResourceYamlTest {
             assertNotNull(messages.get("mount-whistle-foreign"));
             assertNotNull(messages.get("mount-whistle-bound"));
             assertNotNull(messages.get("mount-whistle-restored"));
+            assertNotNull(messages.get("mount-switch-failed"));
+            assertNotNull(messages.get("dragon-milestone-locked"));
+            assertNotNull(messages.get("dragon-called"));
+            assertNotNull(messages.get("dragon-model-failed"));
             assertNotNull(messages.get("mount-equipment-chest-only"));
             assertNotNull(messages.get("mount-storage-not-empty"));
             assertNotNull(messages.get("skills-admin-usage"));

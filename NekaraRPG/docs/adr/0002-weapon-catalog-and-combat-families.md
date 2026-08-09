@@ -60,18 +60,17 @@ uses local sounds and particles only after the relevant effect succeeds.
 
 ### Crafting and quality
 
-The three custom families use registered shaped recipes for all seven vanilla
-material tiers. Recipe output is produced by the server-side factory and is
+Daggers and hammers use registered shaped recipes; a greatsword is forged in a smithing
+table from the matching vanilla sword and its tier ingredient. Recipe output is produced by the server-side factory and is
 therefore PDC-stamped before a player receives it. Existing Smithing Tier and
 workshop processing applies to custom weapons just like vanilla weapons.
 
-`A` means the tier's crafting ingredient, `S` a stick and `B` a second tier
-ingredient. The hammer deliberately uses its cross-head pattern rather than
+`A` means the tier's crafting ingredient and `S` a stick. Greatswords use the matching
+vanilla sword plus one tier ingredient in a smithing table. The hammer deliberately uses its cross-head pattern rather than
 the vanilla pickaxe pattern:
 
 | Weapon | Crafting grid |
 | --- | --- |
-| Greatsword | `AAA` / ` B ` / ` S ` |
 | Hammer | ` A ` / `ASA` / ` S ` |
 
 Equipment material tiers are gated by Smithing level at craft preview and at
