@@ -103,6 +103,7 @@ final class ProductionPerkListener implements Listener {
     private final org.bukkit.NamespacedKey workshopKitKey;
     private final org.bukkit.NamespacedKey scoutArrowKey;
     private final org.bukkit.NamespacedKey fishingChestOwnerKey;
+    private final Map<UUID, BukkitTask> hammeringTasks = new HashMap<>();
     private final Map<UUID, BukkitTask> sharpeningTasks = new HashMap<>();
     private final Map<UUID, WaterAttunement> waterAttunements = new HashMap<>();
     private final Map<UUID, BukkitTask> waterAttunementTasks = new HashMap<>();
@@ -147,6 +148,8 @@ final class ProductionPerkListener implements Listener {
         cropCaretakers.clear();
         fieldHarvestWindows.clear();
         fieldHarvestCooldowns.clear();
+        hammeringTasks.values().forEach(BukkitTask::cancel);
+        hammeringTasks.clear();
         sharpeningTasks.values().forEach(BukkitTask::cancel);
         sharpeningTasks.clear();
         waterAttunementTasks.values().forEach(BukkitTask::cancel);
@@ -291,25 +294,17 @@ final class ProductionPerkListener implements Listener {
             return;
         }
         SmithingTier.ProcessingState state = SmithingTier.state(item, smithingTierKeys);
-        if (station == Material.BLAST_FURNACE && state == SmithingTier.ProcessingState.UNPROCESSED) {
-            if (!consumeFuel(player)) {
-                player.sendActionBar(net.kyori.adventure.text.Component.text(
-                    "Na nahřátí potřebuješ jeden kus uhlí.", net.kyori.adventure.text.format.NamedTextColor.RED));
-                return;
-            }
-            SmithingTier.advanceProcessing(item, smithingTierKeys,
-                SmithingTier.ProcessingState.UNPROCESSED, SmithingTier.ProcessingState.HEATED);
-            player.getWorld().spawnParticle(Particle.LAVA, event.getClickedBlock().getLocation().add(0.5, 1.0, 0.5), 6,
-                0.25, 0.25, 0.25, 0.0);
-            player.playSound(player.getLocation(), Sound.BLOCK_BLASTFURNACE_FIRE_CRACKLE, 0.7F, 1.1F);
-            player.sendActionBar(net.kyori.adventure.text.Component.text(
-                "Výkov je nahřátý. Ochlaď jej ve vodním kotli.", net.kyori.adventure.text.format.NamedTextColor.GOLD));
+        if ((station == Material.ANVIL || station == Material.CHIPPED_ANVIL || station == Material.DAMAGED_ANVIL)
+            && player.isSneaking()
+            && (SmithingTier.isWeapon(item.getType()) || SmithingTier.isArmor(item.getType()))
+            && state == SmithingTier.ProcessingState.HEATED) {
+            startHammering(player, event.getClickedBlock(), item.clone());
             event.setCancelled(true);
             return;
         }
-        if (station == Material.WATER_CAULDRON && state == SmithingTier.ProcessingState.HEATED) {
+        if (station == Material.WATER_CAULDRON && state == SmithingTier.ProcessingState.HAMMERED) {
             if (!SmithingTier.advanceProcessing(item, smithingTierKeys,
-                SmithingTier.ProcessingState.HEATED, SmithingTier.ProcessingState.TEMPERED)) {
+                SmithingTier.ProcessingState.HAMMERED, SmithingTier.ProcessingState.TEMPERED)) {
                 return;
             }
             Optional<SmithingTier> quality = SmithingTier.isWeapon(item.getType())
@@ -336,6 +331,70 @@ final class ProductionPerkListener implements Listener {
         }
     }
 
+    private void startHammering(Player player, Block anvil, ItemStack workpiece) {
+        if (hammeringTasks.containsKey(player.getUniqueId())) {
+            player.sendActionBar(net.kyori.adventure.text.Component.text(
+                "Naklepávání už probíhá.", net.kyori.adventure.text.format.NamedTextColor.YELLOW));
+            return;
+        }
+        Location station = anvil.getLocation().add(0.5, 0.75, 0.5);
+        player.sendActionBar(net.kyori.adventure.text.Component.text(
+            "Naklepáváš výkov…", net.kyori.adventure.text.format.NamedTextColor.GOLD));
+        player.getWorld().spawnParticle(Particle.CRIT, station, 8, 0.22, 0.16, 0.22, 0.04);
+        new BukkitRunnable() {
+            private int elapsedTicks;
+
+            @Override
+            public void run() {
+                if (!hammeringTasks.containsKey(player.getUniqueId())) {
+                    cancel();
+                    return;
+                }
+                ItemStack current = player.getInventory().getItemInMainHand();
+                if (!isHammeringValid(player, station, workpiece, current)) {
+                    cancel();
+                    return;
+                }
+                elapsedTicks += 8;
+                player.getWorld().spawnParticle(Particle.CRIT, station, 6, 0.2, 0.14, 0.2, 0.04);
+                player.getWorld().spawnParticle(Particle.SMOKE, station, 2, 0.16, 0.08, 0.16, 0.01);
+                player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 0.45F,
+                    0.82F + elapsedTicks / 90.0F);
+                player.sendActionBar(net.kyori.adventure.text.Component.text(
+                    "Naklepávání výkovu… " + Math.min(100, elapsedTicks * 100 / 40) + "%",
+                    net.kyori.adventure.text.format.NamedTextColor.GOLD));
+                if (elapsedTicks >= 40) {
+                    cancel();
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 8L);
+        BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            hammeringTasks.remove(player.getUniqueId());
+            ItemStack current = player.getInventory().getItemInMainHand();
+            if (!isHammeringValid(player, station, workpiece, current)) {
+                if (player.isOnline()) {
+                    player.sendActionBar(net.kyori.adventure.text.Component.text(
+                        "Naklepávání bylo přerušeno.", net.kyori.adventure.text.format.NamedTextColor.RED));
+                }
+                return;
+            }
+            if (SmithingTier.advanceProcessing(current, smithingTierKeys,
+                SmithingTier.ProcessingState.HEATED, SmithingTier.ProcessingState.HAMMERED)) {
+                player.getWorld().spawnParticle(Particle.CRIT, station, 18, 0.28, 0.18, 0.28, 0.08);
+                player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 0.75F, 1.05F);
+                player.sendActionBar(net.kyori.adventure.text.Component.text(
+                    "Výkov je naklepán. Ochlaď jej ve vodním kotli.",
+                    net.kyori.adventure.text.format.NamedTextColor.YELLOW));
+            }
+        }, 40L);
+        hammeringTasks.put(player.getUniqueId(), task);
+    }
+
+    private boolean isHammeringValid(Player player, Location station, ItemStack workpiece, ItemStack current) {
+        return player.isOnline() && player.isSneaking() && current.isSimilar(workpiece)
+            && player.getLocation().distanceSquared(station) <= 9.0
+            && SmithingTier.state(current, smithingTierKeys) == SmithingTier.ProcessingState.HEATED;
+    }
     private void startSharpening(Player player, Block grindstone) {
         if (sharpeningTasks.containsKey(player.getUniqueId())) {
             player.sendActionBar(net.kyori.adventure.text.Component.text(
@@ -428,11 +487,6 @@ final class ProductionPerkListener implements Listener {
         }
     }
 
-    private static boolean consumeFuel(Player player) {
-        if (!player.getInventory().containsAtLeast(new ItemStack(Material.COAL), 1)) return false;
-        player.getInventory().removeItem(new ItemStack(Material.COAL, 1));
-        return true;
-    }
 
     private static void consumeCauldronWater(Block cauldron) {
         if (!(cauldron.getBlockData() instanceof Levelled levelled)) return;

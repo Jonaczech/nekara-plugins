@@ -1,5 +1,14 @@
 # Přehled změn
 
+## 2.8.0
+
+- Dračí let nyní ověřuje celou trasu i volný prostor nad terénem. Drak se zastaví před zdí, nízkým stropem, jeskyní i podzemím a nemůže procházet bloky.
+- Kritické zásahy, aplikované krvácení a silové útoky mají krátkou zvukovou a částicovou odezvu. Tiky krvácení dále ukazují vlastní indikátor poškození nad cílem.
+- Chainmail vzniká ve smithing table z odpovídajícího koženého kusu a jednoho železného ingotu. Vyžaduje Řemeslo 20 a prochází standardním dokončením kovové zbroje.
+- Dokončení kovové výbavy používá skutečné tavení ve vysoké peci, Shift + pravý klik na kovadlinu se zvukem úderů, jiskrami a kouřem, potom vodní kotlík. Zbraně se nakonec brousí na brusném kameni.
+- Perk `Bleskové reflexy` přidává aktivní lehké sadě +5 % rychlosti pohybu; s `Vynalézavým tulákem` funguje už se třemi lehkými kusy.
+
+
 ## 2.7.0
 
 - Hlavní úroveň 100 odemyká `Dračí pouto`: osobního létajícího draka bez inventáře

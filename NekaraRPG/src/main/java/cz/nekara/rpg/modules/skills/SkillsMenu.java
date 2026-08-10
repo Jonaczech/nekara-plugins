@@ -997,6 +997,7 @@ final class SkillsMenu implements Listener {
             case POWER_ATTACK_DAMAGE_MULTIPLIER -> "⚔ Silový útok";
             case HUNGER_CONSUMPTION_REDUCTION -> "✦ Úspora hladu";
             case MOVEMENT_PENALTY_REDUCTION -> "✦ Pohyb";
+            case LIGHT_ARMOR_MOVEMENT_SPEED -> "✦ Rychlost lehké sady";
             case DAMAGE_REFLECTION -> "✦ Odraz poškození";
             case HEALTH_REGENERATION -> "✚ Obnova zdraví";
             case STATUS_IMMUNITY_REDUCTION -> "✦ Odolnost účinkům";

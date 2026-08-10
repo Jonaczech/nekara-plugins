@@ -404,14 +404,8 @@ public final class DragonsModule implements NekaraModule, Listener {
         World world = center.getWorld();
         if (world == null || center.getBlockY() + 4 >= world.getMaxHeight()
                 || center.getY() > config().maximumAltitude()) return false;
-        for (int x = -2; x <= 2; x++) {
-            for (int z = -2; z <= 2; z++) {
-                for (int y = 0; y <= 4; y++) {
-                    if (!center.clone().add(x, y, z).getBlock().isPassable()) return false;
-                }
-            }
-        }
-        return true;
+        return DragonFlightCollisionPolicy.canMove(
+            flightPosition(center), flightPosition(center), config().maximumAltitude(), voxelAccess(world));
     }
 
     private HappyGhast activeDragon(UUID ownerId) {
@@ -695,7 +689,11 @@ public final class DragonsModule implements NekaraModule, Listener {
         destination.setY(Math.min(destination.getY(), config().maximumAltitude()));
         destination.setYaw(yawFromMovement(step));
         destination.setPitch(0.0f);
-        carrier.teleport(destination);
+        if (canFlyTo(carrier.getLocation(), destination)) {
+            carrier.teleport(destination);
+        } else {
+            approachTargets.remove(ownerId);
+        }
         carrier.setRotation(destination.getYaw(), 0.0f);
         carrier.setVelocity(new Vector());
     }
@@ -738,7 +736,11 @@ public final class DragonsModule implements NekaraModule, Listener {
             destination.setYaw(yaw);
             destination.setPitch(0.0f);
             destination.setY(Math.min(destination.getY(), config().maximumAltitude()));
-            carrier.teleport(destination);
+            if (canFlyTo(carrier.getLocation(), destination)) {
+                carrier.teleport(destination);
+            } else {
+                moving = false;
+            }
         }
         carrier.setRotation(yaw, 0.0f);
         carrier.setFallDistance(0.0f);
@@ -753,6 +755,32 @@ public final class DragonsModule implements NekaraModule, Listener {
         } else if (!moving && synchronizationTicks % AMBIENT_SOUND_INTERVAL_TICKS == 0) {
             rider.playSound(soundLocation, Sound.ENTITY_ENDER_DRAGON_AMBIENT, 0.35f, 1.15f);
         }
+    }
+
+    private boolean canFlyTo(Location origin, Location destination) {
+        World world = destination.getWorld();
+        return world != null && world.equals(origin.getWorld())
+            && DragonFlightCollisionPolicy.canMove(
+                flightPosition(origin), flightPosition(destination), config().maximumAltitude(), voxelAccess(world));
+    }
+
+    private static DragonFlightCollisionPolicy.Position flightPosition(Location location) {
+        return new DragonFlightCollisionPolicy.Position(location.getX(), location.getY(), location.getZ());
+    }
+
+    private static DragonFlightCollisionPolicy.VoxelAccess voxelAccess(World world) {
+        return new DragonFlightCollisionPolicy.VoxelAccess() {
+            @Override
+            public boolean isPassable(int x, int y, int z) {
+                return y >= world.getMinHeight() && y < world.getMaxHeight()
+                    && world.getBlockAt(x, y, z).isPassable();
+            }
+
+            @Override
+            public int highestBlockingY(int x, int z) {
+                return world.getHighestBlockYAt(x, z);
+            }
+        };
     }
 
     private void synchronizeDragonModel(HappyGhast carrier, EnderDragon model) {

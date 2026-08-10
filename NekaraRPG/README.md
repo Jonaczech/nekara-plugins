@@ -3,6 +3,13 @@
 Modulární RPG plugin pro Purpur/Paper 26.1 a Java 25. Obsahuje autentizaci,
 rybářskou minihru, táboření/Rested, Echo Vein, mounty a nativní Nekara Skills.
 
+## 2.8.0 – Výkov, chainmail a bezpečný let
+
+- Drak ověřuje krok po kroku celou plánovanou trasu, její objem i otevřenou oblohu. Zastaví se před bloky, nízkým stropem a vstupem do jeskyně; nepřesune hráče skrz terén.
+- Kritický zásah, nanesené krvácení a silový útok mají krátké částice a zvuk. Krvácení při každém vlastním tiku ukáže indikátor poškození nad cílem.
+- Chainmail se vyrábí ve smithing table bez šablony z odpovídajícího koženého kusu a jednoho železného ingotu. Vyžaduje Řemeslo 20.
+- Kovový výkov se nejdříve skutečně nataví ve vysoké peci. Hráč jej pak se Shiftem drží v ruce a dvě sekundy naklepává pravým kliknutím na kovadlinu, poté jej ochladí ve vodním kotli. Zbraně se navíc dokončují broušením.
+- `Bleskové reflexy` přidávají aktivní lehké sadě +5 % rychlosti pohybu; `Vynalézavý tulák` ponechává setový bonus aktivní už se třemi lehkými kusy.
 ## 2.7.0 – Dračí pouto, Hero aura a výzbroj
 
 - `Dračí pouto` se automaticky odemkne na Hlavní úrovni 100. Přidává jednoho
@@ -65,7 +72,7 @@ rybářskou minihru, táboření/Rested, Echo Vein, mounty a nativní Nekara Ski
   základní útok, ale dosah kratší o 0,5 bloku. Požadavky levelu na materiál zbraně
   jsou zachované.
 - Stínový oděv poskytuje až +30% účinnost zbroje, +30% úsporu hladu, +20% úhyb a
-  bez pohybové zátěže. Perk Vynalézavý tulák zpřístupní setové bonusy i se třemi
+  bez pohybové zátěže. Bleskové reflexy přidají aktivní lehké sadě +5 % rychlosti pohybu. Perk Vynalézavý tulák zpřístupní setové bonusy i se třemi
   kusy čistě lehké zbroje; Adrenalin při ≤25% zdraví na 5 s udělí Rychlost II a
   Regeneraci I s cooldownem 60 s.
 - Plátová ochrana má šest perků ve vlastní siluetě: Zpevněná výstroj, Nohy z oceli,
