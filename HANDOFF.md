@@ -1,5 +1,13 @@
 # Předání projektu Nekara Plugins
 
+## Release 2.8.0
+
+- Drak při letu ověřuje plánovanou trasu po krátkých úsecích, objem potřebný pro nosič i otevřenou oblohu. Nesmí projít blokem, nízkým stropem, jeskyní ani pokračovat pod povrchem.
+- Bojové procy mají střídmou zpětnou vazbu: kritický zásah bílé jiskry, nanesené krvácení tmavě červený záblesk a silový útok oblouk. Tik krvácení dále používá indikátor poškození.
+- Chainmail se vyrábí ze stejného koženého kusu a jednoho železného ingotu ve smithing table bez šablony. Vyžaduje Řemeslo 20 a prochází celým pracovním postupem kovové výbavy.
+- Pracovní postup je: skutečné tavení ve vysoké peci → Shift + pravý klik na kovadlinu po dobu 2 s → vodní kotlík → u zbraně Shift + broušení. Kovadlina dává údery, jiskry a kouř; přerušení nemění stav předmětu.
+- `Bleskové reflexy` dávají +5 % rychlosti aktivní lehké sadě. S `Vynalézavým tulákem` je setový bonus aktivní už se třemi lehkými kusy.
+- GitHub release je ověřený artefakt; produkční server není tímto releasem automaticky nasazen a musí být ověřen samostatně.
 ## Release 2.7.0
 
 - `Dračí pouto` je nový automatický milník na Power 100. Samostatný modul `dragons`

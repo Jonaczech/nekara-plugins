@@ -3,6 +3,7 @@ package cz.nekara.rpg.modules.skills;
 import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.configuration.SkillsConfig;
 import cz.nekara.rpg.configuration.WeaponCombatConfig;
+import cz.nekara.rpg.items.armor.ArmorRecipeRegistry;
 import cz.nekara.rpg.items.weapons.WeaponRecipeRegistry;
 import cz.nekara.rpg.modules.NekaraModule;
 import cz.nekara.rpg.messages.MessageService;
@@ -108,6 +109,7 @@ public final class SkillsModule implements NekaraModule {
     private volatile NativeActivityListener nativeActivityListener;
     private volatile CombatPerkListener combatPerkListener;
     private volatile ProductionPerkListener productionPerkListener;
+    private volatile ArmorRecipeRegistry armorRecipeRegistry;
     private volatile WeaponRecipeRegistry weaponRecipeRegistry;
     private volatile HeroAuraService heroAuraService;
     private volatile String storageFailure;
@@ -214,6 +216,8 @@ public final class SkillsModule implements NekaraModule {
         nativeActivityListener.enable();
         combatPerkListener = new CombatPerkListener(plugin, this);
         combatPerkListener.enable();
+        armorRecipeRegistry = new ArmorRecipeRegistry(plugin);
+        armorRecipeRegistry.register();
         weaponRecipeRegistry = new WeaponRecipeRegistry(plugin);
         weaponRecipeRegistry.register();
         productionPerkListener = new ProductionPerkListener(plugin, this);
@@ -233,6 +237,11 @@ public final class SkillsModule implements NekaraModule {
         heroAuraService = null;
         if (closingHeroAura != null) {
             closingHeroAura.disable();
+        }
+        ArmorRecipeRegistry closingArmor = armorRecipeRegistry;
+        armorRecipeRegistry = null;
+        if (closingArmor != null) {
+            closingArmor.unregister();
         }
         WeaponRecipeRegistry closingWeapons = weaponRecipeRegistry;
         weaponRecipeRegistry = null;

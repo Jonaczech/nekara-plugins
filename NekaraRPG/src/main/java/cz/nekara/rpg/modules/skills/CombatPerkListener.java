@@ -15,6 +15,7 @@ import cz.nekara.rpg.skills.profile.SkillProfile;
 import cz.nekara.rpg.skills.stats.StatId;
 import io.papermc.paper.event.entity.EntityEquipmentChangedEvent;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.GameMode;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
@@ -75,6 +76,7 @@ final class CombatPerkListener implements Listener {
     private final NamespacedKey chargedArrowKey;
     private final NamespacedKey scoutArrowKey;
     private final NamespacedKey lightMobilityKey;
+    private final NamespacedKey lightSetMovementSpeedKey;
     private final NamespacedKey weaponMobilityKey;
     private final NamespacedKey lightWeaponAttackSpeedKey;
     private final NamespacedKey weaponInteractionRangeKey;
@@ -99,6 +101,7 @@ final class CombatPerkListener implements Listener {
         this.chargedArrowKey = new NamespacedKey(plugin, "skills_charged_arrow");
         this.scoutArrowKey = new NamespacedKey(plugin, "skills_scout_arrow");
         this.lightMobilityKey = new NamespacedKey(plugin, "skills_light_mobility");
+        this.lightSetMovementSpeedKey = new NamespacedKey(plugin, "skills_light_set_movement_speed");
         this.weaponMobilityKey = new NamespacedKey(plugin, "skills_weapon_mobility");
         this.lightWeaponAttackSpeedKey = new NamespacedKey(plugin, "skills_light_weapon_attack_speed");
         this.weaponInteractionRangeKey = new NamespacedKey(plugin, "skills_weapon_interaction_range");
@@ -369,6 +372,11 @@ final class CombatPerkListener implements Listener {
                     .map(state -> state.stats().value(StatId.MOVEMENT_PENALTY_REDUCTION)).orElse(0.0));
         }
         addModifier(player, Attribute.MOVEMENT_SPEED, lightMobilityKey, armorPenalty);
+        armorSkillForSetBonuses(player)
+            .filter(skill -> skill == SkillId.LIGHT_ARMOR)
+            .flatMap(ignored -> lightState)
+            .ifPresent(state -> addModifier(player, Attribute.MOVEMENT_SPEED, lightSetMovementSpeedKey,
+                state.stats().value(StatId.LIGHT_ARMOR_MOVEMENT_SPEED)));
         module.cachedProfile(player.getUniqueId()).ifPresent(profile -> {
             int untrainedPieces = untrainedArmorPieces(player, profile);
             if (untrainedPieces > 0) {
@@ -456,11 +464,12 @@ final class CombatPerkListener implements Listener {
         boolean critical = criticalChance > 0.0 && ThreadLocalRandom.current().nextDouble() < criticalChance;
         if (critical) {
             multiplier *= runtime.stats().value(StatId.CRITICAL_DAMAGE_MULTIPLIER);
-            playEffectSound(target, Sound.ENTITY_PLAYER_ATTACK_CRIT, 0.9F, 1.1F);
+            playCriticalFeedback(target);
         }
         boolean powerAttack = skill == SkillId.HEAVY_WEAPONS && attacker.getAttackCooldown() >= 0.9F;
         if (powerAttack) {
             multiplier *= runtime.stats().value(StatId.POWER_ATTACK_DAMAGE_MULTIPLIER);
+            playPowerAttackFeedback(target);
         }
         if (family == WeaponFamily.DAGGER && isRearAttack(attacker, target)) {
             multiplier *= 1.0 + weaponConfig.rearAttackBonus(family);
@@ -492,7 +501,7 @@ final class CombatPerkListener implements Listener {
                 event.getDamage() * 0.08 * runtime.stats().value(StatId.BLEED_DAMAGE_MULTIPLIER)
                     + runtime.stats().value(StatId.BLEED_FLAT_DAMAGE)));
             bleeds.apply(target.getUniqueId(), attacker.getUniqueId(), damagePerTick, BLEED_TICKS);
-            playEffectSound(target, Sound.ENTITY_BEE_STING, 0.8F, 0.85F);
+            playBleedFeedback(target);
         }
         if (family == WeaponFamily.HAMMER && weaponConfig.hammerStunChance() > 0.0
             && ThreadLocalRandom.current().nextDouble() < weaponConfig.hammerStunChance()) {
@@ -610,6 +619,26 @@ final class CombatPerkListener implements Listener {
 
     private static void playEffectSound(LivingEntity target, Sound sound, float volume, float pitch) {
         target.getWorld().playSound(target.getLocation(), sound, volume, pitch);
+    }
+
+    private static void playCriticalFeedback(LivingEntity target) {
+        target.getWorld().spawnParticle(
+            Particle.CRIT, target.getLocation().add(0.0, 0.9, 0.0), 8,
+            0.28, 0.38, 0.28, 0.12);
+        playEffectSound(target, Sound.ENTITY_PLAYER_ATTACK_CRIT, 0.9F, 1.1F);
+    }
+
+    private static void playPowerAttackFeedback(LivingEntity target) {
+        target.getWorld().spawnParticle(
+            Particle.SWEEP_ATTACK, target.getLocation().add(0.0, 0.7, 0.0), 1);
+        playEffectSound(target, Sound.ENTITY_PLAYER_ATTACK_STRONG, 0.85F, 0.8F);
+    }
+
+    private static void playBleedFeedback(LivingEntity target) {
+        target.getWorld().spawnParticle(
+            Particle.DUST, target.getLocation().add(0.0, 0.85, 0.0), 10,
+            0.24, 0.32, 0.24, 0.0, new Particle.DustOptions(Color.fromRGB(150, 8, 12), 1.15F));
+        playEffectSound(target, Sound.ENTITY_BEE_STING, 0.8F, 0.85F);
     }
 
     private void tickBleeds() {
@@ -750,6 +779,7 @@ final class CombatPerkListener implements Listener {
 
     private void removeArmorModifiers(Player player) {
         removeModifier(player, Attribute.MOVEMENT_SPEED, lightMobilityKey);
+        removeModifier(player, Attribute.MOVEMENT_SPEED, lightSetMovementSpeedKey);
         removeModifier(player, Attribute.MOVEMENT_SPEED, weaponMobilityKey);
         removeModifier(player, Attribute.ATTACK_SPEED, lightWeaponAttackSpeedKey);
         removeModifier(player, Attribute.ENTITY_INTERACTION_RANGE, weaponInteractionRangeKey);

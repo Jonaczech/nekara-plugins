@@ -258,7 +258,9 @@ enum SmithingTier {
         UNPROCESSED((byte) 0),
         HEATED((byte) 1),
         TEMPERED((byte) 2),
-        SHARPENED((byte) 3);
+        SHARPENED((byte) 3),
+        // Keep the existing stored IDs stable for equipment already in player inventories.
+        HAMMERED((byte) 4);
 
         private final byte id;
 
@@ -274,17 +276,19 @@ enum SmithingTier {
 
     private static List<Component> processingLore(Material material, ProcessingState state) {
         boolean weapon = isWeapon(material);
-        int totalSteps = weapon ? 4 : 3;
+        int totalSteps = weapon ? 5 : 4;
         int completeSteps = switch (state) {
             case UNPROCESSED -> 1;
             case HEATED -> 2;
-            case TEMPERED -> 3;
-            case SHARPENED -> 4;
+            case HAMMERED -> 3;
+            case TEMPERED -> 4;
+            case SHARPENED -> 5;
             case NONE -> 0;
         };
         NamedTextColor color = switch (state) {
             case UNPROCESSED -> NamedTextColor.GRAY;
             case HEATED -> NamedTextColor.GOLD;
+            case HAMMERED -> NamedTextColor.YELLOW;
             case TEMPERED -> NamedTextColor.GREEN;
             case SHARPENED -> NamedTextColor.AQUA;
             case NONE -> NamedTextColor.DARK_GRAY;
@@ -292,13 +296,15 @@ enum SmithingTier {
         String label = switch (state) {
             case UNPROCESSED -> "Nezpracovaný";
             case HEATED -> "Nahřátý";
+            case HAMMERED -> "Naklepaný";
             case TEMPERED -> weapon ? "Opracovaný — čeká ostření" : "Opracovaný — hotovo";
             case SHARPENED -> "Naostřený — hotovo";
             case NONE -> "Hotovo";
         };
         String nextStep = switch (state) {
-            case UNPROCESSED -> "Další krok: Blast Furnace + uhlí";
-            case HEATED -> "Další krok: vodní cauldron";
+            case UNPROCESSED -> "Další krok: natav ve vysoké peci";
+            case HEATED -> "Další krok: plížení u kovadliny";
+            case HAMMERED -> "Další krok: vodní cauldron";
             case TEMPERED -> weapon ? "Další krok: plížení u grindstone" : "Ochrana výbavy je aktivní";
             case SHARPENED -> "Nekara damage je aktivní";
             case NONE -> "";

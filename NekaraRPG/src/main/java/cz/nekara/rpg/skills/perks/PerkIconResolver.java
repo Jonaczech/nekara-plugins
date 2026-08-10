@@ -129,7 +129,7 @@ public final class PerkIconResolver {
             case FARMING_HARVEST_EXPERIENCE -> Material.EXPERIENCE_BOTTLE;
             case ARMOR_MULTIPLIER -> Material.IRON_CHESTPLATE;
             case ARMOR_PENETRATION -> Material.ARMOR_STAND;
-            case DODGE_CHANCE, MOVEMENT_PENALTY_REDUCTION -> Material.FEATHER;
+            case DODGE_CHANCE, MOVEMENT_PENALTY_REDUCTION, LIGHT_ARMOR_MOVEMENT_SPEED -> Material.FEATHER;
             case EXPERIENCE_MULTIPLIER, EXPERIENCE_ORB_MULTIPLIER -> Material.EXPERIENCE_BOTTLE;
             case REPUTATION_GAIN, VILLAGER_SKILL -> Material.EMERALD;
             case TRADE_DISCOUNT -> Material.GOLD_NUGGET;

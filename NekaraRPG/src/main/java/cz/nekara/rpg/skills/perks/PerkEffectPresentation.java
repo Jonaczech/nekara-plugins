@@ -101,6 +101,7 @@ public final class PerkEffectPresentation {
             case POWER_ATTACK_DAMAGE_MULTIPLIER -> "poškození silového útoku " + signedPercent(value);
             case HUNGER_CONSUMPTION_REDUCTION -> "šance zabránit ztrátě hladu " + signedPercentagePoints(value);
             case MOVEMENT_PENALTY_REDUCTION -> "omezení pohybu od výstroje " + signedPercent(value);
+            case LIGHT_ARMOR_MOVEMENT_SPEED -> "rychlost pohybu aktivní lehké sady " + signedPercent(value);
             case DAMAGE_REFLECTION -> "odrážené přijaté poškození " + signedPercentagePoints(value);
             case HEALTH_REGENERATION -> "obnova zdraví " + signedPercent(value);
             case STATUS_IMMUNITY_REDUCTION -> "odolnost vůči stavovým účinkům " + signedPercentagePoints(value);

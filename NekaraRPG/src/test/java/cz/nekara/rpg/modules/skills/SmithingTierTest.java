@@ -33,6 +33,14 @@ class SmithingTierTest {
     }
 
     @Test
+    void hammeringUsesANewStoredStateWithoutChangingExistingItemStates() {
+        assertEquals(SmithingTier.ProcessingState.HEATED, SmithingTier.ProcessingState.fromId((byte) 1));
+        assertEquals(SmithingTier.ProcessingState.TEMPERED, SmithingTier.ProcessingState.fromId((byte) 2));
+        assertEquals(SmithingTier.ProcessingState.SHARPENED, SmithingTier.ProcessingState.fromId((byte) 3));
+        assertEquals(SmithingTier.ProcessingState.HAMMERED, SmithingTier.ProcessingState.fromId((byte) 4));
+    }
+
+    @Test
     void bulkCraftingAlsoCoversConstructionComponentsButNotEquipment() {
         assertTrue(ProductionPerkListener.isEfficientConstructionComponent(Material.STICK));
         assertTrue(ProductionPerkListener.isEfficientConstructionComponent(Material.BOWL));

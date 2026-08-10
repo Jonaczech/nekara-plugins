@@ -1,5 +1,11 @@
 # Projektová paměť Nekara Plugins
 
+## Release 2.8.0
+
+- `DragonFlightCollisionPolicy` je čistá policy pro trasu draka. Vyžaduje průchodný koridor 5×5×5, otevřenou oblohu nad cílem i cestou a respektuje maximální výšku; `DragonsModule` nesmí teleportovat nosič přes zamítnutou trasu.
+- `SmithingTier.ProcessingState` zachovává původní uložená ID. Nový `HAMMERED` má samostatné ID, aby dřívější `TEMPERED` a `SHARPENED` předměty zůstaly kompatibilní. Kovadlina vyžaduje setrvání, Shift, stejný předmět a vzdálenost do 3 bloků.
+- Chainmail recipe registry používá stabilní `nekararpg:armor/chainmail_*` klíče; chainmail je lehká zbroj s materiálovou i uživatelskou bránou na levelu 20.
+- `LIGHT_ARMOR_MOVEMENT_SPEED` je samostatný atributový modifier. Aplikuje se jen při aktivním lehkém setovém bonusu, bezpečně se odstraňuje při refreshi a nesmí nahrazovat nebo přepisovat Adrenalin.
 ## Release 2.7.0
 
 - `DragonsModule` je server-only létající mount pro Power milník `dragon_bond` na

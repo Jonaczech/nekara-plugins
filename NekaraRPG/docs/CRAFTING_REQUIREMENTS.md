@@ -1,7 +1,7 @@
 # Požadavky výroby výbavy
 
-Tento přehled popisuje aktuálně vynucované požadavky NekaraRPG. Nezavádí další
-recepty ani nemění vanilla suroviny.
+Tento přehled popisuje aktuálně vynucované požadavky NekaraRPG. Kromě níže
+popsaného chainmail upgradu nemění vanilla recepty ani suroviny.
 
 ## Řemeslo podle materiálu
 
@@ -38,10 +38,14 @@ z příslušného vanilla meče a jednoho materiálu tieru (např. `Iron Sword` 
 ## Zbroje a kvalita
 
 - Helma, chestplate, leggings a boots jsou řízené materiálovou tabulkou.
+- Chainmail se vyrábí ve smithing table bez šablony: odpovídající kožený kus + 1 železný ingot.
 - Po vyrobení získá výbava Řemeslný tier podle aktuální úrovně Řemesla:
   I (0), II (20), III (40), IV (70), V (100).
 - Kovové zbraně a zbroje dále procházejí dílenským zpracováním; neopracovaný
-  kus nemá aktivní plný Nekara bonus.
+  kus nemá aktivní plný Nekara bonus. Výkov se nejdříve skutečně nataví ve vysoké
+  peci, poté se držený v hlavní ruce naklepává plížením a pravým kliknutím na
+  kovadlinu a nakonec ochladí ve vodním kotli. Zbraně se po ochlazení navíc
+  dokončí plížením u brusného kamene; zbroj je hotová už po ochlazení.
 
 ## Používání podle dovednosti
 
