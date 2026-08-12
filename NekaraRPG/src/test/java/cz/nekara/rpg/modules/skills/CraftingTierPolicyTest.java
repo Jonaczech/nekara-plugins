@@ -11,7 +11,7 @@ class CraftingTierPolicyTest {
     void materialRequirementsFollowTheCraftsmanshipProgression() {
         assertEquals(0, CraftingTierPolicy.requiredSmithingLevel(Material.WOODEN_SWORD));
         assertEquals(0, CraftingTierPolicy.requiredSmithingLevel(Material.LEATHER_CHESTPLATE));
-        assertEquals(5, CraftingTierPolicy.requiredSmithingLevel(Material.STONE_AXE));
+        assertEquals(0, CraftingTierPolicy.requiredSmithingLevel(Material.STONE_AXE));
         assertEquals(10, CraftingTierPolicy.requiredSmithingLevel(Material.COPPER_SPEAR));
         assertEquals(15, CraftingTierPolicy.requiredSmithingLevel(Material.GOLDEN_HELMET));
         assertEquals(20, CraftingTierPolicy.requiredSmithingLevel(Material.IRON_CHESTPLATE));
@@ -23,7 +23,7 @@ class CraftingTierPolicyTest {
     @Test
     void customWeaponTiersUseTheSameThresholds() {
         assertEquals(0, CraftingTierPolicy.requiredSmithingLevel(WeaponTier.WOODEN));
-        assertEquals(5, CraftingTierPolicy.requiredSmithingLevel(WeaponTier.STONE));
+        assertEquals(0, CraftingTierPolicy.requiredSmithingLevel(WeaponTier.STONE));
         assertEquals(10, CraftingTierPolicy.requiredSmithingLevel(WeaponTier.COPPER));
         assertEquals(15, CraftingTierPolicy.requiredSmithingLevel(WeaponTier.GOLDEN));
         assertEquals(20, CraftingTierPolicy.requiredSmithingLevel(WeaponTier.IRON));

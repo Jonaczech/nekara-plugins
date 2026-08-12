@@ -1,5 +1,6 @@
 package cz.nekara.rpg.items.weapons;
 
+import cz.nekara.rpg.modules.skills.EquipmentSkillLore;
 import java.util.List;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -30,18 +31,18 @@ public final class WeaponFactory {
         meta.getPersistentDataContainer().set(WeaponCatalog.WEAPON_MODEL_KEY,
             PersistentDataType.STRING, definition.modelKey());
         meta.setItemModel(new NamespacedKey("nekararpg", definition.modelKey()));
-        meta.displayName(Component.text(definition.tier().displayPrefix() + " " + definition.family().displayName(),
+        meta.displayName(Component.text(definition.tier().displayPrefix(definition.family()) + " " + definition.family().displayName(),
             definition.family().skill().name().equals("LIGHT_WEAPONS") ? NamedTextColor.AQUA : NamedTextColor.RED));
+        String combatStyle = definition.family().skill() == cz.nekara.rpg.skills.SkillId.LIGHT_WEAPONS
+            ? "Sek\u00e1n\u00ed a bod\u00e1n\u00ed" : "Brut\u00e1ln\u00ed boj";
+        String handling = definition.family().requiresEmptyOffhand() ? " \u2022 voln\u00e1 druh\u00e1 ruka" : "";
         meta.lore(List.of(
-            Component.text(definition.family().skill() == cz.nekara.rpg.skills.SkillId.LIGHT_WEAPONS
-                ? "Sek\u00e1n\u00ed a bod\u00e1n\u00ed" : "Brut\u00e1ln\u00ed boj", NamedTextColor.GRAY),
-            Component.text(definition.family().requiresEmptyOffhand()
-                ? "Vy\u017eaduje pr\u00e1zdnou druhou ruku" : "Zbra\u0148 Nekara", NamedTextColor.DARK_GRAY),
-            Component.text("Typ po\u0161kozen\u00ed: " + definition.family().damageType().czechName(), NamedTextColor.GOLD),
-            Component.text("Model: " + definition.modelKey(), NamedTextColor.DARK_GRAY)
+            Component.text(combatStyle + handling, NamedTextColor.GRAY),
+            Component.text(definition.family().damageType().czechName() + " po\u0161kozen\u00ed", NamedTextColor.GOLD)
         ));
         applyAttributes(meta, WeaponAttributes.forWeapon(definition));
         item.setItemMeta(meta);
+        EquipmentSkillLore.refresh(item);
         return item;
     }
 

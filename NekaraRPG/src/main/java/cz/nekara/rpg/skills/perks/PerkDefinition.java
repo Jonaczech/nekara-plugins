@@ -53,6 +53,10 @@ public record PerkDefinition(
                 throw new IllegalArgumentException("Rank level requirements must not decrease");
             }
         }
+        if (effects.stream().anyMatch(effect -> effect instanceof RankedStatPerkEffect ranked
+            && ranked.amountsByRank().size() != maxRank)) {
+            throw new IllegalArgumentException("Ranked stat values must match perk max rank");
+        }
         if (effects.isEmpty()) {
             throw new IllegalArgumentException("Perk must define at least one effect");
         }

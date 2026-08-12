@@ -1,5 +1,9 @@
 # These are additional treasures. A successful roll never replaces the actual vanilla catch.
 treasures-enabled: true
+# The blank rune is a custom weighted treasure. It does not replace the vanilla catch.
+blank-rune-weight: 1
+# A fishing chest has this independent chance to contain one additional blank rune.
+blank-rune-chest-chance: 0.05
 treasures:
   NAUTILUS_SHELL: 10
   PRISMARINE_SHARD: 8

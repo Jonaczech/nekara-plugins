@@ -30,10 +30,19 @@ modules:
   mining:
     # Echo Vein is an optional exploration activity built on native mining.
     enabled: false
+  custom-items:
+    # Administrátorský GUI editor a serverová autorita vlastních předmětů.
+    enabled: true
+  bone-meal:
+    # Rozšíří bone meal o barevné květiny na trávě a vegetaci na písku.
+    enabled: true
   mounts:
     enabled: true
   dragons:
     # Dračí pouto is an optional Power 100 flying-mount prototype.
+    enabled: true
+  runes:
+    # Runes use crafting, an anvil, enchanting table and lectern without replacing vanilla use.
     enabled: true
   # Nekara Skills is the native progression authority. XP, perks and active
   # abilities are guarded by real events, player-placed block tracking and

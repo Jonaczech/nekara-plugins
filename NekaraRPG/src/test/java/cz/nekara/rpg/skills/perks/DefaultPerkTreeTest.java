@@ -88,6 +88,30 @@ class DefaultPerkTreeTest {
     }
 
     @Test
+    void runotepectviUsesTwoRankedBranchesAndAFullDualBranchCrown() {
+        DefaultPerkTree tree = DefaultPerkTree.create();
+        PerkDefinition root = tree.catalog().require(new PerkId("runotepectvi.runes"));
+        PerkDefinition inscription = tree.catalog().require(new PerkId("runotepectvi.experience"));
+        PerkDefinition pigment = tree.catalog().require(new PerkId("runotepectvi.lapis"));
+        PerkDefinition limits = tree.catalog().require(new PerkId("runotepectvi.limits"));
+        PerkDefinition insight = tree.catalog().require(new PerkId("runotepectvi.insight"));
+        PerkDefinition memory = tree.catalog().require(new PerkId("runotepectvi.hexblade"));
+
+        assertEquals(5, root.maxRank());
+        assertEquals(List.of(20, 25, 30, 45, 60), inscription.requiredSkillLevelsByRank());
+        assertEquals(5, pigment.maxRank());
+        assertEquals(List.of(50, 60, 70), limits.requiredSkillLevelsByRank());
+        assertEquals(List.of(50, 65, 80), insight.requiredSkillLevelsByRank());
+        assertEquals(Set.of(new PerkRequirement(inscription.id(), 3)), limits.requirements());
+        assertEquals(Set.of(new PerkRequirement(pigment.id(), 3)), insight.requirements());
+        assertEquals(Set.of(
+            new PerkRequirement(limits.id(), 3),
+            new PerkRequirement(insight.id(), 3)
+        ), memory.requirements());
+        assertEquals("Výklad magie", tree.presentation(insight.id()).name());
+    }
+
+    @Test
     void diggingTreeUsesTheImplementedExcavationPerks() {
         DefaultPerkTree tree = DefaultPerkTree.create();
 

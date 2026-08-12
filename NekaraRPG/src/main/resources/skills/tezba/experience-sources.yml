@@ -1,4 +1,4 @@
-# XP za skutečně vytěžené přírodní bloky krumpáčem. Hráčem položené bloky jsou vždy odmítnuty.
+# XP za skutečně vytěžené přírodní bloky bez ohledu na držený nástroj. Hráčem položené bloky jsou vždy odmítnuty.
 tags:
   MINEABLE_PICKAXE: 2
 blocks:

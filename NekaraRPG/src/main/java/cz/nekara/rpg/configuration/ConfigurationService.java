@@ -423,8 +423,10 @@ public final class ConfigurationService {
         LevelRewardConfig levelRewards = parseLevelRewards(config, warning);
         FishingRewardConfig fishingRewards = new FishingRewardConfig(
                 config.getBoolean("skills.rybareni.rewards.treasures-enabled", true),
-                parseMaterialIntTable(config, "skills.rybareni.rewards.treasures", Map.of(), warning));
-
+                parseMaterialIntTable(config, "skills.rybareni.rewards.treasures", Map.of(), warning),
+                Math.max(0, config.getInt("skills.rybareni.rewards.blank-rune-weight", 1)),
+                validateDouble(config.getDouble("skills.rybareni.rewards.blank-rune-chest-chance", 0.05),
+                        0.0, 1.0, 0.05, "skills.rybareni.rewards.blank-rune-chest-chance", warning));
         SkillsConfig skills = new SkillsConfig(
                 validateRelativeStoragePath(
                         config.getString("skills.storage.database-file", "skills/data.db"),

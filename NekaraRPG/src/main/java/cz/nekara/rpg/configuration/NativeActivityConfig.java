@@ -27,7 +27,8 @@ public record NativeActivityConfig(
         put(values, SkillId.TRADING, "villager_trade", 10);
         put(values, SkillId.SMITHING, "equipment_craft", 12, "smithing_table", 12,
             "utility_craft", 2, "construction_craft", 1);
-        put(values, SkillId.ENCHANTING, "enchant_item", 15);
+        put(values, SkillId.ENCHANTING, "enchant_item", 15, "rune_craft", 3, "rune_imbue", 5,
+            "rune_inscribe", 10, "rune_awaken", 8);
         put(values, SkillId.ALCHEMY, "brew_complete", 10);
         put(values, SkillId.FARMING, "mature_harvest", 4, "berry_harvest", 3,
             "wild_flower", 2, "wild_mushroom", 2, "grass_bundle", 1,

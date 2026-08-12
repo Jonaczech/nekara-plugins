@@ -8,7 +8,7 @@ popsaného chainmail upgradu nemění vanilla recepty ani suroviny.
 | Materiál | Požadovaný level Řemesla | Platí pro |
 | --- | ---: | --- |
 | Dřevo, kůže | 0 | zbraně, nástroje, zbroje |
-| Kámen | 5 | zbraně a nástroje |
+| Kámen | 1 | zbraně a nástroje |
 | Měď | 10 | zbraně, nástroje, zbroje |
 | Zlato | 15 | zbraně, nástroje, zbroje |
 | Železo, chainmail | 20 | zbraně, nástroje, zbroje |
@@ -39,12 +39,17 @@ z příslušného vanilla meče a jednoho materiálu tieru (např. `Iron Sword` 
 
 - Helma, chestplate, leggings a boots jsou řízené materiálovou tabulkou.
 - Chainmail se vyrábí ve smithing table bez šablony: odpovídající kožený kus + 1 železný ingot.
-- Po vyrobení získá výbava Řemeslný tier podle aktuální úrovně Řemesla:
+- Kovaná výbava získá Řemeslný tier podle aktuální úrovně Řemesla:
   I (0), II (20), III (40), IV (70), V (100).
-- Kovové zbraně a zbroje dále procházejí dílenským zpracováním; neopracovaný
-  kus nemá aktivní plný Nekara bonus. Výkov se nejdříve skutečně nataví ve vysoké
-  peci, poté se držený v hlavní ruce naklepává plížením a pravým kliknutím na
-  kovadlinu a nakonec ochladí ve vodním kotli. Zbraně se po ochlazení navíc
+- Kožená a chainmail zbroj je z kovárenského zpracování dočasně vyřazena. Chainmail
+  se v peci ani vysoké peci nerecykluje na iron nugget; její vlastní zpracování spolu
+  s koženou zbrojí bude navázáno na Fletching Table.
+- Ostatní kovové zbraně, zbroje a nástroje procházejí dílenským zpracováním; neopracovaný
+  kus nemá aktivní plný Nekara bonus. Výkov se nejdříve nahřeje ve vysoké peci a vyzvedne
+  z výstupního slotu. Poté se vloží do vedlejší ruky a při plížení a pravém kliknutí na
+  kovadlinu naklepává kladivem z hlavní ruky. Server během práce výkov bezpečně uschová,
+  takže zbroj nemůže vanilla interakce obléknout. Kladivo musí být stejného nebo vyššího
+  materiálového tieru. Naklepaný výkov se ochladí ve vodním kotli. Zbraně se poté ještě
   dokončí plížením u brusného kamene; zbroj je hotová už po ochlazení.
 
 ## Používání podle dovednosti

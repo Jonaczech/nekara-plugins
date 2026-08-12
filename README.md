@@ -4,14 +4,14 @@ Repozitář obsahuje serverové pluginy pro ekosystém Nekara. Hlavním artefakt
 
 ## Aktuální release
 
-**NekaraRPG 2.8.0** rozvíjí výbavu, bojovou odezvu a bezpečný pohyb draka.
+**NekaraRPG 2.9.0** přidává GUI tvorbu custom itemů, plnohodnotné Runotepectví, runové sockety a bezpečnější zpracování výbavy.
 
-- Drak při letu ověřuje trasu, bloky i otevřený prostor nad terénem; nemůže projít zdí, stropem ani letět pod povrchem.
-- Kritické zásahy, krvácení a silové útoky mají stručnou vizuální a zvukovou odezvu.
-- Chainmail se vyrábí ve smithing table z koženého kusu a železného ingotu. Vyžaduje Řemeslo 20 a patří do lehké větve výstroje.
-- Kovová výbava se dokončuje skutečným tavením ve vysoké peci, naklepáním na kovadlině, ochlazením ve vodním kotli a u zbraní také broušením.
-- `Bleskové reflexy` dávají aktivní lehké sadě +5 % rychlosti pohybu. `Vynalézavý tulák` aktivuje setové bonusy už se třemi lehkými kusy.
-- `Dračí pouto` se odemyká na Power 100; ve světě je aktivní vždy právě jeden companion — kůň nebo drak.
+- Prázdná, Magická a Nestabilní runa procházejí craftingem, kovadlinou, enchanting table a lecternem. První Runa poznání přidává `+1 / +3 / +5 %` XP.
+- Runotepecký perk-tree má hodnosti, číselné bonusy k vanilla enchantování, samostatné ceny run a bonusy New Game+.
+- Kvalita určuje 1–3 barevné sockety. Tooltipy místo technických dat ukazují dovednost, kvalitu, výkov a efekty run.
+- Administrátor vytváří custom itemy v GUI; stabilní ID a model lze navázat na oddělený resource pack.
+- Bone meal rozšiřuje květiny na trávě a pouštní vegetaci na písku bez cactusu.
+- Výkov vyžaduje kladivo odpovídajícího tieru. Chainmail a kůže čekají na Fletching Table.
 
 GitHub release a živé nasazení na server jsou samostatné kroky. Release asset je vždy ověřen staženým SHA-256; nasazení vyžaduje zastavený server a plný restart.
 

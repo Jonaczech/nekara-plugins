@@ -1,2 +1,6 @@
 sources:
   enchant_item: 15
+  rune_craft: 3
+  rune_imbue: 5
+  rune_inscribe: 10
+  rune_awaken: 8

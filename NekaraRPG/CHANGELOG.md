@@ -1,5 +1,18 @@
 # Přehled změn
 
+## 2.9.0
+
+- Přidán serverově autoritativní GUI editor vlastních předmětů přes `/nrpg item create`. Ukládá stabilní custom ID, namespaced model, kvalitu, statistiky a dovednostní požadavky bez editačních příkazů.
+- Runotepectví dostalo úplný pracovní postup: Prázdná runa z uhlí, smooth stone a redstonu, Magická runa přes kovadlinu a amethyst shard, Tier I–III u enchanting table s white dye a probuzení Nestabilní runy na lecternu. Každý krok uděluje XP.
+- První opakovatelná Runa poznání dává podle tieru `+1 / +3 / +5 %` XP do dovedností. Kvality mají `1 / 1 / 2 / 2 / 3` sockety a lore rozlišuje `◇` a `◆`.
+- Perk-tree Runotepectví používá hodnosti, dvě tematické větve a standardní šipky. Perky ovlivňují vanilla enchanting, tvorbu run, suroviny, XP i New Game+.
+- Vanilla enchantování zůstává zachované a po dokončení doplní číselný výklad efektů do lore.
+- Výkov vyžaduje nahřátí ve vysoké peci a kladivo stejného nebo vyššího tieru. Bezpečná úschova zabrání oblečení zbroje při Shift + pravém kliknutí. Chainmail a kůže čekají na Fletching Table.
+- Tooltipy mají správné české tvary, barvu názvu podle kvality, příslušnou dovednost, kratší symbolický postup a název `Bonusové poškození`.
+- Kamenné předměty nemají požadavek pro nošení a vyrábějí se od Řemesla 1. Běžné XP z Těžby, Lesnictví a Kopání lze získat i bez nástroje.
+- Bone meal na trávě přidává barvitelné květiny. Na písku a rudém písku může vytvořit dead bush, short/tall dry grass nebo cactus flower; běžný cactus se negeneruje.
+- Prázdná runa je velmi vzácným rybářským nálezem a amethyst shard vzácným nálezem při Kopání.
+
 ## 2.8.0
 
 - Dračí let nyní ověřuje celou trasu i volný prostor nad terénem. Drak se zastaví před zdí, nízkým stropem, jeskyní i podzemím a nemůže procházet bloky.

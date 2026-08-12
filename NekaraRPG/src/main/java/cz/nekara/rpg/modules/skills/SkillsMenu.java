@@ -22,6 +22,7 @@ import cz.nekara.rpg.skills.perks.PerkPurchasePolicy;
 import cz.nekara.rpg.skills.perks.PerkPurchaseStatus;
 import cz.nekara.rpg.skills.perks.PerkRequirement;
 import cz.nekara.rpg.skills.perks.StatPerkEffect;
+import cz.nekara.rpg.skills.perks.RankedStatPerkEffect;
 import cz.nekara.rpg.skills.perks.PerkTreeViewport;
 import cz.nekara.rpg.skills.perks.PerkTreeLayout;
 import cz.nekara.rpg.skills.profile.SkillProfile;
@@ -277,8 +278,8 @@ final class SkillsMenu implements Listener {
 
         inventory.setItem(28, craftsmanshipItem(player));
         inventory.setItem(29, productionItem(player, SkillId.ENCHANTING, "Runotepectví", Material.ENCHANTING_TABLE,
-            "Síla očarování", StatId.ENCHANTMENT_POWER,
-            "Úspora úrovní XP", StatId.EXPERIENCE_COST_REDUCTION));
+            "Úspora úrovní XP", StatId.EXPERIENCE_COST_REDUCTION,
+            "Úspora lapisu", StatId.RESOURCE_COST_REDUCTION));
         inventory.setItem(30, productionItem(player, SkillId.ALCHEMY, "Alchymie", Material.BREWING_STAND,
             "Rychlost vaření", StatId.BREWING_SPEED,
             "Síla lektvarů", StatId.POTION_POWER));
@@ -320,8 +321,8 @@ final class SkillsMenu implements Listener {
         PerkPosition newGamePlusPosition = PerkTreeLayout.forSkill(skill).newGamePlus();
         SkillsHolder holder = new SkillsHolder(player.getUniqueId(), Screen.TREE, skill, null, viewport);
         Inventory inventory = create(holder, 54, SkillPresentation.czechName(skill) + " — stezka");
-        renderTreeBackground(inventory);
-        Set<Integer> graphSlots = renderConnections(inventory, profile, perks, viewport);
+        renderTreeBackground(inventory, skill);
+        Set<Integer> graphSlots = renderConnections(inventory, profile, perks, viewport, skill);
         for (PerkDefinition perk : perks) {
             if (!viewport.contains(perk.position())) {
                 continue;
@@ -537,6 +538,7 @@ final class SkillsMenu implements Listener {
         lore.add(Component.empty());
         lore.add(Component.text("✦ Síla perků: +" + Math.round(module.newGamePlusStatBonus(profile, skill) * 100) + " %", NamedTextColor.AQUA));
         lore.add(Component.text("✦ Další běh: " + Math.round(xp * 100) + " % XP", NamedTextColor.GOLD));
+
         lore.add(Component.empty());
         if (reborn) {
             lore.add(Component.text("✦ Trvalý bonus je aktivní", NamedTextColor.GREEN));
@@ -572,10 +574,12 @@ final class SkillsMenu implements Listener {
         }
     }
 
-    private void renderTreeBackground(Inventory inventory) {
+    private void renderTreeBackground(Inventory inventory, SkillId skill) {
+        boolean runic = skill == SkillId.ENCHANTING;
         ItemStack background = GuiItems.item(
-            Material.GRAY_STAINED_GLASS_PANE,
-            Component.text("Pozadí stezky", NamedTextColor.DARK_GRAY)
+            runic ? Material.BLACK_STAINED_GLASS_PANE : Material.GRAY_STAINED_GLASS_PANE,
+            Component.text(runic ? "Runový svitek" : "Pozadí stezky",
+                runic ? NamedTextColor.DARK_PURPLE : NamedTextColor.DARK_GRAY)
         );
         for (int row = TREE_FIRST_ROW; row < TREE_FIRST_ROW + TREE_VIEWPORT_HEIGHT; row++) {
             for (int column = 0; column < TREE_VIEWPORT_WIDTH; column++) {
@@ -934,6 +938,8 @@ final class SkillsMenu implements Listener {
             for (var effect : perk.effects()) {
                 if (effect instanceof StatPerkEffect statEffect) {
                     stats.add(statEffect.statId());
+                } else if (effect instanceof RankedStatPerkEffect statEffect) {
+                    stats.add(statEffect.statId());
                 }
             }
         }
@@ -975,6 +981,8 @@ final class SkillsMenu implements Listener {
             case ITEM_QUALITY -> "✦ Kvalita výrobků";
             case ENCHANTMENT_POWER -> "✧ Síla očarování";
             case EXPERIENCE_COST_REDUCTION -> "✧ Úspora XP";
+            case RUNE_EXPERIENCE_COST_REDUCTION -> "✧ Úspora XP run";
+            case RUNE_DYE_PRESERVATION_CHANCE -> "♻ Zachování pigmentu";
             case RESOURCE_COST_REDUCTION -> "♻ Úspora surovin";
             case POTION_POWER -> "✧ Síla lektvaru";
             case BREWING_SPEED -> "✧ Rychlost vaření";
@@ -1025,7 +1033,8 @@ final class SkillsMenu implements Listener {
         Inventory inventory,
         SkillProfile profile,
         List<PerkDefinition> perks,
-        PerkTreeViewport viewport
+        PerkTreeViewport viewport,
+        SkillId skill
     ) {
         Set<PerkPosition> perkPositions = new HashSet<>();
         perks.forEach(perk -> perkPositions.add(perk.position()));
@@ -1056,15 +1065,24 @@ final class SkillsMenu implements Listener {
             if (isNavigationSlot(slot)) {
                 return;
             }
-            inventory.setItem(slot, GuiItems.modeledItem(
-                "skills/tree/" + connectionStateName(state) + "/" + connectionShape(position, connectionNeighbors),
-                state == 2 ? Material.LIME_STAINED_GLASS_PANE : state == 1 ? Material.WHITE_STAINED_GLASS_PANE : Material.GRAY_STAINED_GLASS_PANE,
-                Component.text(state == 2 ? "Odemčená vazba" : state == 1 ? "Přístupná vazba" : "Zamčená vazba",
-                    state == 2 ? NamedTextColor.GREEN : state == 1 ? NamedTextColor.WHITE : NamedTextColor.GRAY)
-            ));
+            inventory.setItem(slot, connectionItem(skill, state, position, connectionNeighbors));
             slots.add(slot);
         });
         return slots;
+    }
+
+    private ItemStack connectionItem(
+        SkillId skill,
+        int state,
+        PerkPosition position,
+        Set<PerkPosition> connectionNeighbors
+    ) {
+        return GuiItems.modeledItem(
+            "skills/tree/" + connectionStateName(state) + "/" + connectionShape(position, connectionNeighbors),
+            state == 2 ? Material.LIME_STAINED_GLASS_PANE : state == 1 ? Material.WHITE_STAINED_GLASS_PANE : Material.GRAY_STAINED_GLASS_PANE,
+            Component.text(state == 2 ? "Odemčená vazba" : state == 1 ? "Přístupná vazba" : "Zamčená vazba",
+                state == 2 ? NamedTextColor.GREEN : state == 1 ? NamedTextColor.WHITE : NamedTextColor.GRAY)
+        );
     }
 
     private static String connectionStateName(int state) {
@@ -1155,11 +1173,17 @@ final class SkillsMenu implements Listener {
                     met ? NamedTextColor.GREEN : NamedTextColor.RED));
             }
         }
-        return GuiItems.item(
+        ItemStack item = GuiItems.item(
             material,
-            Component.text(presentation.name(), color).decoration(TextDecoration.BOLD, true),
+            Component.text(perk.skill() == SkillId.ENCHANTING ? "✧ " + presentation.name() : presentation.name(), color).decoration(TextDecoration.BOLD, true),
             lore.toArray(Component[]::new)
         );
+        if (perk.skill() == SkillId.ENCHANTING) {
+            ItemMeta meta = item.getItemMeta();
+            meta.setEnchantmentGlintOverride(true);
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 
     private String perkStateLabel(boolean maxed, PerkPurchaseStatus status) {

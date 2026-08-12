@@ -3,6 +3,7 @@ package cz.nekara.rpg.skills.stats;
 import cz.nekara.rpg.skills.SkillId;
 import cz.nekara.rpg.skills.perks.PerkCatalog;
 import cz.nekara.rpg.skills.perks.PerkDefinition;
+import cz.nekara.rpg.skills.perks.RankedStatPerkEffect;
 import cz.nekara.rpg.skills.perks.StatPerkEffect;
 import cz.nekara.rpg.skills.profile.SkillProfile;
 import java.util.ArrayList;
@@ -46,6 +47,13 @@ public final class PerkStatResolver {
                         effect.statId(),
                         effect.operation(),
                         scaledAmount(effect, rank) * multiplier
+                    ));
+                } else if (perk.effects().get(index) instanceof RankedStatPerkEffect effect) {
+                    modifiers.add(new StatModifier(
+                        "perk:" + perk.id().value() + ":" + index,
+                        effect.statId(),
+                        effect.operation(),
+                        effect.amountForRank(rank) * multiplier
                     ));
                 }
             }

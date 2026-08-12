@@ -24,12 +24,35 @@ class SmithingTierTest {
         assertTrue(SmithingTier.requiresProcessing(Material.IRON_SWORD));
         assertTrue(SmithingTier.requiresProcessing(Material.IRON_SPEAR));
         assertTrue(SmithingTier.requiresProcessing(Material.DIAMOND_CHESTPLATE));
-        assertTrue(SmithingTier.requiresProcessing(Material.CHAINMAIL_BOOTS));
+        assertFalse(SmithingTier.requiresProcessing(Material.CHAINMAIL_BOOTS));
+        assertTrue(SmithingTier.requiresProcessing(Material.IRON_PICKAXE));
         assertFalse(SmithingTier.requiresProcessing(Material.WOODEN_SWORD));
         assertFalse(SmithingTier.requiresProcessing(Material.STONE_AXE));
         assertFalse(SmithingTier.requiresProcessing(Material.LEATHER_HELMET));
         assertFalse(SmithingTier.requiresProcessing(Material.BOW));
         assertFalse(SmithingTier.requiresProcessing(Material.CROSSBOW));
+    }
+
+    @Test
+    void workshopHeatingUsesOnlyTheBlastFurnace() {
+        assertFalse(SmithingTier.isWorkshopFurnace(Material.FURNACE));
+        assertTrue(SmithingTier.isWorkshopFurnace(Material.BLAST_FURNACE));
+        assertFalse(SmithingTier.isWorkshopFurnace(Material.SMOKER));
+    }
+    @Test
+    void leatherAndChainmailAreReservedForTheFutureTailoringWorkshop() {
+        assertTrue(SmithingTier.isTailoringMaterial(Material.LEATHER_HELMET));
+        assertTrue(SmithingTier.isTailoringMaterial(Material.CHAINMAIL_BOOTS));
+        assertFalse(SmithingTier.isTailoringMaterial(Material.IRON_CHESTPLATE));
+    }
+
+    @Test
+    void customBlastFurnaceHeatingCoversOnlyEquipmentWithoutVanillaMetalRecipes() {
+        assertTrue(SmithingTier.requiresCustomBlastFurnaceHeating(Material.DIAMOND_CHESTPLATE));
+        assertTrue(SmithingTier.requiresCustomBlastFurnaceHeating(Material.NETHERITE_SWORD));
+        assertFalse(SmithingTier.requiresCustomBlastFurnaceHeating(Material.IRON_CHESTPLATE));
+        assertFalse(SmithingTier.requiresCustomBlastFurnaceHeating(Material.CHAINMAIL_BOOTS));
+        assertFalse(SmithingTier.requiresCustomBlastFurnaceHeating(Material.LEATHER_HELMET));
     }
 
     @Test

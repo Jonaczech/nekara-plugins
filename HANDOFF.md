@@ -1,5 +1,13 @@
 # Předání projektu Nekara Plugins
 
+## Release 2.9.0
+
+- Vydání spojuje GUI editor custom itemů, runový pracovní postup, sockety, hodnostní perk-tree Runotepectví, čitelnější vanilla enchantování, bone meal a opravy výkovu.
+- Stabilní průchod je Prázdná runa → Magická runa → Tier I–III u enchanting table → probuzení na lecternu. Každý krok uděluje Runotepectví XP.
+- První efekt je opakovatelná Runa poznání (`+1 / +3 / +5 %` skill XP). Kvality mají 1/1/2/2/3 sockety zobrazené symboly `◇` a `◆`.
+- Naklepávání vyžaduje tierové kladivo a bezpečnou úschovu výkovu. Chainmail a kůže čekají na Fletching Table.
+- GitHub release nemění produkční server. Před nasazením je nutný živý průchod `NekaraRPG/LIVE_TESTING.md`.
+
 ## Release 2.8.0
 
 - Drak při letu ověřuje plánovanou trasu po krátkých úsecích, objem potřebný pro nosič i otevřenou oblohu. Nesmí projít blokem, nízkým stropem, jeskyní ani pokračovat pod povrchem.
