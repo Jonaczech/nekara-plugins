@@ -24,7 +24,7 @@ public final class PerkIconResolver {
         entry("smithing.tinkering", Material.GRINDSTONE), entry("smithing.masterwork", Material.NETHER_STAR),
         entry("runotepectvi.runes", Material.ENCHANTED_BOOK), entry("runotepectvi.experience", Material.EXPERIENCE_BOTTLE),
         entry("runotepectvi.lapis", Material.LAPIS_LAZULI), entry("runotepectvi.insight", Material.SCULK_CATALYST),
-        entry("runotepectvi.limits", Material.ENCHANTING_TABLE), entry("runotepectvi.hexblade", Material.CRYING_OBSIDIAN),
+        entry("runotepectvi.limits", Material.ENCHANTING_TABLE), entry("runotepectvi.hexblade", Material.LODESTONE),
         entry("alchemy.potency", Material.POTION), entry("alchemy.brew_speed", Material.BREWING_STAND),
         entry("alchemy.ingredients", Material.NETHER_WART), entry("alchemy.vials", Material.SPLASH_POTION),
         entry("alchemy.recipes", Material.WRITTEN_BOOK), entry("alchemy.merging", Material.LINGERING_POTION),
@@ -85,18 +85,28 @@ public final class PerkIconResolver {
 
     private static int priority(PerkEffectDefinition effect) {
         if (effect instanceof StatPerkEffect stat) {
-            return switch (stat.statId()) {
-                case BLEED_CHANCE, BLEED_DAMAGE_MULTIPLIER -> 0;
-                case STUN_CHANCE -> 1;
-                case CRITICAL_CHANCE, CRITICAL_DAMAGE_MULTIPLIER -> 2;
-                default -> 20;
-            };
+            return statPriority(stat.statId());
+        }
+        if (effect instanceof RankedStatPerkEffect stat) {
+            return statPriority(stat.statId());
         }
         return 10;
     }
 
+    private static int statPriority(StatId statId) {
+        return switch (statId) {
+                case BLEED_CHANCE, BLEED_DAMAGE_MULTIPLIER -> 0;
+                case STUN_CHANCE -> 1;
+                case CRITICAL_CHANCE, CRITICAL_DAMAGE_MULTIPLIER -> 2;
+            default -> 20;
+        };
+    }
+
     private static Material material(PerkEffectDefinition effect) {
         if (effect instanceof StatPerkEffect stat) {
+            return statMaterial(stat.statId());
+        }
+        if (effect instanceof RankedStatPerkEffect stat) {
             return statMaterial(stat.statId());
         }
         if (effect instanceof MechanicPerkEffect mechanic) {
@@ -136,7 +146,8 @@ public final class PerkIconResolver {
             case TRADE_SELECTION_BONUS -> Material.LECTERN;
             case ITEM_QUALITY -> Material.SMITHING_TABLE;
             case ENCHANTMENT_POWER -> Material.ENCHANTED_BOOK;
-            case EXPERIENCE_COST_REDUCTION -> Material.LAPIS_LAZULI;
+            case EXPERIENCE_COST_REDUCTION, RUNE_EXPERIENCE_COST_REDUCTION -> Material.LAPIS_LAZULI;
+            case RUNE_DYE_PRESERVATION_CHANCE -> Material.WHITE_DYE;
             case RESOURCE_COST_REDUCTION -> Material.BUNDLE;
             case POTION_POWER -> Material.POTION;
             case BREWING_SPEED -> Material.BREWING_STAND;
@@ -176,7 +187,7 @@ public final class PerkIconResolver {
             case ADRENALINE -> Material.SUGAR;
             case RAGE -> Material.BLAZE_POWDER;
             case POTION_MERGING, ALCHEMY_RECIPES -> Material.BREWING_STAND;
-            case HEXBLADE -> Material.ENCHANTED_BOOK;
+            case RUNE_MEMORY -> Material.AMETHYST_SHARD;
             case PUNCH_HOLDING, UPPERCUT, DROPKICK -> Material.LEATHER_BOOTS;
             case GRAPPLE -> Material.LEAD;
             case MEDITATION -> Material.AMETHYST_SHARD;

@@ -1,6 +1,9 @@
 package cz.nekara.rpg.modules.skills;
 
 import cz.nekara.rpg.NekaraRPGPlugin;
+import cz.nekara.rpg.items.weapons.WeaponCatalog;
+import cz.nekara.rpg.items.weapons.WeaponFamily;
+import cz.nekara.rpg.modules.runes.RuneSocketData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -69,7 +72,8 @@ enum SmithingTier {
         boolean masterworkUnlocked,
         Keys keys
     ) {
-        if (item == null || item.getType().isAir() || !SkillEquipmentPolicy.isSmithingProduct(item)) return false;
+        if (item == null || item.getType().isAir() || !SkillEquipmentPolicy.isSmithingProduct(item)
+            || isTailoringMaterial(item.getType())) return false;
         if (craftsmanshipRank < 1) return false;
         ItemMeta meta = item.getItemMeta();
         PersistentDataContainer data = meta.getPersistentDataContainer();
@@ -79,18 +83,19 @@ enum SmithingTier {
         data.set(keys.qualityChance(), PersistentDataType.DOUBLE, Math.max(0.0, Math.min(1.0, qualityChance)));
         data.set(keys.qualityMaximum(), PersistentDataType.BYTE,
             (byte) (maximumQuality(craftsmanshipRank, fineWorkUnlocked, masterworkUnlocked).ordinal() + 1));
-        if (requiresProcessing(item.getType())) {
+        if (requiresWorkshopProcessing(item)) {
             data.set(keys.processingState(), PersistentDataType.BYTE, ProcessingState.UNPROCESSED.id());
         }
         List<Component> lore = new ArrayList<>(meta.lore() == null ? List.of() : meta.lore());
         lore.add(Component.empty());
         lore.add(Component.text("Kvalita: bude určena po dokončení výkovu.", NamedTextColor.GRAY));
-        if (requiresProcessing(item.getType())) {
+        if (requiresWorkshopProcessing(item)) {
             lore.addAll(processingLore(item.getType(), ProcessingState.UNPROCESSED));
         }
         meta.lore(lore);
         item.setItemMeta(meta);
-        if (!requiresProcessing(item.getType())) {
+        EquipmentSkillLore.refresh(item);
+        if (!requiresWorkshopProcessing(item)) {
             revealQuality(item, keys);
         }
         return true;
@@ -118,14 +123,23 @@ enum SmithingTier {
         lore.removeIf(component -> net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
             .serialize(component).startsWith("Kvalita: bude určena po dokončení výkovu."));
         lore.add(tier.qualityBadge());
-        if (isWeapon(item.getType()) && tier.weaponDamage > 0) lore.add(Component.text("Nekara damage: +" + tier.weaponDamage, NamedTextColor.RED));
-        if (isArmor(item.getType()) && tier.armor > 0) lore.add(Component.text("Nekara armor: +" + tier.armor, NamedTextColor.BLUE));
+        if (isWeapon(item.getType()) && tier.weaponDamage > 0) lore.add(Component.text("Bonusové poškození: +" + tier.weaponDamage, NamedTextColor.RED));
+        if (isArmor(item.getType()) && tier.armor > 0) lore.add(Component.text("Bonusová obrana: +" + tier.armor, NamedTextColor.BLUE));
         if (isTool(item.getType()) && tier.durabilitySaveChance > 0) lore.add(Component.text("Úspora odolnosti: " + (int) (tier.durabilitySaveChance * 100) + "%", NamedTextColor.GREEN));
+        meta.displayName(coloredName(meta, item, tier));
         meta.lore(lore);
         item.setItemMeta(meta);
+        RuneSocketData.refreshLore(item);
+        EquipmentSkillLore.refresh(item);
         return Optional.of(tier);
     }
 
+    private static Component coloredName(ItemMeta meta, ItemStack item, SmithingTier tier) {
+        Component current = meta.hasDisplayName()
+            ? meta.displayName()
+            : Component.translatable(item.getType().translationKey());
+        return current.color(tier.displayColor).decoration(TextDecoration.BOLD, tier.bold);
+    }
     static double qualityPromotionChance(double itemQuality) {
         return Math.max(0.0, Math.min(1.0, itemQuality - 1.0));
     }
@@ -211,7 +225,8 @@ enum SmithingTier {
         List<Component> lore = new ArrayList<>(meta.lore() == null ? List.of() : meta.lore());
         lore.removeIf(component -> {
             String text = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(component);
-            return text.startsWith("Stav výkovu: ") || text.startsWith("Postup zpracování: ");
+            return text.startsWith("Stav výkovu: ") || text.startsWith("Postup zpracování: ")
+                || text.startsWith("Výkov: ");
         });
         lore.addAll(processingLore(item.getType(), next));
         meta.lore(lore);
@@ -293,50 +308,55 @@ enum SmithingTier {
             case SHARPENED -> NamedTextColor.AQUA;
             case NONE -> NamedTextColor.DARK_GRAY;
         };
-        String label = switch (state) {
-            case UNPROCESSED -> "Nezpracovaný";
-            case HEATED -> "Nahřátý";
-            case HAMMERED -> "Naklepaný";
-            case TEMPERED -> weapon ? "Opracovaný — čeká ostření" : "Opracovaný — hotovo";
-            case SHARPENED -> "Naostřený — hotovo";
-            case NONE -> "Hotovo";
-        };
         String nextStep = switch (state) {
-            case UNPROCESSED -> "Další krok: natav ve vysoké peci";
-            case HEATED -> "Další krok: plížení u kovadliny";
-            case HAMMERED -> "Další krok: vodní cauldron";
-            case TEMPERED -> weapon ? "Další krok: plížení u grindstone" : "Ochrana výbavy je aktivní";
-            case SHARPENED -> "Nekara damage je aktivní";
-            case NONE -> "";
+            case UNPROCESSED -> "Pec";
+            case HEATED -> "Kovadlina";
+            case HAMMERED -> "Kotlík";
+            case TEMPERED -> weapon ? "Brus" : "Hotovo";
+            case SHARPENED, NONE -> "Hotovo";
         };
-        Component progress = Component.text("Postup zpracování: [", NamedTextColor.DARK_GRAY);
+        Component progress = Component.text("Výkov: ", NamedTextColor.DARK_GRAY);
         for (int index = 0; index < totalSteps; index++) {
             progress = progress.append(Component.text(index < completeSteps ? "◆" : "◇",
                 index < completeSteps ? color : NamedTextColor.DARK_GRAY));
         }
-        progress = progress.append(Component.text("] " + nextStep, NamedTextColor.GRAY));
-        return List.of(
-            Component.text("Stav výkovu: " + label, color),
-            progress
-        );
+        progress = progress.append(Component.text("  » " + nextStep, color));
+        return List.of(progress);
     }
-
     static boolean isArmor(Material material) { String n = material.name(); return n.endsWith("_HELMET") || n.endsWith("_CHESTPLATE") || n.endsWith("_LEGGINGS") || n.endsWith("_BOOTS"); }
     static boolean isWeapon(Material material) { String n = material.name(); return n.endsWith("_SWORD") || n.endsWith("_AXE") || n.endsWith("_SPEAR") || n.equals("MACE") || material == Material.TRIDENT || material == Material.BOW || material == Material.CROSSBOW; }
     static boolean isTool(Material material) { String n = material.name(); return n.endsWith("_PICKAXE") || n.endsWith("_SHOVEL") || n.endsWith("_HOE"); }
 
     /**
      * Only metal-like crafted equipment enters the workshop pipeline. Wooden,
-     * stone and leather equipment retains its normal vanilla behaviour.
+     * stone, leather and chainmail equipment retains its normal vanilla behaviour.
      */
+    static boolean isWorkshopFurnace(Material material) {
+        return material == Material.BLAST_FURNACE;
+    }
+    static boolean isTailoringMaterial(Material material) {
+        String name = material.name();
+        return name.startsWith("LEATHER_") || name.startsWith("CHAINMAIL_");
+    }
+    static boolean requiresCustomBlastFurnaceHeating(Material material) {
+        return requiresProcessing(material)
+            && (material.name().startsWith("DIAMOND_") || material.name().startsWith("NETHERITE_"));
+    }
+
+    private static boolean requiresWorkshopProcessing(ItemStack item) {
+        return requiresProcessing(item.getType())
+            && WeaponCatalog.resolve(item).map(definition -> definition.family() != WeaponFamily.HAMMER).orElse(true);
+    }
+
     static boolean requiresProcessing(Material material) {
-        if (!isArmor(material) && !isWeapon(material)) {
+        if (!isArmor(material) && !isWeapon(material) && !isTool(material)) {
             return false;
         }
         String name = material.name();
         return !name.startsWith("WOODEN_")
             && !name.startsWith("STONE_")
             && !name.startsWith("LEATHER_")
+            && !name.startsWith("CHAINMAIL_")
             && material != Material.BOW
             && material != Material.CROSSBOW;
     }

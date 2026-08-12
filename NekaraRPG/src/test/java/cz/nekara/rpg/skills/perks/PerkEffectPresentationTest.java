@@ -25,6 +25,28 @@ class PerkEffectPresentationTest {
     }
 
     @Test
+    void showsExplicitCumulativeValuesForIrregularRanks() {
+        PerkDefinition perk = new PerkDefinition(
+            new PerkId("runotepectvi.test"), SkillId.ENCHANTING, 3, 1, 0, Set.of(),
+            List.of(
+                new RankedStatPerkEffect(StatId.EXPERIENCE_ORB_MULTIPLIER,
+                    ModifierOperation.ADD, List.of(0.05, 0.05, 0.10)),
+                new RankedStatPerkEffect(StatId.EXPERIENCE_MULTIPLIER,
+                    ModifierOperation.ADD, List.of(0.0, 0.05, 0.10))
+            ), new PerkPosition(1, 1));
+
+        assertEquals(
+            "Hodnost 1/3: získané zkušenostní koule +5 %",
+            PerkEffectPresentation.describe(perk, 0).getFirst());
+        assertEquals(
+            "Hodnost 2/3: získané zkušenostní koule +5 % • získané XP této dovednosti +5 %",
+            PerkEffectPresentation.describe(perk, 1).getFirst());
+        assertEquals(
+            "Hodnost 3/3: získané zkušenostní koule +10 % • získané XP této dovednosti +10 %",
+            PerkEffectPresentation.describe(perk, 3).getFirst());
+    }
+
+    @Test
     void givesAConcreteDescriptionForMechanics() {
         PerkDefinition perk = perk(1, new MechanicPerkEffect(MechanicId.FIELD_HARVEST));
 

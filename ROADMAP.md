@@ -2,20 +2,22 @@
 
 ## Aktuální release
 
-**NekaraRPG 2.8.0**: bezpečný serverový let draka, bojová vizuální odezva, chainmailový upgrade, rozšířený pracovní postup kovové výbavy a rychlostní bonus lehké sady.
+**NekaraRPG 2.9.0**: GUI custom itemy, plnohodnotné Runotepectví s první Runou poznání, sockety podle kvality, číselné vanilla enchanty, rozšířený bone meal a bezpečnější tierové naklepávání výbavy.
 
 ## Bezprostřední priorita
 
-1. Živě ověřit draka u zdí, stropů, jeskyní a pod terénem podle `NekaraRPG/LIVE_TESTING.md`.
-2. Ověřit celý kovářský průchod pro chainmail, železnou zbroj a jednu zbraň: vysoká pec, kovadlina, vodní kotlík a brusný kámen.
-3. Ověřit +5 % rychlosti `Bleskových reflexů` se čtyřmi kusy lehké zbroje i se třemi kusy po `Vynalézavém tulákovi`.
-4. Teprve po živé akceptaci nasadit přesný release JAR na vypnutý produkční server a provést plný restart.
+1. Živě projít tvorbu Runy poznání včetně cen, tierových bran, zvuků, částic, XP a vracení vstupů.
+2. Ověřit sockety a kumulaci skill XP bonusu na všech kvalitách výbavy.
+3. Ověřit výkov měděné, železné a diamantové zbroje se správným i příliš slabým kladivem; chainmail se nesmí tavit.
+4. Ověřit bone meal na trávě, písku a rudém písku podle `NekaraRPG/LIVE_TESTING.md`.
+5. Teprve po živé akceptaci nasadit release JAR na vypnutý produkční server a restartovat.
 
 ## Následné směry
 
 - Navrhnout Vyztuženou koženou zbroj jako custom lehký mezitier mezi kůží a chainmailem; musí mít stabilní `nekararpg` identitu, resource-pack model a serverově vynucené požadavky.
 - Navrhnout Ocelovou plátovou zbroj jako custom těžký tier 50 vedle diamantové lehké zbroje; nejdříve rozhodnout recept, atributy a roli zlata v těžké větvi.
-- Dopracovat Runotepectví a návrh vlastních run bez nahrazení vanilla enchantingu.
+- Rozšířit katalog run až po samostatném návrhu efektů a balancu; neměnit stabilní formát socketů ani Runu poznání bez migrace.
+- Navrhnout zpracování kožené a chainmail zbroje přes Fletching Table.
 
 ## Mimo rozsah
 

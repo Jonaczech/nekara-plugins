@@ -23,6 +23,13 @@ public enum WeaponTier {
 
     public String id() { return id; }
     public String displayPrefix() { return displayPrefix; }
+    public String displayPrefix(WeaponFamily family) {
+        return switch (family.nounGender()) {
+            case MASCULINE -> displayPrefix;
+            case FEMININE -> displayPrefix.substring(0, displayPrefix.length() - 1) + "\u00e1";
+            case NEUTER -> displayPrefix.substring(0, displayPrefix.length() - 1) + "\u00e9";
+        };
+    }
     public Material craftingIngredient() { return craftingIngredient; }
 
     public Material vanillaMaterial(String suffix) {

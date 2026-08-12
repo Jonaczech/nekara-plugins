@@ -2,6 +2,9 @@ package cz.nekara.rpg.modules.skills;
 
 import cz.nekara.rpg.NekaraRPGPlugin;
 import cz.nekara.rpg.fishing.FishingCatchDeliveredEvent;
+import cz.nekara.rpg.items.weapons.WeaponCatalog;
+import cz.nekara.rpg.items.weapons.WeaponFamily;
+import cz.nekara.rpg.items.weapons.WeaponTier;
 import cz.nekara.rpg.skills.SkillId;
 import cz.nekara.rpg.skills.combat.RandomChanceRoller;
 import cz.nekara.rpg.skills.luck.LuckChanceResolver;
@@ -32,6 +35,7 @@ import org.bukkit.entity.Bee;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.ThrownPotion;
 import org.bukkit.entity.Villager;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
@@ -48,6 +52,7 @@ import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.event.inventory.FurnaceStartSmeltEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.inventory.InventoryType;
@@ -57,6 +62,7 @@ import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -65,11 +71,15 @@ import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.inventory.EnchantingInventory;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.FurnaceInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.potion.PotionType;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
@@ -96,6 +106,8 @@ final class ProductionPerkListener implements Listener {
     private static final long FIELD_HARVEST_COOLDOWN_MILLIS = 45_000L;
     private static final long CROP_CARE_MILLIS = 600_000L;
     private static final int MAX_CARED_CHUNKS = 16_384;
+    private static final long WORKPIECE_HEATING_TICKS = 60L;
+    private static final String ENCHANTMENT_TOOLTIP_HEADER = "Nekara · Výklad očarování";
 
     private final NekaraRPGPlugin plugin;
     private final SkillsModule module;
@@ -104,6 +116,7 @@ final class ProductionPerkListener implements Listener {
     private final org.bukkit.NamespacedKey scoutArrowKey;
     private final org.bukkit.NamespacedKey fishingChestOwnerKey;
     private final Map<UUID, BukkitTask> hammeringTasks = new HashMap<>();
+    private final Map<UUID, ItemStack> hammeringWorkpieces = new HashMap<>();
     private final Map<UUID, BukkitTask> sharpeningTasks = new HashMap<>();
     private final Map<UUID, WaterAttunement> waterAttunements = new HashMap<>();
     private final Map<UUID, BukkitTask> waterAttunementTasks = new HashMap<>();
@@ -150,6 +163,13 @@ final class ProductionPerkListener implements Listener {
         fieldHarvestCooldowns.clear();
         hammeringTasks.values().forEach(BukkitTask::cancel);
         hammeringTasks.clear();
+        for (UUID playerId : new ArrayList<>(hammeringWorkpieces.keySet())) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player != null) {
+                returnHammeringWorkpiece(player, hammeringWorkpieces.remove(playerId));
+            }
+        }
+        hammeringWorkpieces.clear();
         sharpeningTasks.values().forEach(BukkitTask::cancel);
         sharpeningTasks.clear();
         waterAttunementTasks.values().forEach(BukkitTask::cancel);
@@ -252,11 +272,15 @@ final class ProductionPerkListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void heatCraftedEquipment(FurnaceSmeltEvent event) {
-        if (event.getBlock().getType() != Material.BLAST_FURNACE) {
-            return;
-        }
         ItemStack source = event.getSource();
         SmithingTier.ProcessingState state = SmithingTier.state(source, smithingTierKeys);
+        if (SmithingTier.isTailoringMaterial(source.getType())) {
+            event.setCancelled(true);
+            return;
+        }
+        if (!SmithingTier.isWorkshopFurnace(event.getBlock().getType())) {
+            return;
+        }
         if (state == SmithingTier.ProcessingState.NONE) {
             return;
         }
@@ -274,18 +298,87 @@ final class ProductionPerkListener implements Listener {
         event.setResult(heated);
     }
 
+    /**
+     * Diamond equipment has no vanilla blast-furnace recipe, so FurnaceSmeltEvent never fires for it.
+     * Watch the input slot and process every prepared metal workpiece ourselves after a short heating time.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void scheduleWorkshopHeating(InventoryClickEvent event) {
+        if (isWorkshopFurnace(event.getView().getTopInventory().getType())) {
+            scheduleWorkshopHeating(event.getView().getTopInventory());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void scheduleWorkshopHeating(InventoryDragEvent event) {
+        if (isWorkshopFurnace(event.getView().getTopInventory().getType())) {
+            scheduleWorkshopHeating(event.getView().getTopInventory());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void scheduleWorkshopHeating(InventoryOpenEvent event) {
+        if (isWorkshopFurnace(event.getView().getTopInventory().getType())) {
+            scheduleWorkshopHeating(event.getView().getTopInventory());
+        }
+    }
+
+    private static boolean isWorkshopFurnace(InventoryType type) {
+        return type == InventoryType.BLAST_FURNACE;
+    }
+    private void scheduleWorkshopHeating(org.bukkit.inventory.Inventory inventory) {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> heatWorkshopInput(inventory), WORKPIECE_HEATING_TICKS);
+    }
+
+    private void heatWorkshopInput(org.bukkit.inventory.Inventory inventory) {
+        if (!(inventory instanceof FurnaceInventory furnace)) {
+            return;
+        }
+        ItemStack input = furnace.getSmelting();
+        if (input == null || input.getAmount() != 1
+            || SmithingTier.state(input, smithingTierKeys) != SmithingTier.ProcessingState.UNPROCESSED
+            || !SmithingTier.requiresCustomBlastFurnaceHeating(input.getType())) {
+            return;
+        }
+        ItemStack fuel = furnace.getFuel();
+        if (fuel == null || fuel.getType().isAir() || !fuel.getType().isFuel()) {
+            return;
+        }
+        ItemStack output = furnace.getResult();
+        if (output != null && !output.getType().isAir()) {
+            return;
+        }
+        ItemStack heated = input.clone();
+        if (!SmithingTier.advanceProcessing(heated, smithingTierKeys,
+            SmithingTier.ProcessingState.UNPROCESSED, SmithingTier.ProcessingState.HEATED)) {
+            return;
+        }
+        furnace.setSmelting(null);
+        furnace.setResult(heated);
+        fuel.setAmount(fuel.getAmount() - 1);
+        furnace.setFuel(fuel.getAmount() > 0 ? fuel : null);
+    }
+
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void processCraftedEquipment(PlayerInteractEvent event) {
-        if (event.getHand() != EquipmentSlot.HAND || event.getAction() != Action.RIGHT_CLICK_BLOCK
-            || event.getClickedBlock() == null || !supported(event.getPlayer())) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null
+            || !supported(event.getPlayer())) {
             return;
         }
         Player player = event.getPlayer();
         if (!plugin.configuration().get().worlds().isEnabled(player.getWorld().getName())) {
             return;
         }
-        ItemStack item = player.getInventory().getItemInMainHand();
         Material station = event.getClickedBlock().getType();
+        if (isAnvil(station) && player.isSneaking()
+            && hammeringWorkpieces.containsKey(player.getUniqueId())) {
+            cancelVanillaInteraction(event);
+            return;
+        }
+        if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+        }
+        ItemStack item = player.getInventory().getItemInMainHand();
         if (station == Material.SMITHING_TABLE && player.isSneaking()
             && module.runtimeState(player.getUniqueId(), SkillId.SMITHING)
                 .map(state -> state.has(MechanicId.TINKERING)).orElse(false)
@@ -293,15 +386,35 @@ final class ProductionPerkListener implements Listener {
             event.setCancelled(true);
             return;
         }
-        SmithingTier.ProcessingState state = SmithingTier.state(item, smithingTierKeys);
-        if ((station == Material.ANVIL || station == Material.CHIPPED_ANVIL || station == Material.DAMAGED_ANVIL)
-            && player.isSneaking()
-            && (SmithingTier.isWeapon(item.getType()) || SmithingTier.isArmor(item.getType()))
-            && state == SmithingTier.ProcessingState.HEATED) {
-            startHammering(player, event.getClickedBlock(), item.clone());
-            event.setCancelled(true);
-            return;
+        if (isAnvil(station) && player.isSneaking()) {
+            ItemStack workpiece = player.getInventory().getItemInOffHand();
+            SmithingTier.ProcessingState workpieceState = SmithingTier.state(workpiece, smithingTierKeys);
+            if ((SmithingTier.isWeapon(workpiece.getType()) || SmithingTier.isArmor(workpiece.getType())
+                || SmithingTier.isTool(workpiece.getType()))
+                && workpieceState == SmithingTier.ProcessingState.HEATED) {
+                cancelVanillaInteraction(event);
+                Optional<WeaponTier> requiredTier = workpieceTier(workpiece);
+                Optional<WeaponTier> hammerTier = heldHammerTier(item);
+                if (requiredTier.isEmpty()) {
+                    player.sendActionBar(net.kyori.adventure.text.Component.text(
+                        "Materiál výkovu nelze určit.", net.kyori.adventure.text.format.NamedTextColor.RED));
+                    return;
+                }
+                if (hammerTier.isEmpty()) {
+                    player.sendActionBar(net.kyori.adventure.text.Component.text(
+                        "V hlavní ruce musíš držet kovářské kladivo.", net.kyori.adventure.text.format.NamedTextColor.RED));
+                    return;
+                }
+                if (!HammeringTierPolicy.isSufficient(hammerTier.get(), requiredTier.get())) {
+                    player.sendActionBar(net.kyori.adventure.text.Component.text(
+                        "Toto kladivo je na výkov příliš slabé.", net.kyori.adventure.text.format.NamedTextColor.RED));
+                    return;
+                }
+                startHammering(player, event.getClickedBlock(), workpiece, requiredTier.get());
+                return;
+            }
         }
+        SmithingTier.ProcessingState state = SmithingTier.state(item, smithingTierKeys);
         if (station == Material.WATER_CAULDRON && state == SmithingTier.ProcessingState.HAMMERED) {
             if (!SmithingTier.advanceProcessing(item, smithingTierKeys,
                 SmithingTier.ProcessingState.HAMMERED, SmithingTier.ProcessingState.TEMPERED)) {
@@ -331,12 +444,19 @@ final class ProductionPerkListener implements Listener {
         }
     }
 
-    private void startHammering(Player player, Block anvil, ItemStack workpiece) {
-        if (hammeringTasks.containsKey(player.getUniqueId())) {
+    private void startHammering(Player player, Block anvil, ItemStack workpiece, WeaponTier requiredTier) {
+        UUID playerId = player.getUniqueId();
+        if (hammeringTasks.containsKey(playerId) || hammeringWorkpieces.containsKey(playerId)) {
             player.sendActionBar(net.kyori.adventure.text.Component.text(
                 "Naklepávání už probíhá.", net.kyori.adventure.text.format.NamedTextColor.YELLOW));
             return;
         }
+        ItemStack offHand = player.getInventory().getItemInOffHand();
+        if (!offHand.isSimilar(workpiece)) {
+            return;
+        }
+        hammeringWorkpieces.put(playerId, offHand.clone());
+        player.getInventory().setItemInOffHand(null);
         Location station = anvil.getLocation().add(0.5, 0.75, 0.5);
         player.sendActionBar(net.kyori.adventure.text.Component.text(
             "Naklepáváš výkov…", net.kyori.adventure.text.format.NamedTextColor.GOLD));
@@ -346,12 +466,11 @@ final class ProductionPerkListener implements Listener {
 
             @Override
             public void run() {
-                if (!hammeringTasks.containsKey(player.getUniqueId())) {
+                if (!hammeringTasks.containsKey(playerId)) {
                     cancel();
                     return;
                 }
-                ItemStack current = player.getInventory().getItemInMainHand();
-                if (!isHammeringValid(player, station, workpiece, current)) {
+                if (!isHammeringValid(player, station, requiredTier)) {
                     cancel();
                     return;
                 }
@@ -363,15 +482,17 @@ final class ProductionPerkListener implements Listener {
                 player.sendActionBar(net.kyori.adventure.text.Component.text(
                     "Naklepávání výkovu… " + Math.min(100, elapsedTicks * 100 / 40) + "%",
                     net.kyori.adventure.text.format.NamedTextColor.GOLD));
-                if (elapsedTicks >= 40) {
-                    cancel();
-                }
+                if (elapsedTicks >= 40) cancel();
             }
         }.runTaskTimer(plugin, 0L, 8L);
         BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            hammeringTasks.remove(player.getUniqueId());
-            ItemStack current = player.getInventory().getItemInMainHand();
-            if (!isHammeringValid(player, station, workpiece, current)) {
+            hammeringTasks.remove(playerId);
+            ItemStack current = hammeringWorkpieces.remove(playerId);
+            if (current == null) {
+                return;
+            }
+            if (!isHammeringValid(player, station, current, requiredTier)) {
+                returnHammeringWorkpiece(player, current);
                 if (player.isOnline()) {
                     player.sendActionBar(net.kyori.adventure.text.Component.text(
                         "Naklepávání bylo přerušeno.", net.kyori.adventure.text.format.NamedTextColor.RED));
@@ -386,14 +507,67 @@ final class ProductionPerkListener implements Listener {
                     "Výkov je naklepán. Ochlaď jej ve vodním kotli.",
                     net.kyori.adventure.text.format.NamedTextColor.YELLOW));
             }
+            returnHammeringWorkpiece(player, current);
         }, 40L);
-        hammeringTasks.put(player.getUniqueId(), task);
+        hammeringTasks.put(playerId, task);
     }
 
-    private boolean isHammeringValid(Player player, Location station, ItemStack workpiece, ItemStack current) {
-        return player.isOnline() && player.isSneaking() && current.isSimilar(workpiece)
+    private boolean isHammeringValid(Player player, Location station, WeaponTier requiredTier) {
+        ItemStack workpiece = hammeringWorkpieces.get(player.getUniqueId());
+        return workpiece != null && isHammeringValid(player, station, workpiece, requiredTier);
+    }
+
+    private boolean isHammeringValid(Player player, Location station, ItemStack workpiece, WeaponTier requiredTier) {
+        return player.isOnline() && player.isSneaking()
+            && player.getWorld().equals(station.getWorld())
             && player.getLocation().distanceSquared(station) <= 9.0
-            && SmithingTier.state(current, smithingTierKeys) == SmithingTier.ProcessingState.HEATED;
+            && SmithingTier.state(workpiece, smithingTierKeys) == SmithingTier.ProcessingState.HEATED
+            && heldHammerTier(player.getInventory().getItemInMainHand())
+                .map(tier -> HammeringTierPolicy.isSufficient(tier, requiredTier)).orElse(false);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void restoreHammeringWorkpieceOnQuit(PlayerQuitEvent event) {
+        UUID playerId = event.getPlayer().getUniqueId();
+        BukkitTask task = hammeringTasks.remove(playerId);
+        if (task != null) {
+            task.cancel();
+        }
+        returnHammeringWorkpiece(event.getPlayer(), hammeringWorkpieces.remove(playerId));
+    }
+
+    private static void returnHammeringWorkpiece(Player player, ItemStack workpiece) {
+        if (workpiece == null || workpiece.getType().isAir()) {
+            return;
+        }
+        ItemStack offHand = player.getInventory().getItemInOffHand();
+        if (offHand == null || offHand.getType().isAir()) {
+            player.getInventory().setItemInOffHand(workpiece);
+            return;
+        }
+        player.getInventory().addItem(workpiece).values().forEach(leftover ->
+            player.getWorld().dropItemNaturally(player.getLocation(), leftover));
+    }
+
+    private static boolean isAnvil(Material material) {
+        return material == Material.ANVIL || material == Material.CHIPPED_ANVIL
+            || material == Material.DAMAGED_ANVIL;
+    }
+
+    private static void cancelVanillaInteraction(PlayerInteractEvent event) {
+        event.setCancelled(true);
+        event.setUseInteractedBlock(Event.Result.DENY);
+        event.setUseItemInHand(Event.Result.DENY);
+    }
+
+    private static Optional<WeaponTier> heldHammerTier(ItemStack item) {
+        return WeaponCatalog.resolve(item).filter(definition -> definition.family() == WeaponFamily.HAMMER)
+            .map(definition -> definition.tier());
+    }
+
+    private static Optional<WeaponTier> workpieceTier(ItemStack item) {
+        return WeaponCatalog.resolve(item).map(definition -> definition.tier())
+            .or(() -> HammeringTierPolicy.requiredTier(item.getType()));
     }
     private void startSharpening(Player player, Block grindstone) {
         if (sharpeningTasks.containsKey(player.getUniqueId())) {
@@ -452,8 +626,8 @@ final class ProductionPerkListener implements Listener {
                 player.getWorld().spawnParticle(Particle.CRIT, station, 20, 0.25, 0.25, 0.25, 0.12);
                 player.playSound(player.getLocation(), Sound.BLOCK_GRINDSTONE_USE, 0.9F, 1.1F);
                 quality.ifPresent(tier -> celebrateQuality(player, station, tier));
-                String message = quality.map(tier -> "Zbraň dokončena: " + tier.displayName() + ". Nekara damage je aktivní.")
-                    .orElse("Zbraň je naostřená. Její Nekara damage je aktivní.");
+                String message = quality.map(tier -> "Zbraň dokončena: " + tier.displayName() + ". Bonusové poškození je aktivní.")
+                    .orElse("Zbraň je naostřená. Bonusové poškození je aktivní.");
                 player.sendActionBar(quality.map(tier -> net.kyori.adventure.text.Component.text(message, tier.displayColor()))
                     .orElseGet(() -> net.kyori.adventure.text.Component.text(message,
                         net.kyori.adventure.text.format.NamedTextColor.GREEN)));
@@ -504,13 +678,6 @@ final class ProductionPerkListener implements Listener {
             double costReduction = state.stats().value(StatId.EXPERIENCE_COST_REDUCTION);
             event.setExpLevelCost(Math.max(1,
                 (int) Math.ceil(event.getExpLevelCost() * (1.0 - costReduction))));
-            double power = state.stats().value(StatId.ENCHANTMENT_POWER);
-            if (power > 1.0) {
-                event.getEnchantsToAdd().replaceAll((enchantment, level) -> {
-                    int improved = (int) Math.floor(level * power);
-                    return Math.max(level, Math.min(enchantment.getMaxLevel() + 1, improved));
-                });
-            }
             double lapisSave = state.stats().value(StatId.RESOURCE_COST_REDUCTION);
             if (lapisSave > 0.0 && ThreadLocalRandom.current().nextDouble() < lapisSave
                 && event.getInventory() instanceof EnchantingInventory enchanting) {
@@ -525,6 +692,37 @@ final class ProductionPerkListener implements Listener {
                 });
             }
         });
+        Bukkit.getScheduler().runTask(plugin, () -> updateEnchantmentTooltip(event.getItem()));
+    }
+
+    private void updateEnchantmentTooltip(ItemStack item) {
+        if (item == null || item.getType().isAir() || item.getEnchantments().isEmpty()) {
+            return;
+        }
+        var meta = item.getItemMeta();
+        List<Component> lore = new ArrayList<>(meta.lore() == null ? List.of() : meta.lore());
+        removeEnchantmentTooltip(lore);
+        lore.add(Component.empty());
+        lore.add(Component.text(ENCHANTMENT_TOOLTIP_HEADER, NamedTextColor.AQUA));
+        item.getEnchantments().entrySet().stream()
+            .sorted(Map.Entry.comparingByKey(java.util.Comparator.comparing(enchantment -> enchantment.getKey().asString())))
+            .forEach(entry -> {
+                String name = entry.getKey().getKey().getKey().replace('_', ' ');
+                lore.add(Component.text(name + " " + entry.getValue(), NamedTextColor.GRAY));
+                EnchantmentTooltipResolver.explain(entry.getKey().getKey().asString(), entry.getValue())
+                    .forEach(text -> lore.add(Component.text("  " + text, NamedTextColor.DARK_GRAY)));
+            });
+        meta.lore(lore);
+        item.setItemMeta(meta);
+    }
+
+    private static void removeEnchantmentTooltip(List<Component> lore) {
+        for (int index = 0; index < lore.size(); index++) {
+            if (ENCHANTMENT_TOOLTIP_HEADER.equals(PlainTextComponentSerializer.plainText().serialize(lore.get(index)))) {
+                lore.subList(Math.max(0, index - 1), lore.size()).clear();
+                return;
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -1184,9 +1382,14 @@ final class ProductionPerkListener implements Listener {
             giveLater(player, new ItemStack(Material.NETHER_STAR));
             return;
         }
+        int blankRuneWeight = plugin.runesModule().isEnabled() ? rewards.blankRuneWeight() : 0;
+        int totalWeight = rewards.treasureWeights().values().stream().mapToInt(Integer::intValue).sum() + blankRuneWeight;
+        if (blankRuneWeight > 0 && ThreadLocalRandom.current().nextInt(totalWeight) < blankRuneWeight) {
+            giveLater(player, plugin.runesModule().blankRune());
+            return;
+        }
         selectWeighted(rewards.treasureWeights()).ifPresent(material ->
-            giveLater(player, new ItemStack(material)));
-    }
+            giveLater(player, new ItemStack(material)));    }
 
     private void rewardFishingChest(Player player, SkillProfile profile, double baseChance) {
         var luck = plugin.configuration().get().skills().luck();
@@ -1204,6 +1407,10 @@ final class ProductionPerkListener implements Listener {
                 Material.POTION, Material.IRON_INGOT, Material.GOLDEN_CARROT};
             chest.getBlockInventory().addItem(new ItemStack(loot[ThreadLocalRandom.current().nextInt(loot.length)],
                 ThreadLocalRandom.current().nextInt(1, 4)));
+            if (plugin.runesModule().isEnabled()
+                && ThreadLocalRandom.current().nextDouble() < plugin.configuration().get().skills().fishingRewards().blankRuneChestChance()) {
+                chest.getBlockInventory().addItem(plugin.runesModule().blankRune());
+            }
             chest.update(true, false);
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (isFishingChest(block)) block.setType(Material.AIR, false);

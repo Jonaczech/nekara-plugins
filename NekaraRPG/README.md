@@ -3,6 +3,18 @@
 Modulární RPG plugin pro Purpur/Paper 26.1 a Java 25. Obsahuje autentizaci,
 rybářskou minihru, táboření/Rested, Echo Vein, mounty a nativní Nekara Skills.
 
+## 2.9.0 – Runotepectví, custom itemy a sockety
+
+- `/nrpg item create` otevře GUI editor vlastních předmětů se stabilním ID a namespaced modelem pro resource pack.
+- Prázdná runa se vyrábí z uhlí, smooth stone a redstonu. Kovadlina a amethyst shard vytvoří Magickou runu, enchanting table s white dye nabídne Tier I–III a lectern probudí Nestabilní runu.
+- Runa poznání přidává `+1 / +3 / +5 %` XP. Běžná/Neobyčejná kvalita má 1, Vzácná/Epická 2 a Legendární 3 sockety.
+- Runotepectví má dvě hodnostní větve. Perky ovlivňují vanilla enchantování, tvorbu run, suroviny, XP i New Game+.
+- Vanilla enchantování není nahrazené; lore po očarování doplní číselný výklad.
+- Výkov vyžaduje kladivo stejného nebo vyššího tieru a brání nechtěnému oblečení zbroje.
+- Bone meal přidává barvitelné květiny a pouštní vegetaci bez generování cactusu.
+
+Podrobnosti: [runy](docs/RUNES.md), [custom itemy](docs/CUSTOM_ITEMS.md), [bone meal](docs/BONE_MEAL.md) a [požadavky výbavy](docs/CRAFTING_REQUIREMENTS.md).
+
 ## 2.8.0 – Výkov, chainmail a bezpečný let
 
 - Drak ověřuje krok po kroku celou plánovanou trasu, její objem i otevřenou oblohu. Zastaví se před bloky, nízkým stropem a vstupem do jeskyně; nepřesune hráče skrz terén.

@@ -29,14 +29,14 @@ final class CraftingTierPolicy {
         if (name.startsWith("IRON_") || name.startsWith("CHAINMAIL_")) return 20;
         if (name.startsWith("GOLDEN_")) return 15;
         if (name.startsWith("COPPER_")) return 10;
-        if (name.startsWith("STONE_")) return 5;
+        if (name.startsWith("STONE_")) return 0;
         return 0;
     }
 
     static int requiredSmithingLevel(WeaponTier tier) {
         return switch (tier) {
             case WOODEN -> 0;
-            case STONE -> 5;
+            case STONE -> 0;
             case COPPER -> 10;
             case GOLDEN -> 15;
             case IRON -> 20;

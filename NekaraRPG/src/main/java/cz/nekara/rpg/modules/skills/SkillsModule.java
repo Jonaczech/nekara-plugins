@@ -6,6 +6,7 @@ import cz.nekara.rpg.configuration.WeaponCombatConfig;
 import cz.nekara.rpg.items.armor.ArmorRecipeRegistry;
 import cz.nekara.rpg.items.weapons.WeaponRecipeRegistry;
 import cz.nekara.rpg.modules.NekaraModule;
+import cz.nekara.rpg.modules.runes.RuneSocketData;
 import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.skills.SkillId;
 import cz.nekara.rpg.skills.SkillProgressionCurve;
@@ -77,6 +78,7 @@ public final class SkillsModule implements NekaraModule {
     private final SkillsMenu menu;
     private final SkillExperienceFeedback experienceFeedback;
     private final SupplementalVanillaExperience supplementalVanillaExperience = new SupplementalVanillaExperience();
+    private final RuneExperienceAccumulator runeExperienceAccumulator = new RuneExperienceAccumulator();
     private final Set<UUID> pendingPurchases = ConcurrentHashMap.newKeySet();
     private final Set<UUID> pendingAdminMutations = ConcurrentHashMap.newKeySet();
     private final Map<UUID, SkillProfile> profileCache = new ConcurrentHashMap<>();
@@ -290,6 +292,7 @@ public final class SkillsModule implements NekaraModule {
         pendingAdminMutations.clear();
         experienceFeedback.clear();
         supplementalVanillaExperience.clear();
+        runeExperienceAccumulator.clear();
         allExperienceBoosts.clear();
         skillExperienceBoosts.clear();
         profileCache.clear();
@@ -432,7 +435,12 @@ public final class SkillsModule implements NekaraModule {
         });
     }
 
-    void preloadProfile(Player player) {
+    public boolean hasCachedNewGamePlus(UUID playerId, SkillId skill) {
+        SkillProfile profile = profileCache.get(playerId);
+        return profile != null && profile.newGamePlusRank(skill) > 0;
+    }
+
+    public void preloadProfile(Player player) {
         if (!profileCache.containsKey(player.getUniqueId())) {
             loadProfile(player, (profile, snapshot) -> { });
         }
@@ -550,14 +558,20 @@ public final class SkillsModule implements NekaraModule {
         GlobalExperienceEvent event = globalExperienceEvent;
         double restedMultiplier = request.context().synthetic() ? 1.0
             : plugin.campfireModule().skillsExperienceMultiplier(playerId);
-        double multiplier = experienceBoost(playerId, request.skill())
+        Player player = Bukkit.getPlayer(playerId);
+        double runeMultiplier = request.context().synthetic() || player == null || plugin.runesModule() == null
+            || !plugin.runesModule().isEnabled() ? 1.0 : RuneSocketData.equippedExperienceMultiplier(player);
+        double baseMultiplier = experienceBoost(playerId, request.skill())
             * (event == null ? 1.0 : event.multiplier(request.skill()))
             * (profile == null ? 1.0 : newGamePlusExperienceMultiplier(profile, request.skill()))
             * restedMultiplier;
-        if (multiplier == 1.0) return request;
-        long boosted = Math.max(1L, Math.min(100_000_000L,
-            Math.round(request.baseExperience() * multiplier)));
-        return new ExperienceAwardRequest(request.playerKey(), request.skill(), boosted,
+        if (baseMultiplier == 1.0 && runeMultiplier == 1.0) return request;
+        long boosted = Math.round(request.baseExperience() * baseMultiplier);
+        if (runeMultiplier > 1.0) {
+            double fractionalRuneBonus = request.baseExperience() * baseMultiplier * (runeMultiplier - 1.0);
+            boosted += runeExperienceAccumulator.claim(playerId, request.skill(), fractionalRuneBonus);
+        }
+        boosted = Math.max(1L, Math.min(100_000_000L, boosted));        return new ExperienceAwardRequest(request.playerKey(), request.skill(), boosted,
             request.context(), request.fingerprint());
     }
 
@@ -637,6 +651,24 @@ public final class SkillsModule implements NekaraModule {
         return profile == null ? 0 : skillLevel(profile, skill);
     }
 
+    /** Returns whether a cached profile owns a perk for an optional Nekara integration. */
+    public boolean hasCachedPerk(UUID playerId, PerkId perkId) {
+        return cachedPerkRank(playerId, perkId) > 0;
+    }
+
+    /** Returns a cached perk rank for optional gameplay integrations. */
+    public int cachedPerkRank(UUID playerId, PerkId perkId) {
+        SkillProfile profile = profileCache.get(playerId);
+        return profile == null ? 0 : profile.perkRank(perkId);
+    }
+
+    /** Returns one resolved cached stat, including the skill's New Game+ bonus. */
+    public double cachedStat(UUID playerId, SkillId skill, StatId stat) {
+        return runtimeState(playerId, skill)
+            .map(state -> state.stats().value(stat))
+            .orElse(stat.defaultValue());
+    }
+
     /**
      * Grants XP for a verified external Nekara mechanic such as Echo Vein.
      * The normal anti-duplication, event and Rested pipeline remains in force.
@@ -654,6 +686,33 @@ public final class SkillsModule implements NekaraModule {
             result -> showExperienceFeedback(player.getUniqueId(), skill, "Ozvěna žíly", result));
     }
 
+    /** Grants configured XP for a completed Nekara activity that has no vanilla event. */
+    public void awardActivityExperience(Player player, SkillId skill, String sourceType, String sourceKey) {
+        SkillsConfig config = activeConfig;
+        if (player == null || config == null || sourceType == null || sourceKey == null || sourceKey.isBlank()) {
+            return;
+        }
+        long amount = Math.max(0L, Math.round(config.activities().experience(skill, sourceType)
+            * runtimeState(player.getUniqueId(), skill)
+                .map(state -> state.stats().value(StatId.EXPERIENCE_MULTIPLIER)).orElse(1.0)));
+        if (amount < 1L) return;
+        ExperienceFingerprint fingerprint = new ExperienceFingerprint(
+            player.getUniqueId().toString(), skill, sourceType, sourceKey);
+        ExperienceContext context = new ExperienceContext(skill, false, false, false, false, false, false, 0);
+        awardExperience(player.getUniqueId(), new ExperienceAwardRequest(
+            player.getUniqueId().toString(), skill, amount, context, fingerprint),
+            result -> showExperienceFeedback(player.getUniqueId(), skill, runeActivityName(sourceType), result));
+    }
+
+    private static String runeActivityName(String sourceType) {
+        return switch (sourceType) {
+            case "rune_craft" -> "Tvorba pr\u00e1zdn\u00e9 runy";
+            case "rune_imbue" -> "Magick\u00e1 runa";
+            case "rune_inscribe" -> "Z\u00e1pis runy";
+            case "rune_awaken" -> "Probuzen\u00ed runy";
+            default -> "Dokon\u010den\u00e1 \u010dinnost";
+        };
+    }
     WeaponCombatConfig weaponCombatConfig() {
         SkillsConfig config = activeConfig;
         return config == null ? WeaponCombatConfig.defaults() : config.weapons();
@@ -698,7 +757,7 @@ public final class SkillsModule implements NekaraModule {
         return 1.0 + newGamePlusStatBonus(profile, skill);
     }
 
-    int claimSupplementalVanillaExperience(UUID playerId, double amount) {
+    public int claimSupplementalVanillaExperience(UUID playerId, double amount) {
         return supplementalVanillaExperience.claim(playerId, amount);
     }
 

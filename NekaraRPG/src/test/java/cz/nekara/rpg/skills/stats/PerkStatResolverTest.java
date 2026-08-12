@@ -26,6 +26,25 @@ class PerkStatResolverTest {
     }
 
     @Test
+    void resolvesExplicitRunotepectviRankValuesAndNewGamePlus() {
+        SkillProfile profile = new SkillProfile(
+            "player-1", Map.of(), Map.of(
+                new PerkId("runotepectvi.runes"), 5,
+                new PerkId("runotepectvi.experience"), 5,
+                new PerkId("runotepectvi.limits"), 3,
+                new PerkId("runotepectvi.insight"), 2
+            ), 19, 1);
+
+        StatSnapshot stats = resolver.resolve(profile, SkillId.ENCHANTING, 1.25);
+
+        assertEquals(0.1875, stats.value(StatId.EXPERIENCE_COST_REDUCTION), 0.000_001);
+        assertEquals(0.25, stats.value(StatId.RUNE_EXPERIENCE_COST_REDUCTION), 0.000_001);
+        assertEquals(0.1875, stats.value(StatId.RUNE_DYE_PRESERVATION_CHANCE), 0.000_001);
+        assertEquals(1.0625, stats.value(StatId.EXPERIENCE_ORB_MULTIPLIER), 0.000_001);
+        assertEquals(1.0625, stats.value(StatId.EXPERIENCE_MULTIPLIER), 0.000_001);
+    }
+
+    @Test
     void ignoresPerksOwnedByAnotherSkill() {
         SkillProfile profile = new SkillProfile(
             "player-1", Map.of(), Map.of(new PerkId("lesnictvi.yield"), 2), 2, 1);

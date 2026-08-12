@@ -45,13 +45,15 @@ public final class DefaultPerkTree {
             node("fine_work", "Jemná práce", "Odemyká Epickou kvalitu vyrobené výbavy.", stat(StatId.ITEM_QUALITY, 0.08)),
             node("tinkering", "Dílenské úpravy", "Odemkne bezpečnou opravu výbavy řemeslnickou soupravou.", mechanic(MechanicId.TINKERING)),
             node("masterwork", "Mistrovský kus", "Odemyká Legendární kvalitu vyrobené výbavy.", stat(StatId.ITEM_QUALITY, 0.20)));
-        builder.tree(SkillId.ENCHANTING,
-            node("runes", "Čitelné runy", "Zvyšuje sílu vložených očarování.", stat(StatId.ENCHANTMENT_POWER, 0.05)),
-            node("experience", "Šetrný zápis", "Runotepectví spotřebuje méně zkušeností.", stat(StatId.EXPERIENCE_COST_REDUCTION, 0.012)),
-            node("lapis", "Čistý pigment", "Při práci se spotřebuje méně surovin.", stat(StatId.RESOURCE_COST_REDUCTION, 0.012)),
-            node("insight", "Ozvěna poznání", "Zvyšuje zisk zkušeností dovednosti i koulí.", stat(StatId.EXPERIENCE_MULTIPLIER, 0.03), stat(StatId.EXPERIENCE_ORB_MULTIPLIER, 0.01)),
-            node("limits", "Za hranou písma", "Runy mohou překročit běžné hranice své síly.", stat(StatId.ENCHANTMENT_POWER, 0.10)),
-            node("hexblade", "Čepel živlu", "Odemkne přeměnu části zásahu na živlové zranění.", mechanic(MechanicId.HEXBLADE)));
+        builder.enchantingTree(
+            node("runes", "Čitelné runy", "I. hodnost odemkne Tier I runy; každá hodnost zlevňuje vanilla očarování o 3 %.", stat(StatId.EXPERIENCE_COST_REDUCTION, 0.03)),
+            node("experience", "Šetrný zápis", "Každá hodnost zlevňuje tvorbu run o 4 %; III. hodnost odemkne Tier II.", stat(StatId.RUNE_EXPERIENCE_COST_REDUCTION, 0.04)),
+            node("lapis", "Čistý pigment", "Každá hodnost přidává 4% šanci zachovat lapis při vanilla očarování.", stat(StatId.RESOURCE_COST_REDUCTION, 0.04)),
+            node("limits", "Za hranou písma", "Každá hodnost přidává 5% šanci zachovat barvivo; III. hodnost odemkne Tier III.", stat(StatId.RUNE_DYE_PRESERVATION_CHANCE, 0.05)),
+            node("insight", "Výklad magie", "Postupně posiluje zkušenostní koule a zisk XP do Runotepectví.",
+                rankedStat(StatId.EXPERIENCE_ORB_MULTIPLIER, 0.05, 0.05, 0.10),
+                rankedStat(StatId.EXPERIENCE_MULTIPLIER, 0.00, 0.05, 0.10)),
+            node("hexblade", "Runová paměť", "Při úspěšném vrytí má runa 10 % šanci vrátit se a obnovit 25 % základní ceny jejího zápisu.", mechanic(MechanicId.RUNE_MEMORY)));
         builder.tree(SkillId.ALCHEMY,
             node("potency", "Čistá esence", "Vařené lektvary získávají vyšší účinek.", stat(StatId.POTION_POWER, 0.05)),
             node("brew_speed", "Rychlý var", "Varné stojany pracují rychleji.", stat(StatId.BREWING_SPEED, 0.08)),
@@ -180,6 +182,10 @@ public final class DefaultPerkTree {
         return new StatPerkEffect(id, ModifierOperation.ADD, amount);
     }
 
+    private static RankedStatPerkEffect rankedStat(StatId id, Double... amountsByRank) {
+        return new RankedStatPerkEffect(id, ModifierOperation.ADD, List.of(amountsByRank));
+    }
+
     private static MechanicPerkEffect mechanic(MechanicId id) {
         return new MechanicPerkEffect(id);
     }
@@ -202,6 +208,40 @@ public final class DefaultPerkTree {
                 new PerkRequirement(leftDeepId, 1),
                 new PerkRequirement(rightDeepId, 1)
             ), layout.crown());
+        }
+
+        void enchantingTree(Node root, Node left, Node right, Node leftDeep, Node rightDeep, Node crown) {
+            SkillId skill = SkillId.ENCHANTING;
+            PerkTreeLayout layout = PerkTreeLayout.forSkill(skill);
+            PerkId rootId = add(skill, root, 5, 1, List.of(0, 10, 20, 35, 50), Set.of(), layout.root());
+            PerkId leftId = add(skill, left, 5, 1, List.of(20, 25, 30, 45, 60),
+                Set.of(new PerkRequirement(rootId, 2)), layout.left());
+            PerkId rightId = add(skill, right, 5, 2, List.of(20, 35, 50, 70, 85),
+                Set.of(new PerkRequirement(rootId, 2)), layout.right());
+            PerkId leftDeepId = add(skill, leftDeep, 3, 3, List.of(50, 60, 70),
+                Set.of(new PerkRequirement(leftId, 3)), layout.leftDeep());
+            PerkId rightDeepId = add(skill, rightDeep, 3, 3, List.of(50, 65, 80),
+                Set.of(new PerkRequirement(rightId, 3)), layout.rightDeep());
+            add(skill, crown, 1, 5, List.of(100), Set.of(
+                new PerkRequirement(leftDeepId, 3),
+                new PerkRequirement(rightDeepId, 3)
+            ), layout.crown());
+        }
+
+        private PerkId add(
+            SkillId skill,
+            Node node,
+            int maxRank,
+            int pointCost,
+            List<Integer> levels,
+            Set<PerkRequirement> requirements,
+            PerkPosition position
+        ) {
+            PerkId id = new PerkId(skill.id() + "." + node.suffix());
+            definitions.add(new PerkDefinition(
+                id, skill, maxRank, pointCost, levels.getFirst(), levels, requirements, node.effects(), position));
+            presentations.put(id, new PerkPresentation(node.name(), node.description()));
+            return id;
         }
 
         private PerkId add(

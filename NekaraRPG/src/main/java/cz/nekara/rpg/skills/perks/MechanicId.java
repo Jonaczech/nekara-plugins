@@ -16,7 +16,7 @@ public enum MechanicId {
     ADRENALINE,
     RAGE,
     POTION_MERGING,
-    HEXBLADE,
+    RUNE_MEMORY,
     PUNCH_HOLDING,
     UPPERCUT,
     DROPKICK,

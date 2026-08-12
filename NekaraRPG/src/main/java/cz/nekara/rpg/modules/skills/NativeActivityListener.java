@@ -194,9 +194,6 @@ final class NativeActivityListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onFarm(BlockBreakEvent event) {
-        if (!GatheringMaterialPolicy.isHoe(event.getPlayer().getInventory().getItemInMainHand())) {
-            return;
-        }
         Block block = event.getBlock();
         if (isHarvestable(block)) {
             award(event.getPlayer(), SkillId.FARMING, "mature_harvest",

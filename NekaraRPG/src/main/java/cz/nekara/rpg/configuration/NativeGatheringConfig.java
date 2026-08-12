@@ -108,7 +108,7 @@ public record NativeGatheringConfig(
 
     public static Map<Material, Integer> defaultDiggingRareDrops() {
         return Map.of(Material.IRON_NUGGET, 10, Material.GOLD_NUGGET, 4,
-            Material.AMETHYST_SHARD, 2, Material.PRISMARINE_SHARD, 1);
+            Material.AMETHYST_SHARD, 3, Material.PRISMARINE_SHARD, 1);
     }
 
     private static void put(EnumMap<Material, Long> values, long experience, Material... materials) {

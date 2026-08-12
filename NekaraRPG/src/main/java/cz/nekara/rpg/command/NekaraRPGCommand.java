@@ -6,6 +6,7 @@ import cz.nekara.rpg.menu.NekaraRPGMenu;
 import cz.nekara.rpg.minigame.FishingMinigameManager;
 import cz.nekara.rpg.modules.ModuleRegistry;
 import cz.nekara.rpg.modules.campfire.CampfireModule;
+import cz.nekara.rpg.modules.customitems.CustomItemsModule;
 import cz.nekara.rpg.modules.fishing.FishingModule;
 import cz.nekara.rpg.modules.mining.MiningModule;
 import cz.nekara.rpg.modules.mounts.MountsModule;
@@ -50,6 +51,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
     private final MiningModule miningModule;
     private final MountsModule mountsModule;
     private final SkillsModule skillsModule;
+    private final CustomItemsModule customItemsModule;
     private final ModuleRegistry modules;
     private final MessageService messages;
     private final UpdaterService updater;
@@ -63,6 +65,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
             MiningModule miningModule,
             MountsModule mountsModule,
             SkillsModule skillsModule,
+            CustomItemsModule customItemsModule,
             ModuleRegistry modules,
             MessageService messages,
             UpdaterService updater,
@@ -75,6 +78,7 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
         this.miningModule = miningModule;
         this.mountsModule = mountsModule;
         this.skillsModule = skillsModule;
+        this.customItemsModule = customItemsModule;
         this.modules = modules;
         this.messages = messages;
         this.updater = updater;
@@ -188,6 +192,26 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
             }
             case "skills" -> {
                 handleSkillsAdmin(sender, args);
+                yield true;
+            }
+            case "item" -> {
+                if (!require(sender, "nekararpg.item.admin")) yield true;
+                if (!(sender instanceof Player player)) {
+                    messages.send(sender, "player-only");
+                    yield true;
+                }
+                if (!modules.isEnabled(CustomItemsModule.ID)) {
+                    messages.send(sender, "module-disabled", Map.of("module", CustomItemsModule.ID));
+                    yield true;
+                }
+                String action = args.length < 2 ? "create" : args[1].toLowerCase(Locale.ROOT);
+                if ("create".equals(action)) {
+                    customItemsModule.openCreateEditor(player);
+                } else {
+                    player.sendMessage(net.kyori.adventure.text.Component.text(
+                            "Použití: /nrpg item create",
+                            net.kyori.adventure.text.format.NamedTextColor.YELLOW));
+                }
                 yield true;
             }
             case "prehled", "overview", "me" -> {
@@ -727,7 +751,11 @@ public final class NekaraRPGCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return prefix(List.of("menu", "prehled", "help", "reload", "status", "update", "skills", "sit", "stand", "mount", "test", "cancel"), args[0]);
+            return prefix(List.of("menu", "prehled", "help", "reload", "status", "update", "skills", "item", "sit", "stand", "mount", "test", "cancel"), args[0]);
+        }
+        if (sender.hasPermission("nekararpg.item.admin") && args.length == 2
+                && "item".equalsIgnoreCase(args[0])) {
+            return prefix(List.of("create"), args[1]);
         }
         if (sender.hasPermission("nekararpg.skills.admin")
                 && args.length == 2 && "skills".equalsIgnoreCase(args[0])) {

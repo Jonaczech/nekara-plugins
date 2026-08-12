@@ -1,5 +1,14 @@
 # Projektová paměť Nekara Plugins
 
+## Release 2.9.0
+
+- Custom itemy používají stabilní PDC identitu a namespaced model; editor je GUI-only za `/nrpg item create`. Resource pack zůstává oddělený.
+- Runové položky a sockety jsou serverově autoritativní. První efekt `skill_xp` je opakovatelný a má tierové hodnoty 1/3/5 procent.
+- Runotepecké perky zachovávají stabilní ID. `RankedStatPerkEffect` vyjadřuje hodnotu hodnosti explicitně a runtime i tooltipy čtou stejné statistiky.
+- Runy nemění vanilla maximální enchanty ani nabídky. Číselný výklad se zapisuje po dokončení a perky upravují náklady nebo návrat surovin.
+- `HammeringTierPolicy` porovnává materiál kusu a custom kladiva. Rozpracovaný kus je uložen mimo ruce a při přerušení se vrací.
+- Bone meal zachovává vanilla růst; pouštní větev nikdy negeneruje cactus.
+
 ## Release 2.8.0
 
 - `DragonFlightCollisionPolicy` je čistá policy pro trasu draka. Vyžaduje průchodný koridor 5×5×5, otevřenou oblohu nad cílem i cestou a respektuje maximální výšku; `DragonsModule` nesmí teleportovat nosič přes zamítnutou trasu.

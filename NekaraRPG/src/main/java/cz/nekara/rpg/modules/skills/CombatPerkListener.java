@@ -355,6 +355,8 @@ final class CombatPerkListener implements Listener {
             return;
         }
         removeArmorModifiers(player);
+        refreshEquipmentSkillLore(player);
+        refreshEquipmentSkillLore(player);
         Optional<SkillRuntimeState> lightState = module.runtimeState(player.getUniqueId(), SkillId.LIGHT_ARMOR);
         Optional<SkillRuntimeState> heavyState = module.runtimeState(player.getUniqueId(), SkillId.HEAVY_ARMOR);
         if (lightState.isEmpty() || heavyState.isEmpty()) {
@@ -397,6 +399,11 @@ final class CombatPerkListener implements Listener {
         }
     }
 
+    private static void refreshEquipmentSkillLore(Player player) {
+        for (ItemStack item : player.getInventory().getStorageContents()) EquipmentSkillLore.refresh(item);
+        for (ItemStack item : player.getInventory().getArmorContents()) EquipmentSkillLore.refresh(item);
+        EquipmentSkillLore.refresh(player.getInventory().getItemInOffHand());
+    }
     private void applyWeaponMobility(Player player) {
         WeaponCatalog.resolve(player.getInventory().getItemInMainHand()).ifPresent(weapon -> {
             Optional<SkillRuntimeState> state = module.runtimeState(player.getUniqueId(), weapon.family().skill());
@@ -512,10 +519,6 @@ final class CombatPerkListener implements Listener {
             applyHeavyPowerSweep(attacker, target, event.getDamage(), family);
         } else if (family == WeaponFamily.GREATSWORD && weaponConfig.greatswordCleaveDamageMultiplier() > 0.0) {
             applyCleave(attacker, target, event.getDamage() * weaponConfig.greatswordCleaveDamageMultiplier());
-        }
-        if (module.runtimeState(attacker.getUniqueId(), SkillId.ENCHANTING)
-            .map(value -> value.has(MechanicId.HEXBLADE)).orElse(false)) {
-            target.setFireTicks(Math.max(target.getFireTicks(), 40));
         }
         if (!(event.getDamager() instanceof Projectile)) {
             applyWeaponCoating(attacker.getInventory().getItemInMainHand(), target);

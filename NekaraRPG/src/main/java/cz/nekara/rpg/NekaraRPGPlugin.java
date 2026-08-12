@@ -8,11 +8,14 @@ import cz.nekara.rpg.messages.MessageService;
 import cz.nekara.rpg.menu.NekaraRPGMenu;
 import cz.nekara.rpg.modules.ModuleRegistry;
 import cz.nekara.rpg.modules.auth.AuthModule;
+import cz.nekara.rpg.modules.bonemeal.BoneMealModule;
 import cz.nekara.rpg.modules.campfire.CampfireModule;
+import cz.nekara.rpg.modules.customitems.CustomItemsModule;
 import cz.nekara.rpg.modules.dragons.DragonsModule;
 import cz.nekara.rpg.modules.fishing.FishingModule;
 import cz.nekara.rpg.modules.mining.MiningModule;
 import cz.nekara.rpg.modules.mounts.MountsModule;
+import cz.nekara.rpg.modules.runes.RunesModule;
 import cz.nekara.rpg.modules.skills.SkillsModule;
 import cz.nekara.rpg.modules.sitting.SittingModule;
 import cz.nekara.rpg.mount.ActiveMountCoordinator;
@@ -33,8 +36,11 @@ public final class NekaraRPGPlugin extends JavaPlugin {
     private SittingModule sittingModule;
     private CampfireModule campfireModule;
     private MiningModule miningModule;
+    private CustomItemsModule customItemsModule;
+    private BoneMealModule boneMealModule;
     private MountsModule mountsModule;
     private DragonsModule dragonsModule;
+    private RunesModule runesModule;
     private SkillsModule skillsModule;
     private ActiveMountCoordinator activeMountCoordinator;
     private NekaraRPGMenu mainMenu;
@@ -55,21 +61,28 @@ public final class NekaraRPGPlugin extends JavaPlugin {
         sittingModule = new SittingModule(this, messages);
         campfireModule = new CampfireModule(this, messages, sounds, sittingModule);
         miningModule = new MiningModule(this, messages, sounds, fishingModule);
+        customItemsModule = new CustomItemsModule(this);
+        boneMealModule = new BoneMealModule(this);
         activeMountCoordinator = new ActiveMountCoordinator();
         mountsModule = new MountsModule(this, messages, activeMountCoordinator);
         skillsModule = new SkillsModule(this, messages);
+        runesModule = new RunesModule(this, skillsModule);
         dragonsModule = new DragonsModule(this, messages, activeMountCoordinator);
         modules.register(authModule);
         modules.register(fishingModule);
         modules.register(campfireModule);
         modules.register(miningModule);
+        modules.register(customItemsModule);
+        modules.register(boneMealModule);
         modules.register(mountsModule);
         modules.register(skillsModule);
+        modules.register(runesModule);
         modules.register(dragonsModule);
         mainMenu = new NekaraRPGMenu(this, messages, modules, authModule, fishingModule,
                 sittingModule, campfireModule, mountsModule, dragonsModule, skillsModule);
         fishingModule.registerCommand(new NekaraRPGCommand(
                 this, fishingModule, sittingModule, campfireModule, miningModule, mountsModule, skillsModule,
+                customItemsModule,
                 modules, messages, updater, mainMenu));
         AuthCommand authCommand = new AuthCommand(authModule, messages);
         for (String commandName : new String[]{"nekaraauth", "login", "register", "logout"}) {
@@ -143,6 +156,10 @@ public final class NekaraRPGPlugin extends JavaPlugin {
 
     public SkillsModule skillsModule() {
         return skillsModule;
+    }
+
+    public RunesModule runesModule() {
+        return runesModule;
     }
 
     public UpdaterService updater() {

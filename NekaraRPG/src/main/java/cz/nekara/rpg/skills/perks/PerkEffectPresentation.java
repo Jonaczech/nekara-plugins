@@ -23,6 +23,11 @@ public final class PerkEffectPresentation {
         for (PerkEffectDefinition effect : perk.effects()) {
             if (effect instanceof StatPerkEffect stat) {
                 descriptions.add(statDescription(stat.statId(), scaled(stat, displayedRank)));
+            } else if (effect instanceof RankedStatPerkEffect stat) {
+                double amount = stat.amountForRank(displayedRank);
+                if (Math.abs(amount) > 0.000_001) {
+                    descriptions.add(statDescription(stat.statId(), amount));
+                }
             } else if (effect instanceof MechanicPerkEffect mechanic) {
                 descriptions.add("odemkne " + mechanicDescription(mechanic.mechanicId()));
             }
@@ -71,6 +76,8 @@ public final class PerkEffectPresentation {
                 + signedPercentagePoints(value);
             case ENCHANTMENT_POWER -> "síla očarování " + signedPercent(value);
             case EXPERIENCE_COST_REDUCTION -> "úspora úrovní XP při očarování " + signedPercent(value);
+            case RUNE_EXPERIENCE_COST_REDUCTION -> "úspora úrovní XP při tvorbě run " + signedPercent(value);
+            case RUNE_DYE_PRESERVATION_CHANCE -> "šance zachovat barvivo při zápisu runy " + signedPercentagePoints(value);
             case RESOURCE_COST_REDUCTION -> "šance zachránit spotřebovanou přísadu " + signedPercentagePoints(value);
             case POTION_POWER -> "síla a délka účinku lektvarů " + signedPercent(value);
             case BREWING_SPEED -> "rychlost vaření lektvarů " + signedPercent(value);
@@ -125,7 +132,7 @@ public final class PerkEffectPresentation {
             case ADRENALINE -> "Adrenalin při nízkém zdraví";
             case RAGE -> "Hněv při nízkém zdraví";
             case POTION_MERGING -> "spojení dvou pitných lektvarů a ametystového střepu do jedné lahve";
-            case HEXBLADE -> "přeměna části zásahu na živlové poškození";
+            case RUNE_MEMORY -> "10 % šanci vrátit probuzenou runu a 25 % základní ceny jejího zápisu";
             case PUNCH_HOLDING -> "zesílený úder po vyčkání";
             case UPPERCUT -> "zvedák při plížení";
             case DROPKICK -> "odkopnutí při sprintu ve vzduchu";
